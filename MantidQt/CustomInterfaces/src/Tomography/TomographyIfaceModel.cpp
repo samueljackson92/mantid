@@ -605,6 +605,8 @@ void TomographyIfaceModel::makeRunnableWithOptions(
   if (tool == g_customCmdTool) {
     const std::string cmd = m_toolsSettings.custom.toCommand();
 
+	std::cout << "\nDEBUG: ASTRA to command -> " << cmd << "\n\n";
+
     opt.resize(1);
     splitCmdLine(cmd, run, opt[0]);
     return;
@@ -617,8 +619,13 @@ void TomographyIfaceModel::makeRunnableWithOptions(
     local = true;
     cmd = m_systemSettings.m_local.m_reconScriptsPath +
           g_mainReconstructionScript;
+
+	std::cout << "\nDEBUG: ASTRA to command -> " << cmd << "\n\n";
+
   } else if (tool == g_TomoPyTool) {
     cmd = m_toolsSettings.tomoPy.toCommand();
+	std::cout << "\nDEBUG: ASTRA to command -> " << cmd << "\n\n";
+
     // this will make something like:
     // run = "/work/imat/z-tests-fedemp/scripts/tomopy/imat_recon_FBP.py";
     // opt = "--input_dir " + base + currentPathFITS() + " " + "--dark " +
@@ -626,6 +633,9 @@ void TomographyIfaceModel::makeRunnableWithOptions(
     //      currentPathDark() + " " + "--white " + base + currentPathFlat();
   } else if (tool == g_AstraTool) {
     cmd = m_toolsSettings.astra.toCommand();
+
+	std::cout << "\nDEBUG: ASTRA to command -> " << cmd << "\n\n";
+
     // this will produce something like this:
     // run = "/work/imat/scripts/astra/astra-3d-SIRT3D.py";
     // opt = base + currentPathFITS();

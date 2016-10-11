@@ -265,7 +265,6 @@ do_test_doesnt_throw_on_execution(MatrixWorkspace_sptr inputWS,
   TS_ASSERT(outWS != NULL);
   return outWS;
 }
-
 }
 /**
 
@@ -580,7 +579,7 @@ public:
 
   void setUp() override {
     if (!ws) {
-    	ws = create_workspace_with_fitting_functions();
+      ws = create_workspace_with_fitting_functions();
     }
   }
 
