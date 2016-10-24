@@ -150,7 +150,7 @@ MatrixWorkspace_sptr create_workspace_with_detector_level_only_fit_functions() {
   const std::string instrumentName = ws->getInstrument()->getName();
 
   const double A1 = 1;
-  std::string componentLinks = "";
+  std::string componentLinks;
   for (size_t wsIndex = 0; wsIndex < ws->getNumberHistograms(); ++wsIndex) {
     Geometry::IDetector_const_sptr det = ws->getDetector(wsIndex);
 
