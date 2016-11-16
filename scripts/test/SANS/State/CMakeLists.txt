@@ -7,6 +7,8 @@ set ( TEST_PY_FILES
    SANSStateAdjustmentBuilderTest.py
    SANSStateCalculateTransmissionTest.py
    SANSStateCalculateTransmissionBuilderTest.py
+   SANSStateConvertToQTest.py
+   SANSStateConvertToQBuilderTest.py
    SANSStateDataTest.py
    SANSStateDataBuilderTest.py
    SANSStateFunctionsTest.py
@@ -28,8 +30,7 @@ set ( TEST_PY_FILES
    SANSStateWavelengthTest.py
    SANSStateWavelengthBuilderTest.py
    SANSStateWavelengthAndPixelAdjustmentTest.py
-   SANSStateWavelengthAndPixelAdjustmentBuilderTest.py
-   )
+   SANSStateWavelengthAndPixelAdjustmentBuilderTest.py)
 
 check_tests_valid ( ${CMAKE_CURRENT_SOURCE_DIR} ${TEST_PY_FILES} )
 

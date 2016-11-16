@@ -194,14 +194,18 @@ class LimitParserTest(unittest.TestCase):
                                                                                     step_type=RangeStepType.Log)},
                           "L/q -12 3.6 2 /LIN": {user_file_limits_q: simple_range(start=-12, stop=3.6, step=2,
                                                                                   step_type=RangeStepType.Lin)},
-                          "L/q -12 ,  0.4  ,23 ,34.8, 3.6": {user_file_limits_q: complex_range(start=-12, step1=0.4,
-                                                             mid=23, step2=34.8,stop=3.6, step_type=RangeStepType.Lin)},
-                          "L/q -12  , 0.4 , 23 ,34.8 ,3.6 /LIn": {user_file_limits_q: complex_range(start=-12,
+                          "L/q -12 ,  0.4  ,23 ,-34.8, 3.6": {user_file_limits_q: complex_range(start=-12, step1=0.4,
+                                                             mid=23, step2=34.8, stop=3.6,
+                                                     step_type1=RangeStepType.Lin, step_type2=RangeStepType.Log)},
+                          "L/q -12  , 0.4 , 23 ,-34.8 ,3.6 /LIn": {user_file_limits_q: complex_range(start=-12,
                                                                                                     step1=0.4,
-                                                        mid=23, step2=34.8, stop=3.6, step_type=RangeStepType.Lin)},
+                                                        mid=23, step2=34.8, stop=3.6, step_type1=RangeStepType.Lin,
+                                                                                    step_type2=RangeStepType.Lin)},
                           "L/q -12  , 0.4 , 23  ,34.8 ,3.6  /Log": {user_file_limits_q: complex_range(start=-12,
                                                                     step1=0.4, mid=23, step2=34.8, stop=3.6,
-                                                                    step_type=RangeStepType.Log)}}
+                                                                    step_type1=RangeStepType.Log,
+                                                                    step_type2=RangeStepType.Log)}
+                          }
 
         invalid_settings = {"L/Q 12 2 3 4": RuntimeError,
                             "L/Q 12 2 3 4 23 3": RuntimeError,
@@ -222,14 +226,17 @@ class LimitParserTest(unittest.TestCase):
                                                                                         step_type=RangeStepType.Log)},
                           "L/qxY -12 3.6 2 /LIN": {user_file_limits_qxy: simple_range(start=-12, stop=3.6, step=2,
                                                                                       step_type=RangeStepType.Lin)},
-                          "L/qxy -12  , 0.4,  23, 34.8, 3.6": {user_file_limits_qxy: complex_range(start=-12, step1=0.4,
-                                                         mid=23, step2=34.8, stop=3.6, step_type=RangeStepType.Lin)},
+                          "L/qxy -12  , 0.4,  23, -34.8, 3.6": {user_file_limits_qxy: complex_range(start=-12, step1=0.4,
+                                                         mid=23, step2=34.8, stop=3.6, step_type1=RangeStepType.Lin,
+                                                                                    step_type2=RangeStepType.Log)},
                           "L/qXY -12  , 0.4 , 23 ,34.8 ,3.6 /LIn": {user_file_limits_qxy: complex_range(start=-12,
                                                                     step1=0.4, mid=23, step2=34.8, stop=3.6,
-                                                                    step_type=RangeStepType.Lin)},
+                                                                    step_type1=RangeStepType.Lin,
+                                                                    step_type2=RangeStepType.Lin)},
                           "L/qXY -12   ,0.4,  23  ,34.8 ,3.6  /Log": {user_file_limits_qxy: complex_range(start=-12,
                                                                       step1=0.4, mid=23, step2=34.8, stop=3.6,
-                                                                      step_type=RangeStepType.Log)}}
+                                                                      step_type1=RangeStepType.Log,
+                                                                      step_type2=RangeStepType.Log)}}
 
         invalid_settings = {"L/QXY 12 2 3 4": RuntimeError,
                             "L/QXY 12 2 3 4 23 3": RuntimeError,
@@ -634,42 +641,42 @@ class TubeCalibFileParserTest(unittest.TestCase):
 
 class QResolutionParserTest(unittest.TestCase):
     def test_that_gets_type(self):
-        self.assertTrue(QResolutionParser.get_type(), "QRESOLUTION")
+        self.assertTrue(QResolutionParser.get_type(), "QRESOL")
 
     def test_that_q_resolution_on_off_is_parsed_correctly(self):
-        valid_settings = {"QRESOLUTION/ON": {user_file_q_resolution_on: True},
-                          "QRESOLUTIoN / oFF": {user_file_q_resolution_on: False}}
+        valid_settings = {"QRESOL/ON": {user_file_q_resolution_on: True},
+                          "QREsoL / oFF": {user_file_q_resolution_on: False}}
 
-        invalid_settings = {"QRESOLUTION= ON": RuntimeError}
+        invalid_settings = {"QRESOL= ON": RuntimeError}
 
         q_resolution_parser = QResolutionParser()
         do_test(q_resolution_parser, valid_settings, invalid_settings, self.assertTrue, self.assertRaises)
 
     def test_that_q_resolution_float_values_are_parsed_correctly(self):
-        valid_settings = {"QRESOLUTION/deltaR = 23.546": {user_file_q_resolution_delta_r: 23.546},
-                          "QRESOLUTION/ Lcollim = 23.546": {user_file_q_resolution_collimation_length: 23.546},
-                          "QRESOLUTION/ a1 = 23.546": {user_file_q_resolution_a1: 23.546},
-                          "QRESOLUTION/ a2 =  23": {user_file_q_resolution_a2: 23},
-                          "QREsolution /  H1 = 23.546 ": {user_file_q_resolution_h1: 23.546},
-                          "QREsolution /h2 = 23.546 ": {user_file_q_resolution_h2: 23.546},
-                          "QREsolution /  W1 = 23.546 ": {user_file_q_resolution_w1: 23.546},
-                          "QREsolution /W2 = 23.546 ": {user_file_q_resolution_w2: 23.546}
+        valid_settings = {"QRESOL/deltaR = 23.546": {user_file_q_resolution_delta_r: 23.546},
+                          "QRESOL/ Lcollim = 23.546": {user_file_q_resolution_collimation_length: 23.546},
+                          "QRESOL/ a1 = 23.546": {user_file_q_resolution_a1: 23.546},
+                          "QRESOL/ a2 =  23": {user_file_q_resolution_a2: 23},
+                          "QRESOL /  H1 = 23.546 ": {user_file_q_resolution_h1: 23.546},
+                          "QRESOL /h2 = 23.546 ": {user_file_q_resolution_h2: 23.546},
+                          "QRESOL /  W1 = 23.546 ": {user_file_q_resolution_w1: 23.546},
+                          "QRESOL /W2 = 23.546 ": {user_file_q_resolution_w2: 23.546}
                           }
 
-        invalid_settings = {"QRESOLUTION/DELTAR 23": RuntimeError,
-                            "QRESOLUTION/DELTAR = test": RuntimeError,
-                            "QRESOLUTION/A1 t": RuntimeError,
-                            "QRESOLUTION/B1=10": RuntimeError}
+        invalid_settings = {"QRESOL/DELTAR 23": RuntimeError,
+                            "QRESOL /DELTAR = test": RuntimeError,
+                            "QRESOL /A1 t": RuntimeError,
+                            "QRESOL/B1=10": RuntimeError}
 
         q_resolution_parser = QResolutionParser()
         do_test(q_resolution_parser, valid_settings, invalid_settings, self.assertTrue, self.assertRaises)
 
     def test_that_moderator_is_parsed_correctly(self):
-        valid_settings = {"QRESOLUTION/MODERATOR = test_file.txt": {user_file_q_resolution_moderator: "test_file.txt"}}
+        valid_settings = {"QRESOL/MODERATOR = test_file.txt": {user_file_q_resolution_moderator: "test_file.txt"}}
 
-        invalid_settings = {"QRESOLUTION/MODERATOR = test_file.nxs": RuntimeError,
-                            "QRESOLUTION/MODERATOR/test_file.txt": RuntimeError,
-                            "QRESOLUTION/MODERATOR=test_filetxt": RuntimeError}
+        invalid_settings = {"QRESOL/MODERATOR = test_file.nxs": RuntimeError,
+                            "QRESOL/MODERATOR/test_file.txt": RuntimeError,
+                            "QRESOL/MODERATOR=test_filetxt": RuntimeError}
 
         q_resolution_parser = QResolutionParser()
         do_test(q_resolution_parser, valid_settings, invalid_settings, self.assertTrue, self.assertRaises)
@@ -1015,7 +1022,7 @@ class UserFileParserTest(unittest.TestCase):
         assert_valid_result(result, {user_file_tube_calibration_file: "calib_file.nxs"}, self.assertTrue)
 
         # QResolutionParser
-        result = user_file_parser.parse_line("QRESOLUTION/ON")
+        result = user_file_parser.parse_line("QRESOL/ON")
         assert_valid_result(result, {user_file_q_resolution_on: True}, self.assertTrue)
 
         # FitParser

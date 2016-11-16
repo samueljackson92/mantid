@@ -37,8 +37,8 @@ sample_user_file = ("PRINT for changer\n"
                     "mask/time 17500 22000\n"
                     "!\n"
                     "L/R 12 15\n"
-                    "!L/Q/RCut 200\n"
-                    "!L/Q/WCut 8.0\n"
+                    "L/Q/RCut 200\n"
+                    "L/Q/WCut 8.0\n"
                     "!PRINT REMOVED RCut=200 WCut=8\n"
                     "!\n"
                     "MON/DIRECT=DIRECTM1_15785_12m_31Oct12_v12.dat\n"
@@ -66,7 +66,14 @@ sample_user_file = ("PRINT for changer\n"
                     "!\n"
                     "!! 01/10/13 MASKSANS2d_133F M3 by M1 trans Hellsing, Rennie, Jackson, L1=L2=12m A1=20 and A2=8mm\n"
                     "L/EVENTSTIME 7000.0,500.0,60000.0\n"
-                    "SAMPLE/PATH/ON\n")
+                    "SAMPLE/PATH/ON\n"
+                    "QRESOL/ON \n"
+                    "QRESOL/DELTAR=11 \n"
+                    "QRESOL/LCOLLIM=12 \n"
+                    "QRESOL/MODERATOR=moderator_rkh_file.txt\n"
+                    "QRESOL/A1=13\n"
+                    "QRESOL/A2=14\n"
+                    )
 
 
 def create_user_file(user_file_content):

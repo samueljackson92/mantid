@@ -197,7 +197,7 @@ class SANSCreateWavelengthAndPixelAdjustment(DataProcessorAlgorithm):
             state = create_deserialized_sans_state_from_property_manager(state_property_manager)
             state.validate()
         except ValueError as err:
-            errors.update({"SANSSMove": str(err)})
+            errors.update({"SANSCreateWavelengthAndPixelAdjustment": str(err)})
 
         # The transmission and the normalize to monitor workspace must have exactly one histogram present
         transmission_workspace = self.getProperty("TransmissionWorkspace").value

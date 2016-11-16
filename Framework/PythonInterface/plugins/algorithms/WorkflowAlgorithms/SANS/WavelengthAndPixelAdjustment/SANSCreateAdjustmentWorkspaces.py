@@ -45,7 +45,8 @@ class SANSCreateAdjustmentWorkspaces(DataProcessorAlgorithm):
         workspace_validator = CompositeValidator()
         workspace_validator.add(WorkspaceUnitValidator("Wavelength"))
         self.declareProperty(MatrixWorkspaceProperty('SampleData', '',
-                                                     optional=PropertyMode.Optional, direction=Direction.Input),
+                                                     optional=PropertyMode.Optional, direction=Direction.Input,
+                                                     validator=workspace_validator),
                              doc='A workspace cropped to the detector to be reduced (the SAME as the input to Q1D). '
                                  'This used to verify the solid angle. The workspace is not modified, just inspected.')
 

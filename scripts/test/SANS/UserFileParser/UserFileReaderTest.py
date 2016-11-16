@@ -22,8 +22,9 @@ class UserFileReaderTest(unittest.TestCase):
         # Assert
         expected_values = {user_file_limits_wavelength: [simple_range(start=1.5, stop=12.5, step=0.125,
                                                                       step_type=RangeStepType.Lin)],
-                           user_file_limits_q: [complex_range(.001, .001, .0126, -.08, .2,
-                                                              step_type=RangeStepType.Lin)],
+                           user_file_limits_q: [complex_range(.001, .001, .0126, .08, .2,
+                                                              step_type1=RangeStepType.Lin,
+                                                              step_type2=RangeStepType.Log)],
                            user_file_limits_qxy: [simple_range(0, 0.05, 0.001, RangeStepType.Lin)],
                            user_file_back_single_monitors: [back_single_monitor_entry(1, 35000, 65000),
                                                             back_single_monitor_entry(2, 85000, 98000)],
@@ -77,7 +78,16 @@ class UserFileReaderTest(unittest.TestCase):
                            user_file_trans_radius: [7.0],
                            user_file_trans_roi: ["test.xml", "test2.xml"],
                            user_file_trans_mask: ["test3.xml", "test4.xml"],
-                           user_file_sample_path: [True]}
+                           user_file_sample_path: [True],
+                           user_file_limits_radius_cut: [200],
+                           user_file_limits_wavelength_cut: [8.0],
+                           user_file_q_resolution_on: [True],
+                           user_file_q_resolution_delta_r: [11.],
+                           user_file_q_resolution_collimation_length: [12.],
+                           user_file_q_resolution_a1: [13.],
+                           user_file_q_resolution_a2: [14.],
+                           user_file_q_resolution_moderator: ["moderator_rkh_file.txt"]
+                           }
 
         self.assertTrue(len(expected_values) == len(output))
         for key, value in expected_values.items():

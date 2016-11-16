@@ -2,6 +2,8 @@
 
 import abc
 import re
+from math import copysign
+
 
 from SANS2.Common.SANSEnumerations import (ISISReductionMode, DetectorType, RangeStepType, FitType, DataType)
 from SANS2.UserFile.UserFileCommon import *
@@ -580,7 +582,7 @@ class LimitParser(UserFileComponentParser):
                does_pattern_match(self._wavelength_complex_pattern, line)
 
     def _extract_angle_limit(self, line):
-        is_no_mirror =  re.search(self._phi_no_mirror, line) is not None
+        is_no_mirror = re.search(self._phi_no_mirror, line) is not None
         angles_string = re.sub(self._phi, "", line)
         angles = extract_float_range(angles_string)
         return {user_file_limits_angle: mask_angle_entry(min=angles[0],
@@ -667,20 +669,35 @@ class LimitParser(UserFileComponentParser):
 
     def _extract_complex_pattern(self, complex_range_input, tag):
         # Get the step type
-        step_type = self._get_step_type(complex_range_input)
+        step_type = self._get_step_type(complex_range_input, default=None)
 
         # Remove the step type
         range_with_steps_string = re.sub(self._lin_or_log, "", complex_range_input)
         range_with_steps = extract_float_range_midpoint_and_steps(range_with_steps_string, ",")
-        return {tag: complex_range(start=range_with_steps[0],
-                                   step1=range_with_steps[1],
-                                   mid=range_with_steps[2],
-                                   step2=range_with_steps[3],
-                                   stop=range_with_steps[4],
-                                   step_type=step_type)}
 
-    def _get_step_type(self, range_string):
-        return RangeStepType.Log if re.search(self._log, range_string) is not None else RangeStepType.Lin
+        # Check if there is a sign on the individual steps, this shows if something had been marked as linear or log.
+        # If there is an explicit LOG/LIN command, then this overwrites the sign
+        step_type1 = RangeStepType.Log if copysign(1, range_with_steps[1]) == -1 else RangeStepType.Lin
+        step_type2 = RangeStepType.Log if copysign(1, range_with_steps[3]) == -1 else RangeStepType.Lin
+        if step_type is not None:
+            step_type1 = step_type
+            step_type2 = step_type
+
+        return {tag: complex_range(start=range_with_steps[0],
+                                   step1=abs(range_with_steps[1]),
+                                   mid=range_with_steps[2],
+                                   step2=abs(range_with_steps[3]),
+                                   stop=range_with_steps[4],
+                                   step_type1=step_type1,
+                                   step_type2=step_type2)}
+
+    def _get_step_type(self, range_string, default=RangeStepType.Lin):
+        range_type = default
+        if re.search(self._log, range_string):
+            range_type = RangeStepType.Log
+        elif re.search(self._lin, range_string):
+            range_type = RangeStepType.Lin
+        return range_type
 
     @staticmethod
     def get_type():
@@ -1319,7 +1336,7 @@ class QResolutionParser(UserFileComponentParser):
         QRESOL/W1="w1"
         QRESOL/W2="w2"
     """
-    Type = "QRESOLUTION"
+    Type = "QRESOL"
 
     def __init__(self):
         super(QResolutionParser, self).__init__()

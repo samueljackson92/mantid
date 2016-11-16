@@ -160,3 +160,18 @@ def append_to_sans_file_tag(workspace, to_append):
         value = get_tag(SANSConstants.sans_file_tag, workspace)
         value += to_append
         set_tag(SANSConstants.sans_file_tag, value, workspace)
+
+
+def is_pure_none_or_not_none(elements_to_check):
+    """
+    Checks a list of elements contains None entries and non-None entries
+
+    @param elements_to_check: a list with entries to check
+    @return: True if the list contains either only None or only non-None elements, else False
+    """
+    are_all_none_or_all_not_none = True
+    if len(elements_to_check) == 0:
+        return are_all_none_or_all_not_none
+    return all(element is not None for element in elements_to_check) or\
+           all(element is None for element in elements_to_check)
+

@@ -14,6 +14,8 @@ from SANS2.State.SANSStateWavelength import SANSStateWavelength
 from SANS2.State.SANSStateSave import SANSStateSave
 from SANS2.State.SANSStateAdjustment import SANSStateAdjustment
 from SANS2.State.SANSStateScale import SANSStateScale
+from SANS2.State.SANSStateConvertToQ import SANSStateConvertToQ
+
 
 # ------------------------------------------------
 # SANSState
@@ -36,6 +38,7 @@ class SANSStateISIS(SANSStateBase, SANSState):
     save = TypedParameter(SANSStateSave, validator_sub_state)
     scale = TypedParameter(SANSStateScale, validator_sub_state)
     adjustment = TypedParameter(SANSStateAdjustment, validator_sub_state)
+    convert_to_q = TypedParameter(SANSStateConvertToQ, validator_sub_state)
 
     def __init__(self):
         super(SANSStateISIS, self).__init__()
@@ -62,6 +65,8 @@ class SANSStateISIS(SANSStateBase, SANSState):
             is_invalid.update("SANSStateISIS: The state object needs to include a SANSStateScale object.")
         if not self.adjustment:
             is_invalid.update("SANSStateISIS: The state object needs to include a SANSStateAdjustment object.")
+        if not self.convert_to_q:
+            is_invalid.update("SANSStateISIS: The state object needs to include a SANSStateConvertToQ object.")
 
         if is_invalid:
             raise ValueError("SANSState: There is an issue with your in put. See: {0}".format(json.dumps(is_invalid)))
@@ -74,7 +79,7 @@ class SANSStateISIS(SANSStateBase, SANSState):
                     attr = getattr(self, descriptor_name)
                     attr.validate()
                 except ValueError as err:
-                    is_invalid.update({descriptor_name: pickle.dumps(err.message)})
+                    is_invalid.update({descriptor_name: pickle.dumps(str(err))})
 
         if is_invalid:
             raise ValueError("SANSState: There is an issue with your in put. See: {0}".format(json.dumps(is_invalid)))

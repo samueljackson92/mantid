@@ -19,6 +19,7 @@ from SANS2.State.StateBuilder.SANSStateAdjustmentBuilder import get_adjustment_b
 from SANS2.State.StateBuilder.SANSStateNormalizeToMonitorBuilder import get_normalize_to_monitor_builder
 from SANS2.State.StateBuilder.SANSStateCalculateTransmissionBuilder import get_calculate_transmission_builder
 from SANS2.State.StateBuilder.SANSStateWavelengthAndPixelAdjustmentBuilder import get_wavelength_and_pixel_adjustment_builder
+from SANS2.State.StateBuilder.SANSStateConvertToQBuilder import get_convert_to_q_builder
 
 
 def check_if_contains_only_one_element(to_check, element_name):
@@ -116,6 +117,7 @@ def set_wavelength_limits(builder, user_file_items):
         builder.set_wavelength_step(wavelength_limits.step)
         builder.set_wavelength_step_type(wavelength_limits.step_type)
 
+
 def set_prompt_peak_correction(builder, user_file_items):
     if user_file_fit_monitor_times in user_file_items:
         fit_monitor_times = user_file_items[user_file_fit_monitor_times]
@@ -124,6 +126,32 @@ def set_prompt_peak_correction(builder, user_file_items):
         fit_monitor_times = fit_monitor_times[-1]
         builder.set_prompt_peak_correction_min(fit_monitor_times.start)
         builder.set_prompt_peak_correction_max(fit_monitor_times.stop)
+
+
+def set_single_entry(builder, method_name, tag, all_entries, apply_to_value=None):
+    """
+    Sets a single element on the specified builder via a specified method name.
+
+    If several entries were specified by the user, then the last entry is specified and the
+    @param builder: a builder object
+    @param method_name: a method on the builder object
+    @param tag: the tag of an entry which is potentially part of all_entries
+    @param all_entries: all parsed entries
+    @param apply_to_value: a function which should be applied before setting the value. If it is None, then nothing
+                           happens
+    """
+    if tag in all_entries:
+        list_of_entries = all_entries[tag]
+        # We expect only one entry, but the user could have specified it several times.
+        # If so we want to log it.
+        check_if_contains_only_one_element(list_of_entries, tag)
+        # We select the entry which was added last.
+        entry = list_of_entries[-1]
+        if apply_to_value is not None:
+            entry = apply_to_value(entry)
+        # Set the value on the specified method
+        method = getattr(builder, method_name)
+        method(entry)
 
 
 class UserFileStateDirectorISIS(object):
@@ -143,6 +171,7 @@ class UserFileStateDirectorISIS(object):
         self._save_builder = get_save_builder(self._data)
         self._scale_builder = get_scale_builder(self._data)
         self._adjustment_builder = get_adjustment_builder(self._data)
+        self._convert_to_q_builder = get_convert_to_q_builder(self._data)
 
     def set_user_file(self, user_file):
         file_path = find_full_file_path(user_file)
@@ -176,6 +205,9 @@ class UserFileStateDirectorISIS(object):
         # Adjustment state. This includes the transmission calculation, the monitor normalizeation and the generation
         # of other adjustment workspaces
         self._set_up_adjustment_state(user_file_items)
+
+        # Convert to Q state
+        self._set_up_convert_to_q_state(user_file_items)
 
     def construct(self):
         # Create the different sub states and add them to the state
@@ -218,6 +250,11 @@ class UserFileStateDirectorISIS(object):
         adjustment_state = self._adjustment_builder.build()
         adjustment_state.validate()
         self._state_builder.set_adjustment(adjustment_state)
+
+        # Convert to Q state
+        convert_to_q_state = self._convert_to_q_builder.build()
+        convert_to_q_state.validate()
+        self._state_builder.set_convert_to_q(convert_to_q_state)
 
         # Data state
         self._state_builder.set_data(self._data)
@@ -342,12 +379,8 @@ class UserFileStateDirectorISIS(object):
         # ---------------------------
         # Sample offset
         # ---------------------------
-        if user_file_sample_offset in user_file_items:
-            sample_offset = user_file_items[user_file_sample_offset]
-            # Should the user have chosen several values, then the last element is selected
-            check_if_contains_only_one_element(sample_offset, user_file_sample_offset)
-            sample_offset = sample_offset[-1]
-            self._move_builder.set_sample_offset(convert_mm_to_m(sample_offset))
+        set_single_entry(self._move_builder, "set_sample_offset", user_file_sample_offset,
+                         user_file_items, apply_to_value=convert_mm_to_m)
 
         # ---------------------------
         # Monitor 4 offset; for now this is only SANS2D
@@ -391,29 +424,13 @@ class UserFileStateDirectorISIS(object):
         # ------------------------
         # Reduction mode
         # ------------------------
-        if user_file_det_reduction_mode in user_file_items:
-            reduction_modes = user_file_items[user_file_det_reduction_mode]
-            # Should the user have chosen several values, then the last element is selected
-            check_if_contains_only_one_element(reduction_modes, user_file_det_reduction_mode)
-            reduction_mode = reduction_modes[-1]
-            self._reduction_builder.set_reduction_mode(reduction_mode)
+        set_single_entry(self._reduction_builder, "set_reduction_mode", user_file_det_reduction_mode, user_file_items)
 
         # -------------------------------
         # Shift and rescale
         # -------------------------------
-        if user_file_det_rescale in user_file_items:
-            rescales = user_file_items[user_file_det_rescale]
-            # Should the user have chosen several values, then the last element is selected
-            check_if_contains_only_one_element(rescales, user_file_det_rescale)
-            rescale = rescales[-1]
-            self._reduction_builder.set_merge_rescale(rescale)
-
-        if user_file_det_shift in user_file_items:
-            shifts = user_file_items[user_file_det_shift]
-            # Should the user have chosen several values, then the last element is selected
-            check_if_contains_only_one_element(shifts, user_file_det_shift)
-            shift = shifts[-1]
-            self._reduction_builder.set_merge_shift(shift)
+        set_single_entry(self._reduction_builder, "set_merge_rescale", user_file_det_rescale, user_file_items)
+        set_single_entry(self._reduction_builder, "set_merge_shift", user_file_det_shift, user_file_items)
 
         # -------------------------------
         # Fitting merged
@@ -554,22 +571,12 @@ class UserFileStateDirectorISIS(object):
         # ---------------------------------
         # 4. Clear detector
         # ---------------------------------
-        if user_file_mask_clear_detector_mask in user_file_items:
-            clear_detectors = user_file_items[user_file_mask_clear_detector_mask]
-            # Should the user have chosen several values, then the last element is selected
-            check_if_contains_only_one_element(clear_detectors, user_file_mask_clear_detector_mask)
-            clear_detector = clear_detectors[-1]
-            self._mask_builder.set_clear(clear_detector)
+        set_single_entry(self._mask_builder, "set_clear", user_file_mask_clear_detector_mask, user_file_items)
 
         # ---------------------------------
         # 5. Clear time
         # ---------------------------------
-        if user_file_mask_clear_time_mask in user_file_items:
-            clear_times = user_file_items[user_file_mask_clear_time_mask]
-            # Should the user have chosen several values, then the last element is selected
-            check_if_contains_only_one_element(clear_times, user_file_mask_clear_time_mask)
-            clear_time = clear_times[-1]
-            self._mask_builder.set_clear_time(clear_time)
+        set_single_entry(self._mask_builder, "set_clear_time", user_file_mask_clear_time_mask, user_file_items)
 
         # ---------------------------------
         # 6. Single Spectrum
@@ -803,6 +810,60 @@ class UserFileStateDirectorISIS(object):
             scales = scales[-1]
             self._scale_builder.set_scale(scales.s)
 
+    def _set_up_convert_to_q_state(self, user_file_items):
+        # Get the radius cut off if any is present
+        set_single_entry(self._convert_to_q_builder, "set_radius_cutoff", user_file_limits_radius_cut, user_file_items,
+                         apply_to_value=convert_mm_to_m)
+
+        # Get the wavelength cut off if any is present
+        set_single_entry(self._convert_to_q_builder, "set_wavelength_cutoff", user_file_limits_wavelength_cut,
+                         user_file_items)
+
+        # Get the 1D q values
+        if user_file_limits_q in user_file_items:
+            limits_q = user_file_items[user_file_limits_q]
+            check_if_contains_only_one_element(limits_q, user_file_limits_q)
+            limits_q = limits_q[-1]
+            # Now we have to check if we have a simple pattern or a more complex pattern at hand
+            is_complex = isinstance(limits_q, complex_range)
+            self._convert_to_q_builder.set_q_min(limits_q.start)
+            self._convert_to_q_builder.set_q_max(limits_q.stop)
+            if is_complex:
+                self._convert_to_q_builder.set_q_step(limits_q.step1)
+                self._convert_to_q_builder.set_q_step_type(limits_q.step_type1)
+                self._convert_to_q_builder.set_q_mid(limits_q.mid)
+                self._convert_to_q_builder.set_q_step2(limits_q.step2)
+                self._convert_to_q_builder.set_q_step_type2(limits_q.step_type2)
+            else:
+                self._convert_to_q_builder.set_q_step(limits_q.step)
+                self._convert_to_q_builder.set_q_step_type(limits_q.step_type)
+
+        # Get the Gravity settings
+        set_single_entry(self._convert_to_q_builder, "set_use_gravity", user_file_gravity_on_off, user_file_items)
+        set_single_entry(self._convert_to_q_builder, "set_gravity_extra_length", user_file_gravity_extra_length, user_file_items)
+
+        # Get the QResolution settings set_q_resolution_delta_r
+        set_single_entry(self._convert_to_q_builder, "set_use_q_resolution", user_file_q_resolution_on, user_file_items)
+        set_single_entry(self._convert_to_q_builder, "set_q_resolution_delta_r", user_file_q_resolution_delta_r,
+                         user_file_items, apply_to_value=convert_mm_to_m)
+        set_single_entry(self._convert_to_q_builder, "set_q_resolution_collimation_length",
+                         user_file_q_resolution_collimation_length, user_file_items)
+        set_single_entry(self._convert_to_q_builder, "set_q_resolution_a1", user_file_q_resolution_a1, user_file_items,
+                         apply_to_value=convert_mm_to_m)
+        set_single_entry(self._convert_to_q_builder, "set_q_resolution_a2", user_file_q_resolution_a2, user_file_items,
+                         apply_to_value=convert_mm_to_m)
+        set_single_entry(self._convert_to_q_builder, "set_moderator_file", user_file_q_resolution_moderator,
+                         user_file_items)
+        set_single_entry(self._convert_to_q_builder, "set_q_resolution_h1", user_file_q_resolution_h1, user_file_items,
+                         apply_to_value=convert_mm_to_m)
+        set_single_entry(self._convert_to_q_builder, "set_q_resolution_h2", user_file_q_resolution_h2, user_file_items,
+                         apply_to_value=convert_mm_to_m)
+        set_single_entry(self._convert_to_q_builder, "set_q_resolution_w1", user_file_q_resolution_w1, user_file_items,
+                         apply_to_value=convert_mm_to_m)
+        set_single_entry(self._convert_to_q_builder, "set_q_resolution_w2", user_file_q_resolution_w2, user_file_items,
+                         apply_to_value=convert_mm_to_m)
+
+
     def _set_up_adjustment_state(self, user_file_items):
         # ------------------------------------------------
         # Setup the normalize to monitor state
@@ -823,11 +884,7 @@ class UserFileStateDirectorISIS(object):
         self._adjustment_builder.set_wavelength_and_pixel_adjustment(wavelength_and_pixel_adjustment_state)
 
         # Get the wide angle correction setting
-        if user_file_sample_path in user_file_items:
-            sample_path = user_file_items[user_file_sample_path]
-            check_if_contains_only_one_element(sample_path, user_file_sample_path)
-            sample_path = sample_path[-1]
-            self._adjustment_builder.set_wide_angle_correction(sample_path)
+        set_single_entry(self._adjustment_builder, "set_wide_angle_correction", user_file_sample_path, user_file_items)
 
     def _set_up_normalize_to_monitor_state(self, user_file_items):
         normalize_to_state_builder = get_normalize_to_monitor_builder(self._data)
@@ -859,16 +916,16 @@ class UserFileStateDirectorISIS(object):
     def _set_up_calculate_transmission(self, user_file_items):
         calculate_transmission_builder = get_calculate_transmission_builder(self._data)
 
-        if user_file_trans_radius in user_file_items:
-            trans_radius = user_file_items[user_file_trans_radius]
-            check_if_contains_only_one_element(trans_radius, user_file_trans_radius)
-            trans_radius = trans_radius[-1]
-            calculate_transmission_builder.set_transmission_radius_on_detector(convert_mm_to_m(trans_radius))
+        # Transmission radius
+        set_single_entry(calculate_transmission_builder, "set_transmission_radius_on_detector", user_file_trans_radius,
+                         user_file_items,apply_to_value=convert_mm_to_m)
 
+        # List of transmission roi files
         if user_file_trans_roi in user_file_items:
             trans_roi = user_file_items[user_file_trans_roi]
             calculate_transmission_builder.set_transmission_roi_files(trans_roi)
 
+        # List of transmission mask files
         if user_file_trans_mask in user_file_items:
             trans_mask = user_file_items[user_file_trans_mask]
             calculate_transmission_builder.set_transmission_mask_files(trans_mask)

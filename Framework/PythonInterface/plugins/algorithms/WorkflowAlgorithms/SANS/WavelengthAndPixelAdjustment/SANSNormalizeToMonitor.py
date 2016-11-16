@@ -203,7 +203,7 @@ class SANSNormalizeToMonitor(DataProcessorAlgorithm):
             state.property_manager = state_property_manager
             state.validate()
         except ValueError as err:
-            errors.update({"SANSSMove": str(err)})
+            errors.update({"SANSNormalizeToMonitor": str(err)})
         return errors
 
 

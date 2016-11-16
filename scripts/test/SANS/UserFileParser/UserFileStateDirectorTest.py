@@ -67,6 +67,25 @@ class UserFileStateDirectorISISTest(unittest.TestCase):
         self.assertTrue(wavelength.wavelength_step == 0.125)
         self.assertTrue(wavelength.wavelength_step_type is RangeStepType.Lin)
 
+    def _assert_convert_to_q(self, state):
+        convert_to_q = state.convert_to_q
+        self.assertTrue(convert_to_q.wavelength_cutoff == 8.0)
+        self.assertTrue(convert_to_q.radius_cutoff == 0.2)
+        self.assertTrue(convert_to_q.q_min == .001)
+        self.assertTrue(convert_to_q.q_max == .2)
+        self.assertTrue(convert_to_q.q_step == .001)
+        self.assertTrue(convert_to_q.q_step_type is RangeStepType.Lin)
+        self.assertTrue(convert_to_q.q_step2 == .08)
+        self.assertTrue(convert_to_q.q_step_type2 is RangeStepType.Log)
+        self.assertTrue(convert_to_q.use_gravity)
+
+        self.assertTrue(convert_to_q.use_q_resolution)
+        self.assertTrue(convert_to_q.q_resolution_a1 == 13./1000.)
+        self.assertTrue(convert_to_q.q_resolution_a2 == 14./1000.)
+        self.assertTrue(convert_to_q.q_resolution_delta_r == 11./1000.)
+        self.assertTrue(convert_to_q.moderator_file == "moderator_rkh_file.txt")
+        self.assertTrue(convert_to_q.q_resolution_collimation_length == 12.)
+
     def _assert_adjustment(self, state):
         adjustment = state.adjustment
 
@@ -171,6 +190,7 @@ class UserFileStateDirectorISISTest(unittest.TestCase):
         self._assert_wavelength(state)
         self._assert_scale(state)
         self._assert_adjustment(state)
+        self._assert_convert_to_q(state)
 
         # clean up
         if os.path.exists(user_file_path):

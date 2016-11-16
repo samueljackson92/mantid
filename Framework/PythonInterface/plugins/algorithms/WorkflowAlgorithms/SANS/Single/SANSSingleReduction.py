@@ -124,7 +124,6 @@ class SANSSingleReduction(DataProcessorAlgorithm):
         output_bundles = []
         output_parts_bundles = []
         for reduction_setting_bundle in reduction_setting_bundles:
-
             output_bundle, output_parts_bundle = run_core_reduction(reduction_alg,
                                                                     reduction_setting_bundle,
                                                                     use_optimizations)
