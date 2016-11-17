@@ -160,6 +160,5 @@ class QResolutionCalculatorFactory(object):
             else:
                 q_resolution = NullQResolutionCalculator()
         else:
-            q_resolution = NullQResolutionCalculator()
-            RuntimeError("QResolutionCalculatorFactory: Other instruments are not implemented yet.")
+            raise RuntimeError("QResolutionCalculatorFactory: Other instruments are not implemented yet.")
         return q_resolution

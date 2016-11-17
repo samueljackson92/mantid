@@ -93,8 +93,7 @@ class DivideByVolumeFactory(object):
         elif is_isis_instrument:
             divider = NullDivideByVolume()
         else:
-            divider = NullDivideByVolume()
-            RuntimeError("DivideVolumeFactory: Other instruments are not implemented yet.")
+            raise RuntimeError("DivideVolumeFactory: Other instruments are not implemented yet.")
         return divider
 
 
@@ -156,6 +155,5 @@ class MultiplyByAbsoluteScaleFactory(object):
         elif is_isis_instrument:
             multiplier = MultiplyByAbsoluteScaleISIS()
         else:
-            multiplier = None
-            NotImplementedError("MultiplyByAbsoluteScaleFactory: Other instruments are not implemented yet.")
+            raise NotImplementedError("MultiplyByAbsoluteScaleFactory: Other instruments are not implemented yet.")
         return multiplier
