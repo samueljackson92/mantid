@@ -64,7 +64,7 @@ class SANSScaleTest(unittest.TestCase):
 
         # Assert
         # We have a LOQ data set, hence we need to divide by pi
-        expected_value = 0.3/(height * math.pi * math.pow(width, 2) / 4.0) * (scale / math.pi)
+        expected_value = 0.3/(height * math.pi * math.pow(width, 2) / 4.0) * (scale / math.pi) * 100.
         data_y = output_workspace.dataY(0)
         tolerance = 1e-7
         self.assertTrue(abs(data_y[0] - expected_value) < tolerance)

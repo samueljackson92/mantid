@@ -70,7 +70,7 @@ class ScaleHelperTest(unittest.TestCase):
         width = 10.
         height = 5.
         thickness = 2.
-        shape = 0
+        shape = 1
 
         workspace = ScaleHelperTest._get_workspace(width, height, thickness, shape)
 
@@ -149,7 +149,7 @@ class ScaleHelperTest(unittest.TestCase):
         # Assert
         self.assertTrue(isinstance(multiplier, MultiplyByAbsoluteScaleLOQ))
 
-    def test_that_correct_scale_strategy_is_selected_for_loq(self):
+    def test_that_correct_scale_strategy_is_selected_for_loq_2(self):
         # Arrange
         facility = SANSFacility.ISIS
         data_builder = get_data_builder(facility)
@@ -173,7 +173,7 @@ class ScaleHelperTest(unittest.TestCase):
         output_workspace = multiplier.multiply_by_absolute_scale(workspace, state_loq.scale)
 
         # Assert
-        expected_value = 0.3 * 2.4 / math.pi
+        expected_value = 0.3 * 2.4 / math.pi * 100.
         data_y = output_workspace.dataY(0)
         self.assertEquals(data_y[0], expected_value)
 

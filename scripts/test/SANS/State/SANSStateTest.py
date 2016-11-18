@@ -15,7 +15,9 @@ from SANS2.State.SANSStateSave import (SANSStateSaveISIS)
 from SANS2.State.SANSStateNormalizeToMonitor import (SANSStateNormalizeToMonitorLOQ)
 from SANS2.State.SANSStateScale import (SANSStateScaleISIS)
 from SANS2.State.SANSStateCalculateTransmission import (SANSStateCalculateTransmissionLOQ)
+from SANS2.State.SANSStateWavelengthAndPixelAdjustment import (SANSStateWavelengthAndPixelAdjustmentISIS)
 from SANS2.State.SANSStateAdjustment import (SANSStateAdjustmentISIS)
+from SANS2.State.SANSStateConvertToQ import (SANSStateConvertToQISIS)
 from SANS2.Common.SANSConstants import SANSConstants
 from SANS2.Common.SANSEnumerations import (ISISReductionMode, ReductionDimensionality, FitModeForMerge,
                                            RangeStepType, RebinType, SampleShape)
@@ -113,10 +115,30 @@ class SANSStateTest(unittest.TestCase):
         calculate_transmission_state.background_TOF_monitor_start = {"1": 12, "2": 13}
         calculate_transmission_state.background_TOF_monitor_stop = {"1": 15, "2": 18}
 
+        wavelength_and_pixel_state = SANSStateWavelengthAndPixelAdjustmentISIS()
+        wavelength_and_pixel_state.wavelength_low = 1.0
+        wavelength_and_pixel_state.wavelength_high = 10.0
+        wavelength_and_pixel_state.wavelength_step = 2.0
+        wavelength_and_pixel_state.wavelength_step_type = RangeStepType.Lin
+
         adjustment_state = SANSStateAdjustmentISIS()
         adjustment_state.normalize_to_monitor = normalize_to_monitor_state
         adjustment_state.calculate_transmission = calculate_transmission_state
+        adjustment_state.wavelength_and_pixel_adjustment = wavelength_and_pixel_state
+        adjustment_state.wide_angle_correction = False
         state.adjustment = adjustment_state
+
+        convert_to_q_state = SANSStateConvertToQISIS()
+        convert_to_q_state.reduction_dimensionality = ReductionDimensionality.OneDim
+        convert_to_q_state.use_gravity = False
+        convert_to_q_state.radius_cutoff = 0.002
+        convert_to_q_state.wavelength_cutoff = 1.
+        convert_to_q_state.q_min = 1.
+        convert_to_q_state.q_max = 2.
+        convert_to_q_state.q_step = 0.1
+        convert_to_q_state.q_step_type = RangeStepType.Lin
+        convert_to_q_state.use_q_resolution = False
+        state.convert_to_q = convert_to_q_state
 
         # Assert
         try:
@@ -247,7 +269,7 @@ class SANSStateTest(unittest.TestCase):
         scale_state.height = 3.0
         scale_state.scale = 4.0
         state.scale = scale_state
-        
+
         # Adjustment state
         normalize_to_monitor_state = SANSStateNormalizeToMonitorLOQ()
         normalize_to_monitor_state.rebin_type = RebinType.Rebin
@@ -274,10 +296,29 @@ class SANSStateTest(unittest.TestCase):
         calculate_transmission_state.background_TOF_monitor_start = {"1": 12, "2": 13}
         calculate_transmission_state.background_TOF_monitor_stop = {"1": 15, "2": 18}
 
+        wavelength_and_pixel_state = SANSStateWavelengthAndPixelAdjustmentISIS()
+        wavelength_and_pixel_state.wavelength_low = 1.0
+        wavelength_and_pixel_state.wavelength_high = 10.0
+        wavelength_and_pixel_state.wavelength_step = 2.0
+        wavelength_and_pixel_state.wavelength_step_type = RangeStepType.Lin
+
         adjustment_state = SANSStateAdjustmentISIS()
         adjustment_state.normalize_to_monitor = normalize_to_monitor_state
         adjustment_state.calculate_transmission = calculate_transmission_state
+        adjustment_state.wavelength_and_pixel_adjustment = wavelength_and_pixel_state
         state.adjustment = adjustment_state
+
+        convert_to_q_state = SANSStateConvertToQISIS()
+        convert_to_q_state.reduction_dimensionality = ReductionDimensionality.OneDim
+        convert_to_q_state.use_gravity = False
+        convert_to_q_state.radius_cutoff = 0.002
+        convert_to_q_state.wavelength_cutoff = 1.
+        convert_to_q_state.q_min = 1.
+        convert_to_q_state.q_max = 2.
+        convert_to_q_state.q_step = 0.1
+        convert_to_q_state.q_step_type = RangeStepType.Lin
+        convert_to_q_state.use_q_resolution = False
+        state.convert_to_q = convert_to_q_state
 
         # Act
         serialized = state.property_manager
@@ -327,7 +368,7 @@ class SANSStateTest(unittest.TestCase):
         self.assertTrue(state_2.scale.height == 3.0)
         self.assertTrue(state_2.scale.scale == 4.0)
         self.assertTrue(state_2.scale.shape is SampleShape.Cuboid)
-        
+
         # Adjustment state
         self.assertTrue(state_2.adjustment.normalize_to_monitor.rebin_type is RebinType.Rebin)
         self.assertTrue(state_2.adjustment.normalize_to_monitor.wavelength_low == 1.0)
@@ -335,6 +376,14 @@ class SANSStateTest(unittest.TestCase):
         self.assertTrue(state_2.adjustment.normalize_to_monitor.wavelength_step == 1.0)
         self.assertTrue(state_2.adjustment.normalize_to_monitor.background_TOF_monitor_start == {"1": 12, "2": 13})
         self.assertTrue(state_2.adjustment.calculate_transmission.transmission_monitor == 3)
+        self.assertTrue(state_2.adjustment.wavelength_and_pixel_adjustment.wavelength_low == 1.0)
+        # ConvertToQ state
+        self.assertTrue(state_2.convert_to_q.reduction_dimensionality is
+                        ReductionDimensionality.OneDim)
+        self.assertFalse(state_2.convert_to_q.use_q_resolution)
+        self.assertTrue(state_2.convert_to_q.q_min == 1.)
+        self.assertTrue(state_2.convert_to_q.q_step_type is RangeStepType.Lin)
+        self.assertTrue(state_2.convert_to_q.wavelength_cutoff == 1.)
 
 
 if __name__ == '__main__':

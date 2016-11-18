@@ -11,6 +11,8 @@ from SANS2.State.StateBuilder.SANSStateScaleBuilder import get_scale_builder
 from SANS2.State.StateBuilder.SANSStateCalculateTransmissionBuilder import get_calculate_transmission_builder
 from SANS2.State.StateBuilder.SANSStateWavelengthAndPixelAdjustmentBuilder import get_wavelength_and_pixel_adjustment_builder
 from SANS2.State.StateBuilder.SANSStateAdjustmentBuilder import get_adjustment_builder
+from SANS2.State.StateBuilder.SANSStateConvertToQBuilder import get_convert_to_q_builder
+
 
 from SANS2.Common.SANSEnumerations import (SANSFacility, ISISReductionMode, ReductionDimensionality,
                                            FitModeForMerge, RebinType, RangeStepType, SaveType, FitType, SampleShape)
@@ -29,9 +31,11 @@ class TestDirector(object):
         self.save_state = None
         self.scale_state = None
         self.adjustment_state = None
+        self.convert_to_q_state = None
 
     def set_states(self, data_state=None, move_state=None, reduction_state=None, slice_state=None,
-                   mask_state=None, wavelength_state=None, save_state=None, scale_state=None, adjustment_state=None):
+                   mask_state=None, wavelength_state=None, save_state=None, scale_state=None, adjustment_state=None,
+                   convert_to_q_state=None):
         self.data_state = data_state
         self.data_state = data_state
         self.move_state = move_state
@@ -42,6 +46,7 @@ class TestDirector(object):
         self.save_state = save_state
         self.scale_state = scale_state
         self.adjustment_state = adjustment_state
+        self.convert_to_q_state = convert_to_q_state
 
     def construct(self):
         facility = SANSFacility.ISIS
@@ -162,6 +167,20 @@ class TestDirector(object):
             adjustment_builder.set_wavelength_and_pixel_adjustment(wavelength_and_pixel)
             self.adjustment_state = adjustment_builder.build()
 
+        # SANSStateConvertToQ
+        if self.convert_to_q_state is None:
+            convert_to_q_builder = get_convert_to_q_builder(self.data_state)
+            convert_to_q_builder.set_reduction_dimensionality(ReductionDimensionality.OneDim)
+            convert_to_q_builder.set_use_gravity(False)
+            convert_to_q_builder.set_radius_cutoff(0.002)
+            convert_to_q_builder.set_wavelength_cutoff(12.)
+            convert_to_q_builder.set_q_min(0.1)
+            convert_to_q_builder.set_q_max(0.8)
+            convert_to_q_builder.set_q_step(0.01)
+            convert_to_q_builder.set_q_step_type(RangeStepType.Lin)
+            convert_to_q_builder.set_use_q_resolution(False)
+            self.convert_to_q_state = convert_to_q_builder.build()
+
         # Set the sub states on the SANSState
         state_builder = get_state_builder(self.data_state)
         state_builder.set_data(self.data_state)
@@ -173,4 +192,5 @@ class TestDirector(object):
         state_builder.set_save(self.save_state)
         state_builder.set_scale(self.scale_state)
         state_builder.set_adjustment(self.adjustment_state)
+        state_builder.set_convert_to_q(self.convert_to_q_state)
         return state_builder.build()
