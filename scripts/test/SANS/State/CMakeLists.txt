@@ -5,6 +5,7 @@
 set ( TEST_PY_FILES
    SANSStateAdjustmentTest.py
    SANSStateAdjustmentBuilderTest.py
+   SANSStateBaseTest.py
    SANSStateCalculateTransmissionTest.py
    SANSStateCalculateTransmissionBuilderTest.py
    SANSStateConvertToQTest.py

@@ -3,8 +3,7 @@
 import json
 import pickle
 import inspect
-from SANS2.State.SANSStateFunctions import validator_sub_state
-from SANS2.State.SANSStateBase import (SANSStateBase, TypedParameter, sans_parameters)
+from SANS2.State.SANSStateBase import (SANSStateBase, TypedParameter, sans_parameters, validator_sub_state)
 from SANS2.State.SANSStateData import SANSStateData
 from SANS2.State.SANSStateMove import SANSStateMove
 from SANS2.State.SANSStateReduction import SANSStateReduction

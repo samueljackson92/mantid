@@ -6,7 +6,7 @@ from SANS2.Common.SANSConstants import SANSConstants
 # -------------------------------------------
 # Strongly Typed enum class decorator
 # -------------------------------------------
-def inner_classes_with_name_space(*inner_classes):
+def sans_type(*inner_classes):
     """
     Class decorator which changes the name of an inner class to include the name of the outer class. The inner class
     gets a method to determine the name of the outer class. This information is needed for serialization at the
@@ -30,12 +30,12 @@ def inner_classes_with_name_space(*inner_classes):
 # ---------------------------
 #  Instrument and facility types
 # --------------------------
-@inner_classes_with_name_space("LOQ", "LARMOR", "SANS2D", "NoInstrument")
+@sans_type("LOQ", "LARMOR", "SANS2D", "NoInstrument")
 class SANSInstrument(object):
     pass
 
 
-@inner_classes_with_name_space("ISIS", "NoFacility")
+@sans_type("ISIS", "NoFacility")
 class SANSFacility(object):
     pass
 
@@ -68,9 +68,8 @@ def convert_sans_instrument_to_string(to_convert):
 # ------------------------------------
 # Data Types
 # ------------------------------------
-@inner_classes_with_name_space("SampleScatter", "SampleTransmission", "SampleDirect",
-                               "CanScatter", "CanTransmission", "CanDirect",
-                               "Calibration")
+@sans_type("SampleScatter", "SampleTransmission", "SampleDirect", "CanScatter", "CanTransmission", "CanDirect",
+           "Calibration")
 class SANSDataType(object):
     """
     Defines the different data types which are required for the reduction. Besides the fundamental data of the
@@ -94,6 +93,9 @@ def convert_to_data_type(as_string):
         data_type = SANSDataType.CanDirect
     elif as_string == "calibration":
         data_type = SANSDataType.Calibration
+    else:
+        raise ValueError("The specified data type {0} does not exist.".format(as_string))
+
     return data_type
 
 
@@ -112,6 +114,8 @@ def convert_from_data_type_to_string(data_type):
         as_string = "can_direct"
     elif data_type is SANSDataType.Calibration:
         as_string = "calibration"
+    else:
+        raise ValueError("The specified data type {0} does not exist.".format(data_type))
     return as_string
 
 
@@ -123,7 +127,7 @@ class Coordinates(object):
     pass
 
 
-@inner_classes_with_name_space("X", "Y", "Z")
+@sans_type("X", "Y", "Z")
 class CanonicalCoordinates(Coordinates):
     pass
 
@@ -131,7 +135,7 @@ class CanonicalCoordinates(Coordinates):
 # --------------------------
 #  ReductionMode
 # --------------------------
-@inner_classes_with_name_space("Merged", "All")
+@sans_type("Merged", "All")
 class ReductionMode(object):
     """
     Defines the reduction modes which should be common to all implementations, namely All and Merged.
@@ -139,7 +143,7 @@ class ReductionMode(object):
     pass
 
 
-@inner_classes_with_name_space("Hab", "Lab")
+@sans_type("Hab", "Lab")
 class ISISReductionMode(ReductionMode):
     """
     Defines the different reduction modes. This can be the high-angle bank, the low-angle bank
@@ -147,7 +151,7 @@ class ISISReductionMode(ReductionMode):
     pass
 
 
-@inner_classes_with_name_space("OneDim", "TwoDim")
+@sans_type("OneDim", "TwoDim")
 class ReductionDimensionality(object):
     """
     Defines the dimensionality for reduction. This can be either 1D or 2D
@@ -155,7 +159,7 @@ class ReductionDimensionality(object):
     pass
 
 
-@inner_classes_with_name_space("Scatter", "Transmission", "Direct")
+@sans_type("Scatter", "Transmission", "Direct")
 class ReductionData(object):
     """
     Defines the workspace type of the reduction data. For all known instances this can be scatter, transmission
@@ -164,7 +168,7 @@ class ReductionData(object):
     pass
 
 
-@inner_classes_with_name_space("Sample", "Can")
+@sans_type("Sample", "Can")
 class DataType(object):
     """
     Defines the type of reduction data. This can be either be with the sample or without the sample, i.e. Can
@@ -192,7 +196,7 @@ def convert_string_to_reduction_data_type(data_string):
     return data_type
 
 
-@inner_classes_with_name_space("Count", "Norm")
+@sans_type("Count", "Norm")
 class OutputParts(object):
     """
     Defines the partial outputs of a reduction. They are the numerator (Count) and denominator (Norm) of a division.
@@ -200,7 +204,7 @@ class OutputParts(object):
     pass
 
 
-@inner_classes_with_name_space("Both", "NoFit", "ShiftOnly", "ScaleOnly")
+@sans_type("Both", "NoFit", "ShiftOnly", "ScaleOnly")
 class FitModeForMerge(object):
     """
     Defines which fit operation to use during the merge of two reductions.
@@ -225,7 +229,7 @@ def convert_fit_mode_for_merge_to_string(to_convert):
 # --------------------------
 #  Detectors
 # --------------------------
-@inner_classes_with_name_space("Horizontal", "Vertical", "Rotated")
+@sans_type("Horizontal", "Vertical", "Rotated")
 class DetectorOrientation(object):
     """
     Defines the detector orientation.
@@ -233,7 +237,7 @@ class DetectorOrientation(object):
     pass
 
 
-@inner_classes_with_name_space("Hab", "Lab")
+@sans_type("Hab", "Lab")
 class DetectorType(object):
     """
     Defines the detector type
@@ -266,7 +270,7 @@ def convert_string_to_detector_type(to_convert):
 # --------------------------
 #  Ranges
 # --------------------------
-@inner_classes_with_name_space("Lin", "Log")
+@sans_type("Lin", "Log")
 class RangeStepType(object):
     """
     Defines the step type of a range
@@ -297,7 +301,7 @@ def convert_string_to_range_step_type(range_string):
 # --------------------------
 #  Rebin
 # --------------------------
-@inner_classes_with_name_space("Rebin", "InterpolatingRebin")
+@sans_type("Rebin", "InterpolatingRebin")
 class RebinType(object):
     """
     Defines the rebin types available
@@ -328,7 +332,7 @@ def convert_string_to_rebin_type(rebin_string):
 # --------------------------
 #  SaveType
 # --------------------------
-@inner_classes_with_name_space("Nexus", "NistQxy", "CanSAS", "RKH", "CSV", "NXcanSAS")
+@sans_type("Nexus", "NistQxy", "CanSAS", "RKH", "CSV", "NXcanSAS")
 class SaveType(object):
     """
     Defines the save types available
@@ -337,7 +341,6 @@ class SaveType(object):
 
 
 def convert_save_type_to_string(save_type):
-    as_string = None
     if save_type is SaveType.Nexus:
         as_string = "Nexus"
     elif save_type is SaveType.NistQxy:
@@ -358,7 +361,7 @@ def convert_save_type_to_string(save_type):
 # --------------------
 # Fit
 # --------------------
-@inner_classes_with_name_space("Linear", "Log", "Polynomial", "NoFit")
+@sans_type("Linear", "Log", "Polynomial", "NoFit")
 class FitType(object):
     """
     Defines possible fit types
@@ -382,7 +385,7 @@ def convert_fit_type_to_string(fit_type):
 # --------------------------
 #  SampleShape
 # --------------------------
-@inner_classes_with_name_space("CylinderAxisUp", "Cuboid", "CylinderAxisAlong")
+@sans_type("CylinderAxisUp", "Cuboid", "CylinderAxisAlong")
 class SampleShape(object):
     """
     Defines the sample shape types

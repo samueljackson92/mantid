@@ -102,15 +102,3 @@ def get_output_workspace_name(state, reduction_mode):
                              dimensionality_as_string + wavelength_range_string + phi_limits_as_string +
                              start_time_as_string + end_time_as_string)
     return output_workspace_name
-
-
-# -----------------------------------------------
-# Validator for sub states
-# -----------------------------------------------
-def validator_sub_state(sub_state):
-    is_valid = True
-    try:
-        sub_state.validate()
-    except ValueError:
-        is_valid = False
-    return is_valid

@@ -20,6 +20,10 @@ def is_positive(value):
     return value >= 0
 
 
+def is_positive_or_none(value):
+    return value >= 0 or value is None
+
+
 def all_list_elements_are_of_type_and_not_empty(value, comparison_type, additional_comparison=lambda x: True):
     is_of_type = True
     for element in value:
@@ -60,7 +64,12 @@ def all_list_elements_are_string_and_not_empty(value):
     return typed_comparison(value)
 
 
-def all_list_elements_are_string_and_positive_and_not_empty(value):
+def all_list_elements_are_int_and_not_empty(value):
+    typed_comparison = partial(all_list_elements_are_of_type_and_not_empty, comparison_type=int)
+    return typed_comparison(value)
+
+
+def all_list_elements_are_int_and_positive_and_not_empty(value):
     typed_comparison = partial(all_list_elements_are_of_type_and_not_empty, comparison_type=int,
                                additional_comparison=lambda x: x>=0)
     return typed_comparison(value)
@@ -69,6 +78,14 @@ def all_list_elements_are_string_and_positive_and_not_empty(value):
 def all_list_elements_are_class_type(value):
     pass
 
+
+def validator_sub_state(sub_state):
+    is_valid = True
+    try:
+        sub_state.validate()
+    except ValueError:
+        is_valid = False
+    return is_valid
 
 # -------------------------------------------------------
 # Parameters
@@ -85,6 +102,7 @@ class TypedParameter(object):
         prefix = cls.__name__
         # pylint: disable=protected-access
         index = cls.__counter
+        cls.__counter += 1
         # Name which is used to store value in the instance. This will be unique and not accessible via the standard
         # attribute access, since the developer/user cannot apply the hash symbol in their code (it is valid though
         # when writing into the __dict__). Note that the name which we generate here will be altered (via a
@@ -171,7 +189,7 @@ class ClassTypeParameter(TypedParameter):
         if not issubclass(value, self.parameter_type):
             raise TypeError("Trying to set {0} which expects a value of type {1}."
                             " Got a value of {2} which is of type: {3}".format(self.name, str(self.parameter_type),
-                                                                               str(value), str(value)))
+                                                                               str(value), type(value)))
 
 
 class FloatWithNoneParameter(TypedParameter):
@@ -182,34 +200,52 @@ class FloatWithNoneParameter(TypedParameter):
         if not isinstance(value, self.parameter_type) and value is not None:
             raise TypeError("Trying to set {0} which expects a value of type {1}."
                             " Got a value of {2} which is of type: {3}".format(self.name, str(self.parameter_type),
-                                                                               str(value), str(value)))
+                                                                               str(value), type(value)))
 
 
 class PositiveFloatWithNoneParameter(TypedParameter):
     def __init__(self):
-        super(PositiveFloatWithNoneParameter, self).__init__(float)
+        super(PositiveFloatWithNoneParameter, self).__init__(float, is_positive_or_none)
 
     def _type_check(self, value):
-        if not isinstance(value, self.parameter_type) and value >= 0:
+        if not isinstance(value, self.parameter_type) and value is not None:
             raise TypeError("Trying to set {0} which expects a value of type {1}."
                             " Got a value of {2} which is of type: {3}".format(self.name, str(self.parameter_type),
-                                                                               str(value), str(value)))
+                                                                               str(value), type(value)))
 
 
 class FloatListParameter(TypedParameter):
     def __init__(self):
-        super(FloatListParameter, self).__init__(list, all_list_elements_are_float_and_not_empty)
+        super(FloatListParameter, self).__init__(list)
+
+    def _type_check(self, value):
+        if not isinstance(value, self.parameter_type) or not all_list_elements_are_float_and_not_empty(value):
+            raise TypeError("Trying to set {0} which expects a value of type {1}."
+                            " Got a value of {2} which is of type: {3}".format(self.name, str(self.parameter_type),
+                                                                               str(value), type(value)))
 
 
 class StringListParameter(TypedParameter):
         def __init__(self):
             super(StringListParameter, self).__init__(list, all_list_elements_are_string_and_not_empty)
 
+        def _type_check(self, value):
+            if not isinstance(value, self.parameter_type) or not all_list_elements_are_string_and_not_empty(value):
+                raise TypeError("Trying to set {0} which expects a value of type {1}."
+                                " Got a value of {2} which is of type: {3}".format(self.name, str(self.parameter_type),
+                                                                                   str(value), type(value)))
+
 
 class PositiveIntegerListParameter(TypedParameter):
     def __init__(self):
         super(PositiveIntegerListParameter, self).__init__(list,
-                                                           all_list_elements_are_string_and_positive_and_not_empty)
+                                                           all_list_elements_are_int_and_positive_and_not_empty)
+
+    def _type_check(self, value):
+        if not isinstance(value, self.parameter_type) or not all_list_elements_are_int_and_not_empty(value):
+            raise TypeError("Trying to set {0} which expects a value of type {1}."
+                            " Got a value of {2} which is of type: {3}".format(self.name, str(self.parameter_type),
+                                                                               str(value), type(value)))
 
 
 class ClassTypeListParameter(TypedParameter):
@@ -372,7 +408,7 @@ def convert_state_to_dict(instance):
     descriptor_values, descriptor_types = get_descriptor_values(instance)
     # Add the descriptors to a dict
     state_dict = dict()
-    for key, value in descriptor_values.iteritems():
+    for key, value in descriptor_values.items():
         # If the value is a SANSBaseState then create a dict from it
         # If the value is a dict, then we need to check what the sub types are
         # If the value is a ClassTypeParameter, then we need to encode it
@@ -383,7 +419,7 @@ def convert_state_to_dict(instance):
         elif isinstance(value, dict):
             # If we have a dict, then we need to watch out since a value in the dict might be a SANSState
             sub_dictionary = {}
-            for key_sub, val_sub in value.iteritems():
+            for key_sub, val_sub in value.items():
                 if isinstance(val_sub, SANSStateBase):
                     sub_dictionary_value = val_sub.property_manager
                 else:
