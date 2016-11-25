@@ -7,10 +7,10 @@ from SANS.Single.Bundles import OutputPartsBundle
 from SANS2.State.SANSStateReduction import SANSStateReductionISIS
 from SANS2.State.StateDirector.TestDirector import TestDirector
 
-from SANS2.Common.SANSEnumerations import (ISISReductionMode, ReductionDimensionality, FitModeForMerge)
+from SANS2.Common.SANSType import (ISISReductionMode, ReductionDimensionality, FitModeForMerge)
 from SANS2.Common.SANSFunctions import create_unmanaged_algorithm
 from SANS2.Common.SANSConstants import SANSConstants
-from SANS2.Common.SANSEnumerations import (DataType, ISISReductionMode)
+from SANS2.Common.SANSType import (DataType, ISISReductionMode)
 
 
 class MergeReductionsTest(unittest.TestCase):

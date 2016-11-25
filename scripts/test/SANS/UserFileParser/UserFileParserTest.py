@@ -1,7 +1,7 @@
 import unittest
 import mantid
 
-from SANS2.Common.SANSEnumerations import (ISISReductionMode, DetectorType, RangeStepType, FitType, DataType)
+from SANS2.Common.SANSType import (ISISReductionMode, DetectorType, RangeStepType, FitType, DataType)
 from SANS2.UserFile.UserFileParser import *
 
 

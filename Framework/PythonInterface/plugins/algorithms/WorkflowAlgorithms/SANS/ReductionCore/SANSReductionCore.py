@@ -3,12 +3,13 @@
 """ SANSReductionCore algorithm runs the sequence of reduction steps which are necessary to reduce a data set."""
 
 from mantid.kernel import (Direction, PropertyManagerProperty, StringListValidator)
-from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, AlgorithmFactory, PropertyMode)
+from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, AlgorithmFactory, PropertyMode,
+                        IEventWorkspace)
 
 from SANS2.Common.SANSConstants import SANSConstants
 from SANS2.State.SANSStateBase import create_deserialized_sans_state_from_property_manager
 from SANS2.Common.SANSFunctions import create_unmanaged_algorithm
-from SANS2.Common.SANSEnumerations import (DetectorType, convert_detector_type_to_string,
+from SANS2.Common.SANSType import (DetectorType, convert_detector_type_to_string,
                                            convert_reduction_data_type_to_string, DataType)
 
 
@@ -160,37 +161,38 @@ class SANSReductionCore(DataProcessorAlgorithm):
         # creation of the adjustment workspaces requires the sample workspace itself and we have to run it sequentially.
         # We could consider to have a serial and a parallel strategy here, depending on the wide angle correction
         # settings. On the other hand it is not clear that this would be an advantage with the GIL.
-        #---------------------------------------------------------------------------------------------------------------
+        # --------------------------------------------------------------------------------------------------------------
         wavelength_adjustment_workspace, pixel_adjustment_workspace, wavelength_and_pixel_adjustment_workspace =\
             self._adjustment(state, workspace, monitor_workspace, component_as_string, data_type_as_string)
 
         # ------------------------------------------------------------
         # 9. Convert event workspaces to histogram workspaces
         # ------------------------------------------------------------
-        #workspace = self._convert_to_histogram(workspace)
+        workspace = self._convert_to_histogram(workspace)
 
         # ------------------------------------------------------------
         # 10. Convert to Q
         # ------------------------------------------------------------
+        workspace, sum_of_counts, sum_of_norms = self._convert_to_q(state,
+                                                                    workspace,
+                                                                    wavelength_adjustment_workspace,
+                                                                    pixel_adjustment_workspace,
+                                                                    wavelength_and_pixel_adjustment_workspace)
 
-        # ------------------------------------------------------------
         # ------------------------------------------------------------
         # Populate the output
         self.setProperty(SANSConstants.output_workspace, workspace)
+        # ------------------------------------------------------------
 
-        # # Set the output for partial outputs
-        # **************************************************
-        # ONLY FOR DEVELOPMENT AND TESTING -- BEGIN
-        # **************************************************
+
+        # ------------------------------------------------------------
+        # Diagnostic output
+        # ------------------------------------------------------------
         # We abuse output fields for testing at this point
-        if wavelength_adjustment_workspace:
-            self.setProperty("SumOfCounts", wavelength_adjustment_workspace)
-        if pixel_adjustment_workspace:
-            self.setProperty("SumOfNormFactors", pixel_adjustment_workspace)
-        # **************************************************
-        # ONLY FOR DEVELOPMENT AND TESTING -- END
-        # **************************************************
-
+        if sum_of_counts:
+            self.setProperty("SumOfCounts", sum_of_counts)
+        if sum_of_norms:
+            self.setProperty("SumOfNormFactors", sum_of_norms)
 
         # TODO: Publish temporary workspaces if required
         # This includes partial workspaces of Q1D and unfitted transmission data
@@ -300,14 +302,50 @@ class SANSReductionCore(DataProcessorAlgorithm):
         return wavelength_adjustment, pixel_adjustment, wavelength_and_pixel_adjustment
 
     def _convert_to_histogram(self, workspace):
-        convert_name = "RebinToWorkspace"
-        convert_options = {"WorkspaceToRebin": workspace,
-                           "WorkspaceToMatch": workspace,
-                           SANSConstants.output_workspace: SANSConstants.output_workspace,
-                           "PreserveEvents": False}
+        if isinstance(workspace, IEventWorkspace):
+            convert_name = "RebinToWorkspace"
+            convert_options = {"WorkspaceToRebin": workspace,
+                               "WorkspaceToMatch": workspace,
+                               SANSConstants.output_workspace: SANSConstants.output_workspace,
+                               "PreserveEvents": False}
+            convert_alg = create_unmanaged_algorithm(convert_name, **convert_options)
+            convert_alg.execute()
+            workspace = convert_alg.getProperty(SANSConstants.output_workspace).value
+        return workspace
+
+    def _convert_to_q(self, state, workspace, wavelength_adjustment_workspace, pixel_adjustment_workspace,
+                      wavelength_and_pixel_adjustment_workspace):
+        """
+        A conversion to momentum transfer is performed in this step.
+
+        The conversion can be either to the modulus of Q in which case the output is a 1D workspace, or it can
+        be a 2D reduction where the y axis is Qy, ie it is a numeric axis.
+        @param state: a SANSState object
+        @param workspace: the workspace to convert to momentum transfer.
+        @param wavelength_adjustment_workspace: the wavelength adjustment workspace.
+        @param pixel_adjustment_workspace: the pixel adjustment workspace.
+        @param wavelength_and_pixel_adjustment_workspace: the wavelength and pixel adjustment workspace.
+        @return: a reduced workspace
+        """
+        state_serialized = state.property_manager
+        convert_name = "SANSConvertToQ"
+        convert_options = {SANSConstants.input_workspace: workspace,
+                           SANSConstants.output_workspace: SANSConstants.dummy,
+                           "SANSState": state_serialized,
+                           "OutputParts": True}
+        if wavelength_adjustment_workspace:
+            convert_options.update({"InputWorkspaceWavelengthAdjustment": wavelength_adjustment_workspace})
+        if pixel_adjustment_workspace:
+            convert_options.update({"InputWorkspacePixelAdjustment": pixel_adjustment_workspace})
+        if wavelength_and_pixel_adjustment_workspace:
+            convert_options.update({"InputWorkspaceWavelengthAndPixelAdjustment":
+                                        wavelength_and_pixel_adjustment_workspace})
         convert_alg = create_unmanaged_algorithm(convert_name, **convert_options)
         convert_alg.execute()
-        return convert_alg.getProperty(SANSConstants.output_workspace).value
+        data_workspace = convert_alg.getProperty(SANSConstants.output_workspace).value
+        sum_of_counts = convert_alg.getProperty("SumOfCounts").value
+        sum_of_norms = convert_alg.getProperty("SumOfNormFactors").value
+        return data_workspace, sum_of_counts, sum_of_norms
 
     def validateInputs(self):
         errors = dict()

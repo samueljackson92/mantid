@@ -8,7 +8,7 @@ from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, Algorit
 from SANS.Mask.MaskWorkspace import MaskFactory
 from SANS2.State.SANSStateBase import create_deserialized_sans_state_from_property_manager
 from SANS2.Common.SANSConstants import SANSConstants
-from SANS2.Common.SANSEnumerations import DetectorType
+from SANS2.Common.SANSType import DetectorType
 from SANS2.Common.SANSFunctions import append_to_sans_file_tag
 
 

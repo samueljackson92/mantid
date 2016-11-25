@@ -7,7 +7,7 @@ from abc import (ABCMeta, abstractmethod)
 from mantid.api import FileFinder
 from mantid.kernel import (DateAndTime, ConfigService)
 from mantid.api import (AlgorithmManager, ExperimentInfo)
-from SANS2.Common.SANSEnumerations import (SANSInstrument, convert_sans_instrument_to_string)
+from SANS2.Common.SANSType import (SANSInstrument, convert_sans_instrument_to_string)
 
 
 # ------------------------------------
@@ -213,8 +213,7 @@ def get_isis_nexus_info(file_name):
     try:
         with h5.File(file_name) as h5_file:
             keys = h5_file.keys()
-            is_isis_nexus = "raw_data_1" in keys
-
+            is_isis_nexus = u"raw_data_1" in keys
             first_entry = h5_file["raw_data_1"]
             period_group = first_entry["periods"]
             proton_charge_data_set = period_group["proton_charge"]

@@ -3,7 +3,7 @@ import mantid
 
 from SANS2.State.StateBuilder.SANSStateDataBuilder import get_data_builder
 from SANS2.State.StateBuilder.SANSStateConvertToQBuilder import get_convert_to_q_builder
-from SANS2.Common.SANSEnumerations import (RangeStepType, ReductionDimensionality, SANSFacility)
+from SANS2.Common.SANSType import (RangeStepType, ReductionDimensionality, SANSFacility)
 
 
 class SANSStateConvertToQBuilderTest(unittest.TestCase):

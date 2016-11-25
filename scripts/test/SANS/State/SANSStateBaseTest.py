@@ -10,7 +10,7 @@ from SANS2.State.SANSStateBase import (StringParameter, BoolParameter, FloatPara
                                        StringListParameter, PositiveIntegerListParameter, ClassTypeListParameter,
                                        SANSStateBase, sans_parameters, TypedParameter, validator_sub_state,
                                        create_deserialized_sans_state_from_property_manager)
-from SANS2.Common.SANSEnumerations import sans_type
+from SANS2.Common.SANSType import sans_type
 
 
 @sans_type("TypeA", "TypeB")

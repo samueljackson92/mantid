@@ -8,7 +8,7 @@ import mantid
 from mantid.api import AlgorithmManager
 
 from SANS2.State.StateBuilder.SANSStateDataBuilder import get_data_builder
-from SANS2.Common.SANSEnumerations import (DetectorType, DetectorType, convert_detector_type_to_string, DataType,
+from SANS2.Common.SANSType import (DetectorType, DetectorType, convert_detector_type_to_string, DataType,
                                            convert_reduction_data_type_to_string, SANSFacility)
 from SANS2.UserFile.UserFileStateDirector import UserFileStateDirectorISIS
 from SANS2.Common.SANSConstants import SANSConstants
@@ -91,7 +91,15 @@ class SANSReductionCoreTest(unittest.TestCase):
         load_alg.setProperty("Filename", f_name)
         load_alg.setProperty(SANSConstants.output_workspace, SANSConstants.dummy)
         load_alg.execute()
+
         ws = load_alg.getProperty(SANSConstants.output_workspace).value
+
+        from mantid.api import AnalysisDataService
+        from mantid.simpleapi import SaveNexusProcessed
+        AnalysisDataService.addOrReplace("test", ws)
+        AnalysisDataService.addOrReplace("test2", reference_workspace)
+        SaveNexusProcessed(Filename="C:/Users/pica/Desktop/new_data.nxs", InputWorkspace="test")
+        SaveNexusProcessed(Filename="C:/Users/pica/Desktop/old_data.nxs", InputWorkspace="test2")
 
         # Compare reference file with the output_workspace
         # We need to disable the instrument comparison, it takes way too long

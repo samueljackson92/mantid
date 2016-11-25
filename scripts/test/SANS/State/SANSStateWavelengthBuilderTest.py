@@ -3,7 +3,7 @@ import mantid
 
 from SANS2.State.StateBuilder.SANSStateWavelengthBuilder import get_wavelength_builder
 from SANS2.State.StateBuilder.SANSStateDataBuilder import get_data_builder
-from SANS2.Common.SANSEnumerations import (SANSFacility, SANSInstrument, RebinType, RangeStepType)
+from SANS2.Common.SANSType import (SANSFacility, SANSInstrument, RebinType, RangeStepType)
 
 
 class SANSStateSliceEventBuilderTest(unittest.TestCase):

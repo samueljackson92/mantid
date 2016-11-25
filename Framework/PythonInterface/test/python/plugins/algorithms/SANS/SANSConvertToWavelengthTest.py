@@ -4,7 +4,7 @@ import mantid
 from mantid.dataobjects import EventWorkspace
 from SANS2.Common.SANSFunctions import (create_unmanaged_algorithm)
 from SANS2.Common.SANSConstants import SANSConstants
-from SANS2.Common.SANSEnumerations import (convert_range_step_type_to_string, RangeStepType)
+from SANS2.Common.SANSType import (convert_range_step_type_to_string, RangeStepType)
 
 
 def provide_workspace(is_event=True):

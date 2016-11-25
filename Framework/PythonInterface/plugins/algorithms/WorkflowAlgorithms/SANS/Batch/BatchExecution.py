@@ -3,7 +3,7 @@ from collections import namedtuple
 from mantid.api import AnalysisDataService
 
 from SANS2.Common.SANSFunctions import create_unmanaged_algorithm
-from SANS2.Common.SANSEnumerations import (SANSDataType, SaveType)
+from SANS2.Common.SANSType import (SANSDataType, SaveType)
 from SANS2.Common.SANSConstants import SANSConstants
 from SANS2.State.SANSStateFunctions import get_output_workspace_name_from_workspace
 from SANS2.Common.SANSFileInformation import (get_extension_for_file_type, SANSFileInformationFactory)

@@ -1,130 +1,85 @@
 import unittest
 import mantid
-from mantid.kernel import (PropertyManagerProperty, PropertyManager)
-from mantid.api import Algorithm
+
 from SANS2.State.SANSStateConvertToQ import (SANSStateConvertToQ, SANSStateConvertToQISIS)
-from SANS2.Common.SANSEnumerations import (ReductionDimensionality, RangeStepType)
+from SANS2.Common.SANSType import (ReductionDimensionality, RangeStepType)
+from StateTestHelper import (assert_validate_error, assert_raises_nothing)
 
 
 class SANSStateConvertToQTest(unittest.TestCase):
+    @staticmethod
+    def _get_convert_to_q_state(convert_to_q_entries):
+        state = SANSStateConvertToQISIS()
+        default_entries = {"reduction_dimensionality": ReductionDimensionality.OneDim, "use_gravity": True,
+                           "gravity_extra_length": 12., "radius_cutoff": 1.5, "wavelength_cutoff": 2.7,
+                           "q_min": 0.5, "q_max": 1., "q_step": 1., "q_step_type": RangeStepType.Lin,
+                           "q_step2": 1., "q_step_type2": RangeStepType.Lin, "q_mid": 1.,
+                           "q_xy_max": 1.4, "q_xy_step": 24.5, "q_xy_step_type": RangeStepType.Lin,
+                           "use_q_resolution": True, "q_resolution_collimation_length": 12.,
+                           "q_resolution_delta_r": 12., "moderator_file": "test.txt", "q_resolution_a1": 1.,
+                           "q_resolution_a2": 2., "q_resolution_h1": 1., "q_resolution_h2": 2., "q_resolution_w1": 1.,
+                           "q_resolution_w2": 2.}
+
+        for key, value in default_entries.items():
+            if key in convert_to_q_entries:
+                value = convert_to_q_entries[key]
+            if value is not None:  # If the value is None, then don't set it
+                setattr(state, key, value)
+        return state
+
+    def check_bad_and_good_value(self, bad_convert_to_q, good_convert_to_q):
+        # Bad values
+        state = self._get_convert_to_q_state(bad_convert_to_q)
+        assert_validate_error(self, ValueError, state)
+
+        # Good values
+        state = self._get_convert_to_q_state(good_convert_to_q)
+        assert_raises_nothing(self, state)
+
     def test_that_is_sans_state_data_object(self):
         state = SANSStateConvertToQISIS()
         self.assertTrue(isinstance(state, SANSStateConvertToQ))
 
-    def test_that_can_set_and_get_values(self):
-        # Arrange
-        state = SANSStateConvertToQISIS()
+    def test_that_raises_with_inconsistent_1D_q_values(self):
+        self.check_bad_and_good_value({"q_min": None, "q_max": 2.}, {"q_min": 1., "q_max": 2.})
 
-        # Act + Assert
-        state.reduction_dimensionality = ReductionDimensionality.OneDim
-        state.use_gravity = False
-        state.gravity_extra_length = 12.8
-        state.radius_cutoff = 1.
-        state.wavelength_cutoff = 34.
-        state.q_min = 23.
-        state.q_max = 234.
-        state.q_step = 34.
-        state.q_step_type = RangeStepType.Lin
+    def test_that_raises_when_the_lower_bound_is_larger_than_the_upper_bound_for_q_1D(self):
+        self.check_bad_and_good_value({"q_min": 2., "q_max": 1.}, {"q_min": 1., "q_max": 2.})
 
-        try:
-            state.validate()
-            is_valid = True
-        except ValueError:
-            is_valid = False
-        self.assertTrue(is_valid)
+    def test_that_raises_when_no_q_bounds_are_set_for_explicit_1D_reduction(self):
+        self.check_bad_and_good_value({"q_min": None, "q_max": None,
+                                       "reduction_dimensionality": ReductionDimensionality.OneDim},
+                                      {"q_min": 1., "q_max": 2.,
+                                       "reduction_dimensionality": ReductionDimensionality.OneDim})
 
-    def test_that_invalid_types_for_parameters_raise_type_error(self):
-        # Arrange
-        state = SANSStateConvertToQISIS()
+    def test_that_raises_when_no_q_bounds_are_set_for_explicit_2D_reduction(self):
+        self.check_bad_and_good_value({"q_xy_max": None, "q_xy_step": None,
+                                       "reduction_dimensionality": ReductionDimensionality.TwoDim},
+                                      {"q_xy_max": 1., "q_xy_step": 2.,
+                                       "reduction_dimensionality": ReductionDimensionality.TwoDim})
 
-        # Act + Assert
-        try:
-            state.use_gravity = "w234234"
-            is_valid = True
-        except TypeError:
-            is_valid = False
-        self.assertFalse(is_valid)
+    def test_that_raises_when_inconsistent_circular_values_for_q_resolution_are_specified(self):
+        self.check_bad_and_good_value({"use_q_resolution": True, "q_resolution_a1": None,
+                                       "q_resolution_a2": 12.},
+                                      {"use_q_resolution": True, "q_resolution_a1": 11.,
+                                       "q_resolution_a2": 12.})
 
-    def test_that_invalid_list_values_raise_value_error(self):
-        # Arrange
-        state = SANSStateConvertToQISIS()
+    def test_that_raises_when_inconsistent_rectangular_values_for_q_resolution_are_specified(self):
+        self.check_bad_and_good_value({"use_q_resolution": True, "q_resolution_h1": None,
+                                       "q_resolution_h2": 12., "q_resolution_w1": 1., "q_resolution_w2": 2.},
+                                      {"use_q_resolution": True, "q_resolution_h1": 1.,
+                                       "q_resolution_h2": 12., "q_resolution_w1": 1., "q_resolution_w2": 2.})
 
-        # Act + Assert
-        try:
-            state.q_step = -1.0
-            is_valid = True
-        except ValueError:
-            is_valid = False
-        self.assertFalse(is_valid)
+    def test_that_raises_when_no_geometry_for_q_resolution_was_specified(self):
+        self.check_bad_and_good_value({"use_q_resolution": True, "q_resolution_h1": None, "q_resolution_a1": None,
+                                       "q_resolution_a2": None, "q_resolution_h2": None, "q_resolution_w1": None,
+                                       "q_resolution_w2": None},
+                                      {"use_q_resolution": True, "q_resolution_h1": 1., "q_resolution_a1": 1.,
+                                       "q_resolution_a2": 2., "q_resolution_h2": 12., "q_resolution_w1": 1.,
+                                       "q_resolution_w2": 2.})
 
-    def test_that_q_min_smaller_than_q_max_raises(self):
-        # Arrange
-        state = SANSStateConvertToQISIS()
-        state.q_min = 12.
-        state.q_max = 11.
-        # Act + Assert
-        try:
-            state.validate()
-            is_valid = True
-        except ValueError:
-            is_valid = False
-        self.assertFalse(is_valid)
-
-    def test_that_incomplete_q_information_raises(self):
-        # Arrange
-        state = SANSStateConvertToQISIS()
-        state.q_min = 12.
-        # Act + Assert
-        try:
-            state.validate()
-            is_valid = True
-        except ValueError:
-            is_valid = False
-        self.assertFalse(is_valid)
-
-    def test_that_dict_can_be_generated_from_state_object_and_property_manager_read_in(self):
-        class FakeAlgorithm(Algorithm):
-            def PyInit(self):
-                self.declareProperty(PropertyManagerProperty("Args"))
-
-            def PyExec(self):
-                pass
-
-        # Arrange
-        state = SANSStateConvertToQISIS()
-
-        state.reduction_dimensionality = ReductionDimensionality.OneDim
-        state.use_gravity = False
-        state.gravity_extra_length = 12.8
-        state.radius_cutoff = 1.
-        state.wavelength_cutoff = 34.
-        state.q_min = 23.
-        state.q_max = 234.
-        state.q_step = 34.
-        state.q_step_type = RangeStepType.Lin
-
-        # Act
-        serialized = state.property_manager
-        fake = FakeAlgorithm()
-        fake.initialize()
-        fake.setProperty("Args", serialized)
-        property_manager = fake.getProperty("Args").value
-
-        # Assert
-        self.assertTrue(type(serialized) == dict)
-        self.assertTrue(type(property_manager) == PropertyManager)
-        state_2 = SANSStateConvertToQISIS()
-        state_2.property_manager = property_manager
-
-        self.assertTrue(state_2.reduction_dimensionality is ReductionDimensionality.OneDim)
-        self.assertFalse(state_2.use_gravity)
-        self.assertTrue(state_2.gravity_extra_length == 12.8)
-        self.assertTrue(state_2.radius_cutoff == 1.)
-        self.assertTrue(state_2.wavelength_cutoff == 34.)
-        self.assertTrue(state_2.q_min == 23.)
-        self.assertTrue(state_2.q_max == 234.)
-        self.assertTrue(state_2.q_step == 34.)
-        self.assertTrue(state_2.q_step_type is RangeStepType.Lin)
+    def test_that_raises_when_moderator_file_has_not_been_set(self):
+        self.check_bad_and_good_value({"moderator_file": None}, {"moderator_file": "test"})
 
 
 if __name__ == '__main__':

@@ -5,7 +5,7 @@ from mantid.dataobjects import Workspace2D
 
 from SANS2.Common.SANSFunctions import (get_charge_and_time, create_unmanaged_algorithm)
 from SANS2.Common.SANSConstants import SANSConstants
-from SANS2.Common.SANSEnumerations import (SANSInstrument)
+from SANS2.Common.SANSType import (SANSInstrument)
 
 
 def slice_by_time(workspace, start_time=None, stop_time=None):

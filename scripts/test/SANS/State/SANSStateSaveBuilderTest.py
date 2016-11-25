@@ -3,8 +3,8 @@ import mantid
 
 from SANS2.State.StateBuilder.SANSStateDataBuilder import get_data_builder
 from SANS2.State.StateBuilder.SANSStateSaveBuilder import get_save_builder
-from SANS2.Common.SANSEnumerations import (SaveType)
-from SANS2.Common.SANSEnumerations import (SANSFacility)
+from SANS2.Common.SANSType import (SaveType)
+from SANS2.Common.SANSType import (SANSFacility)
 
 
 class SANSStateReductionBuilderTest(unittest.TestCase):

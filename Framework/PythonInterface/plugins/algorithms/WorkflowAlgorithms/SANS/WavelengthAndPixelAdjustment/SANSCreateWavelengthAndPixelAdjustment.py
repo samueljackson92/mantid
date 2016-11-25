@@ -11,7 +11,7 @@ from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, Algorit
                         FileProperty, FileAction, Progress, WorkspaceUnitValidator)
 
 from SANS2.State.SANSStateBase import create_deserialized_sans_state_from_property_manager
-from SANS2.Common.SANSEnumerations import (RangeStepType, convert_detector_type_to_string, DetectorType)
+from SANS2.Common.SANSType import (RangeStepType, convert_detector_type_to_string, DetectorType)
 from SANS2.Common.SANSConstants import SANSConstants
 from SANS2.Common.SANSFunctions import create_unmanaged_algorithm
 

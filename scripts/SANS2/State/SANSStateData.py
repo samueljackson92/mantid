@@ -5,14 +5,16 @@
 import json
 from SANS2.State.SANSStateBase import (SANSStateBase, StringParameter, PositiveIntegerParameter,
                                        ClassTypeParameter, sans_parameters)
-from SANS2.Common.SANSEnumerations import SANSInstrument
-
+from SANS2.Common.SANSType import SANSInstrument
+from SANS2.Common.SANSConstants import SANSConstants
+from SANS2.State.SANSStateFunctions import (is_pure_none_or_not_none, is_not_none_and_first_larger_than_second,
+                                            one_is_none, validation_message)
 
 # ------------------------------------------------
 # SANSStateData
 # ------------------------------------------------
 class SANSStateData(object):
-    ALL_PERIODS = 0
+    ALL_PERIODS = SANSConstants.ALL_PERIODS
 
 
 # -----------------------------------------------
@@ -60,24 +62,38 @@ class SANSStateDataISIS(SANSStateBase, SANSStateData):
 
         # A sample scatter must be specified
         if self.sample_scatter is None:
-            is_invalid.update({"sample_scatter": "The sample scatter workspace must be set."})
+            entry = validation_message("Sample scatter was not specified.",
+                                       "Make sure that the sample scatter file is specified.",
+                                       {"sample_scatter": self.sample_scatter})
+            is_invalid.update(entry)
 
         # If the sample transmission/direct was specified, then a sample direct/transmission is required
-        if (self.sample_transmission and not self.sample_direct) or \
-                (not self.sample_transmission and self.sample_direct):
-            is_invalid.update({"sample_transmission": "The sample transmission/direct was specified, "
-                                                      "then the direct/transmission must be specified as well."})
+        if not is_pure_none_or_not_none([self.sample_transmission, self.sample_direct]):
+            entry = validation_message("If the sample transmission is specified then, the direct run needs to be "
+                                       "specified too.",
+                                       "Make sure that the transmission and direct runs are both specified (or none).",
+                                       {"sample_transmission": self.sample_transmission,
+                                        "sample_direct": self.sample_direct})
+            is_invalid.update(entry)
 
         # If the can transmission/direct was specified, then this requires the can scatter
         if (self.can_direct or self.can_transmission) and (not self.can_scatter):
-            is_invalid.update({"can_scatter": "The can transmission/direct was specified, then the "
-                                              "scan scatter must be specified as well."})
+            entry = validation_message("If the can transmission is specified then the can scatter run needs to be "
+                                       "specified too.",
+                                       "Make sure that the can scatter file is set.",
+                                       {"can_scatter": self.can_scatter,
+                                        "can_transmission": self.can_transmission,
+                                        "can_direct": self.can_direct})
+            is_invalid.update(entry)
 
         # If a can transmission/direct was specified, then the other can entries need to be specified as well.
-        if self.can_scatter and (self.can_transmission and not self.can_direct) or \
-                (not self.can_transmission and self.can_direct):
-            is_invalid.update({"can_transmission": "The can transmission/direct was specified, then the "
-                                                   "direct/transmission must be specified as well."})
+        if self.can_scatter and not is_pure_none_or_not_none([self.can_transmission, self.can_direct]):
+            entry = validation_message("Inconsistent can transmission setting.",
+                                       "Make sure that the can transmission and can direct runs are set (or none of"
+                                       " them).",
+                                       {"can_transmission": self.can_transmission,
+                                        "can_direct": self.can_direct})
+            is_invalid.update(entry)
 
         if is_invalid:
             raise ValueError("SANSStateData: The provided inputs are illegal. "

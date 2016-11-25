@@ -2,7 +2,7 @@
 
 import json
 from SANS2.State.SANSStateBase import (SANSStateBase, sans_parameters, PositiveFloatParameter, ClassTypeParameter)
-from SANS2.Common.SANSEnumerations import SampleShape
+from SANS2.Common.SANSType import SampleShape
 
 
 # ------------------------------------------------
@@ -27,13 +27,7 @@ class SANSStateScaleISIS(SANSStateScale, SANSStateBase):
         super(SANSStateScaleISIS, self).__init__()
 
     def validate(self):
-        is_invalid = dict()
-
-        if is_invalid:
-            raise ValueError("SANSStateScale: The provided inputs are illegal. "
-                             "Please see: {}".format(json.dumps(is_invalid)))
-
-
+        pass
 
 # -----------------------------------------------
 # SANSStateScale setup for other facilities/techniques/scenarios.

@@ -3,7 +3,7 @@
 import copy
 
 from SANS2.State.SANSStateAdjustment import (SANSStateAdjustmentISIS)
-from SANS2.Common.SANSEnumerations import SANSInstrument
+from SANS2.Common.SANSType import SANSInstrument
 from SANS2.State.StateBuilder.AutomaticSetters import (automatic_setters)
 
 

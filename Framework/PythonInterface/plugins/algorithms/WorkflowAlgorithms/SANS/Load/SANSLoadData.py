@@ -8,7 +8,7 @@ from SANS2.Common.SANSFileInformation import (SANSFileInformationFactory, SANSFi
                                               find_full_file_path)
 from SANS2.State.SANSStateData import (SANSStateData)
 from SANS2.Common.SANSConstants import (SANSConstants)
-from SANS2.Common.SANSEnumerations import (SANSInstrument, SANSDataType, convert_from_data_type_to_string)
+from SANS2.Common.SANSType import (SANSInstrument, SANSDataType, convert_from_data_type_to_string)
 from SANS2.Common.SANSFunctions import (create_unmanaged_algorithm)
 from SANS2.Common.SANSLogTagger import (set_tag, has_tag, get_tag)
 from SANS.Load.SANSCalibration import apply_calibration
@@ -180,8 +180,6 @@ def get_loading_strategy(file_information, period, is_transmission):
     elif file_information.get_type() == SANSFileType.ISISRaw:
         loader_name, loader_options = get_loader_info_for_raw(file_information, period)
     elif file_information.get_type() == SANSFileType.ISISNexusAdded:
-        loader_name = None
-        loader_options = {}
         raise NotImplementedError("SANSLoad: Cannot load SANS file of type {0}".format(str(file_information.get_type())))
         # TODO: Add loader for added
     else:
@@ -460,7 +458,7 @@ class SANSLoadDataISIS(SANSLoadData):
         else:
             calibration_file = ""
 
-        for key, value in file_info.iteritems():
+        for key, value in file_info.items():
             # Loading
             report_message = "Loading {0}".format(convert_from_data_type_to_string(key))
             progress.report(report_message)

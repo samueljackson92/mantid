@@ -5,7 +5,7 @@ import re
 from math import copysign
 
 
-from SANS2.Common.SANSEnumerations import (ISISReductionMode, DetectorType, RangeStepType, FitType, DataType)
+from SANS2.Common.SANSType import (ISISReductionMode, DetectorType, RangeStepType, FitType, DataType)
 from SANS2.UserFile.UserFileCommon import *
 
 
@@ -460,7 +460,7 @@ class LimitParser(UserFileComponentParser):
         L/QXY qxy1 qxy2 [dqxy[/LIN]]  or  L/QXY qxy1 qxy2 [dqxy[/LOG]]
         L/QXY qxy1,dqxy1,qxy3,dqxy2,qxy2 [/LIN]]  or  L/QXY qxy1,dqxy1,qxy3,dqxy2,qxy2 [/LOG]]
 
-        L/R r1 r2  or undocumented L/R r1 r2 step where step is actually ignored
+        L/R r1 r2  or undocumented L/R  r1 r2 step where step is actually ignored
 
         L/WAV l1 l2 [dl[/LIN]  or  L/WAV l1 l2 [dl[/LOG]
         L/WAV l1,dl1,l3,dl2,l2 [/LIN]  or  L/WAV l1,dl1,l3,dl2,l2 [/LOG]
@@ -612,6 +612,17 @@ class LimitParser(UserFileComponentParser):
         radius_range = extract_float_list(radius_range_string, separator=" ")
         return {user_file_limits_radius: range_entry(start=radius_range[0],
                                                      stop=radius_range[1])}
+        # radius_range_string = re.sub(self._radius, "", line)
+        # radius_range = extract_float_list(radius_range_string, separator=" ")
+        #
+        # has_three_entries = len(radius_range) == 3
+        # min_value = radius_range[1] if has_three_entries else radius_range[0]
+        # max_value = radius_range[2] if has_three_entries else radius_range[1]
+        # min_value = None if min_value < 0 else min_value
+        # max_value = None if max_value < 0 else max_value
+        #
+        # return {user_file_limits_radius: range_entry(start=min_value,
+        #                                              stop=max_value)}
 
     def _extract_q_limit(self, line):
         q_range = re.sub(self._q, "", line)

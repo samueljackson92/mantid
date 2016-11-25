@@ -1,277 +1,187 @@
 import unittest
 import mantid
-from mantid.kernel import (PropertyManagerProperty, PropertyManager)
-from mantid.api import Algorithm
+
 from SANS2.State.SANSStateCalculateTransmission import (SANSStateCalculateTransmission,
                                                         SANSStateCalculateTransmissionISIS,
                                                         SANSStateCalculateTransmissionLOQ)
-from SANS2.Common.SANSEnumerations import (RebinType, RangeStepType, FitType, DataType,
+from SANS2.Common.SANSType import (RebinType, RangeStepType, FitType, DataType,
                                            convert_reduction_data_type_to_string)
+from StateTestHelper import assert_validate_error, assert_raises_nothing
 
 
 class SANSStateCalculateTransmissionTest(unittest.TestCase):
+    @staticmethod
+    def _set_fit(state, default_settings, custom_settings, fit_key):
+        fit = state.fit[fit_key]
+        for key, value in default_settings.items():
+            if key in custom_settings:
+                value = custom_settings[key]
+            if value is not None:  # If the value is None, then don't set it
+                setattr(fit, key, value)
+        state.fit[fit_key] = fit
+
+    @staticmethod
+    def _get_calculate_transmission_state(trans_entries, fit_entries):
+        state = SANSStateCalculateTransmissionISIS()
+        if trans_entries is None:
+            trans_entries = {}
+        trans_settings = {"transmission_radius_on_detector": 12., "transmission_roi_files": ["test.xml"],
+                          "transmission_mask_files": ["test.xml"], "default_transmission_monitor": 3,
+                          "transmission_monitor": 4, "default_incident_monitor": 1, "incident_monitor": 2,
+                          "prompt_peak_correction_min": 123., "prompt_peak_correction_max": 1234.,
+                          "rebin_type": RebinType.Rebin, "wavelength_low": 1., "wavelength_high": 2.7,
+                          "wavelength_step": 0.5,  "wavelength_step_type": RangeStepType.Lin,
+                          "use_full_wavelength_range": True, "wavelength_full_range_low": 12.,
+                          "wavelength_full_range_high": 434., "background_TOF_general_start": 1.4,
+                          "background_TOF_general_stop": 24.5, "background_TOF_monitor_start": {"1": 123, "2": 123},
+                          "background_TOF_monitor_stop": {"1": 234, "2": 2323}, "background_TOF_roi_start": 12.,
+                          "background_TOF_roi_stop": 123.}
+
+        for key, value in trans_settings.items():
+            if key in trans_entries:
+                value = trans_entries[key]
+            if value is not None:  # If the value is None, then don't set it
+                setattr(state, key, value)
+
+        fit_settings = {"fit_type": FitType.Polynomial, "polynomial_order": 1, "wavelength_low": 12.,
+                        "wavelength_high": 232.}
+        if fit_entries is None:
+            fit_entries = {}
+        SANSStateCalculateTransmissionTest._set_fit(state, fit_settings, fit_entries,
+                                                    convert_reduction_data_type_to_string(DataType.Sample))
+        SANSStateCalculateTransmissionTest._set_fit(state, fit_settings, fit_entries,
+                                                    convert_reduction_data_type_to_string(DataType.Can))
+        return state
+
+    @staticmethod
+    def _get_dict(entry_name, value):
+        output = {}
+        if value is not None:
+            output.update({entry_name: value})
+        return output
+
+    def check_bad_and_good_values(self, bad_trans=None, bad_fit=None, good_trans=None, good_fit=None):
+        # Bad values
+        state = self._get_calculate_transmission_state(bad_trans, bad_fit)
+        assert_validate_error(self, ValueError, state)
+
+        # Good values
+        state = self._get_calculate_transmission_state(good_trans, good_fit)
+        assert_raises_nothing(self, state)
+
     def test_that_is_sans_state_data_object(self):
         state = SANSStateCalculateTransmissionISIS()
         self.assertTrue(isinstance(state, SANSStateCalculateTransmission))
 
-    def test_that_can_set_and_get_values(self):
-        # Arrange
-        state = SANSStateCalculateTransmissionISIS()
+    def test_that_raises_when_no_incident_monitor_is_available(self):
+        self.check_bad_and_good_values(bad_trans={"incident_monitor": None, "default_incident_monitor": None},
+                                       good_trans={"incident_monitor": 1, "default_incident_monitor": None})
+        self.check_bad_and_good_values(bad_trans={"incident_monitor": None, "default_incident_monitor": None},
+                                       good_trans={"incident_monitor": None, "default_incident_monitor": 1})
 
-        # Act + Assert
-        state.prompt_peak_correction_min = 12.0
-        state.prompt_peak_correction_max = 17.0
+    def test_that_raises_when_no_transmission_is_specified(self):
+        self.check_bad_and_good_values(bad_trans={"transmission_monitor": None, "default_transmission_monitor": None,
+                                                  "transmission_radius_on_detector": None,
+                                                  "transmission_roi_files": None},
+                                       good_trans={"transmission_monitor": 4, "default_transmission_monitor": None,
+                                                   "transmission_radius_on_detector": None,
+                                                   "transmission_roi_files": None})
 
-        state.rebin_type = RebinType.Rebin
-        state.wavelength_low = 1.5
-        state.wavelength_high = 2.7
-        state.wavelength_step = 0.5
-        state.wavelength_step_type = RangeStepType.Lin
-        state.use_full_wavelength_range = True
-        state.wavelength_full_range_low = 123.0
-        state.wavelength_full_range_high = 343.0
+    def test_that_raises_for_inconsistent_prompt_peak(self):
+        self.check_bad_and_good_values(bad_trans={"prompt_peak_correction_min": 1., "prompt_peak_correction_max": None},
+                                       good_trans={"prompt_peak_correction_min": None,
+                                                   "prompt_peak_correction_max": None})
+        self.check_bad_and_good_values(bad_trans={"prompt_peak_correction_min": 1.,
+                                                  "prompt_peak_correction_max": None},
+                                       good_trans={"prompt_peak_correction_min": 1., "prompt_peak_correction_max": 2.})
 
-        state.incident_monitor = 1
-        state.transmission_monitor = 2
-        state.default_transmission_monitor = 3
-        state.roi_files = ["sfsdf", "sdfsdfsf"]
-        state.transmission_radius = 2.6
+    def test_that_raises_for_lower_bound_larger_than_upper_bound_for_prompt_peak(self):
+        self.check_bad_and_good_values(bad_trans={"prompt_peak_correction_min": 2., "prompt_peak_correction_max": 1.},
+                                       good_trans={"prompt_peak_correction_min": 1., "prompt_peak_correction_max": 2.})
 
-        state.background_TOF_general_start = 1.4
-        state.background_TOF_general_stop = 34.6
-        state.background_TOF_monitor_start = {"1": 123, "2": 123}
-        state.background_TOF_monitor_stop = {"1": 234, "2": 2323}
-        state.background_TOF_roi_start = 3.4
-        state.background_TOF_roi_stop = 6.8
+    def test_that_raises_when_not_all_elements_are_set_for_wavelength(self):
+        self.check_bad_and_good_values(bad_trans={"wavelength_low": 1., "wavelength_high": 2.,
+                                                  "wavelength_step": 0.5, "wavelength_step_type": None},
+                                       good_trans={"wavelength_low": 1., "wavelength_high": 2.,
+                                                   "wavelength_step": 0.5, "wavelength_step_type": RangeStepType.Lin})
 
-        state.fit[convert_reduction_data_type_to_string(DataType.Sample)].wavelength_low = 10.0
-        state.fit[convert_reduction_data_type_to_string(DataType.Sample)].wavelength_high = 20.0
-        state.fit[convert_reduction_data_type_to_string(DataType.Sample)].polynomial_order = 3
-        state.fit[convert_reduction_data_type_to_string(DataType.Sample)].fit_type = FitType.Polynomial
+    def test_that_raises_for_lower_bound_larger_than_upper_bound_for_wavelength(self):
+        self.check_bad_and_good_values(bad_trans={"wavelength_low": 2., "wavelength_high": 1.,
+                                                  "wavelength_step": 0.5, "wavelength_step_type":  RangeStepType.Lin},
+                                       good_trans={"wavelength_low": 1., "wavelength_high": 2.,
+                                                   "wavelength_step": 0.5, "wavelength_step_type": RangeStepType.Lin})
 
-        state.fit[convert_reduction_data_type_to_string(DataType.Can)].wavelength_low = 10.0
-        state.fit[convert_reduction_data_type_to_string(DataType.Can)].wavelength_high = 20.0
-        state.fit[convert_reduction_data_type_to_string(DataType.Can)].polynomial_order = 0
-        state.fit[convert_reduction_data_type_to_string(DataType.Can)].fit_type = FitType.Linear
+    def test_that_raises_for_missing_full_wavelength_entry(self):
+        self.check_bad_and_good_values(bad_trans={"use_full_wavelength_range": True, "wavelength_full_range_low": None,
+                                                  "wavelength_full_range_high": 12.},
+                                       good_trans={"use_full_wavelength_range": True, "wavelength_full_range_low": 11.,
+                                                   "wavelength_full_range_high": 12.})
 
-        try:
-            state.validate()
-            is_valid = True
-        except ValueError:
-            is_valid = False
-        self.assertTrue(is_valid)
+    def test_that_raises_for_lower_bound_larger_than_upper_bound_for_full_wavelength(self):
+        self.check_bad_and_good_values(bad_trans={"use_full_wavelength_range": True, "wavelength_full_range_low": 2.,
+                                                  "wavelength_full_range_high": 1.},
+                                       good_trans={"use_full_wavelength_range": True, "wavelength_full_range_low": 1.,
+                                                   "wavelength_full_range_high": 2.})
 
-    def test_that_invalid_types_for_parameters_raise_type_error(self):
-        # Arrange
-        state = SANSStateCalculateTransmissionISIS()
+    def test_that_raises_for_inconsistent_general_background(self):
+        self.check_bad_and_good_values(bad_trans={"background_TOF_general_start": 1.,
+                                                  "background_TOF_general_stop": None},
+                                       good_trans={"background_TOF_general_start": None,
+                                                   "background_TOF_general_stop": None})
 
-        # Act + Assert
-        try:
-            state.background_TOF_monitor_start = "w234234"
-            is_valid = True
-        except TypeError:
-            is_valid = False
-        self.assertFalse(is_valid)
+    def test_that_raises_for_lower_bound_larger_than_upper_bound_for_general_background(self):
+        self.check_bad_and_good_values(bad_trans={"background_TOF_general_start": 2.,
+                                                  "background_TOF_general_stop": 1.},
+                                       good_trans={"background_TOF_general_start": 1.,
+                                                   "background_TOF_general_stop": 2.})
 
-    def test_that_invalid_list_values_raise_value_error(self):
-        # Arrange
-        state = SANSStateCalculateTransmissionISIS()
+    def test_that_raises_for_inconsistent_roi_background(self):
+        self.check_bad_and_good_values(bad_trans={"background_TOF_roi_start": 1.,
+                                                  "background_TOF_roi_stop": None},
+                                       good_trans={"background_TOF_roi_start": None,
+                                                   "background_TOF_roi_stop": None})
 
-        # Act + Assert
-        try:
-            state.wavelength_low = -1.0
-            is_valid = True
-        except ValueError:
-            is_valid = False
-        self.assertFalse(is_valid)
+    def test_that_raises_for_lower_bound_larger_than_upper_bound_for_roi_background(self):
+        self.check_bad_and_good_values(bad_trans={"background_TOF_roi_start": 2.,
+                                                  "background_TOF_roi_stop": 1.},
+                                       good_trans={"background_TOF_roi_start": 1.,
+                                                   "background_TOF_roi_stop": 2.})
 
-    def test_validate_method_raises_value_error_for_mismatching_monitor_start_and_stop_backgrounds(self):
-        # Arrange
-        state = SANSStateCalculateTransmissionISIS()
+    def test_that_raises_for_inconsistent_monitor_background(self):
+        self.check_bad_and_good_values(bad_trans={"background_TOF_monitor_start": {"1": 12., "2": 1.},
+                                                  "background_TOF_monitor_stop": None},
+                                       good_trans={"background_TOF_monitor_start": None,
+                                                   "background_TOF_monitor_stop": None})
 
-        state.prompt_peak_correction_min = 12.0
-        state.prompt_peak_correction_max = 17.0
+    def test_that_raises_when_lengths_of_monitor_backgrounds_are_different(self):
+        self.check_bad_and_good_values(bad_trans={"background_TOF_monitor_start": {"1": 1., "2": 1.},
+                                                  "background_TOF_monitor_stop": {"1": 2.}},
+                                       good_trans={"background_TOF_monitor_start": {"1": 1., "2": 1.},
+                                                   "background_TOF_monitor_stop": {"1": 2., "2": 2.}})
 
-        state.rebin_type = RebinType.Rebin
-        state.wavelength_low = 1.5
-        state.wavelength_high = 2.7
-        state.wavelength_step = 0.5
-        state.wavelength_step_type = RangeStepType.Lin
-        state.use_full_wavelength_range = True
-        state.wavelength_full_range_low = 123.0
-        state.wavelength_full_range_high = 343.0
+    def test_that_raises_when_monitor_name_mismatch_exists_for_monitor_backgrounds(self):
+        self.check_bad_and_good_values(bad_trans={"background_TOF_monitor_start": {"1": 1., "2": 1.},
+                                                  "background_TOF_monitor_stop": {"1": 2., "3": 2.}},
+                                       good_trans={"background_TOF_monitor_start": {"1": 1., "2": 1.},
+                                                   "background_TOF_monitor_stop": {"1": 2., "2": 2.}})
 
-        state.incident_monitor = 1
-        state.transmission_monitor = 2
-        state.default_transmission_monitor = 3
-        state.roi_files = ["sfsdf", "sdfsdfsf"]
-        state.transmission_radius = 2.6
+    def test_that_raises_lower_bound_larger_than_upper_bound_for_monitor_backgrounds(self):
+        self.check_bad_and_good_values(bad_trans={"background_TOF_monitor_start": {"1": 1., "2": 2.},
+                                                  "background_TOF_monitor_stop": {"1": 2., "2": 1.}},
+                                       good_trans={"background_TOF_monitor_start": {"1": 1., "2": 1.},
+                                                   "background_TOF_monitor_stop": {"1": 2., "2": 2.}})
 
-        state.background_TOF_general_start = 1.4
-        state.background_TOF_general_stop = 34.6
-        state.background_TOF_monitor_start = {"1": 12, "2": 13}
-        state.background_TOF_monitor_stop = {"1": 14, "3": 16}
-        state.background_TOF_roi_start = 3.4
-        state.background_TOF_roi_stop = 6.8
+    def test_that_polynomial_order_can_only_be_set_with_polynomial_setting(self):
+        self.check_bad_and_good_values(bad_fit={"fit_type": FitType.Log, "polynomial_order": 4},
+                                       good_fit={"fit_type": FitType.Polynomial,  "polynomial_order": 4})
 
-        state.fit[convert_reduction_data_type_to_string(DataType.Sample)].wavelength_low = 10.0
-        state.fit[convert_reduction_data_type_to_string(DataType.Sample)].wavelength_high = 20.0
-        state.fit[convert_reduction_data_type_to_string(DataType.Sample)].polynomial_order = 3
-        state.fit[convert_reduction_data_type_to_string(DataType.Sample)].fit_type = FitType.Polynomial
+    def test_that_raises_for_inconsistent_wavelength_in_fit(self):
+        self.check_bad_and_good_values(bad_trans={"wavelength_low": None,  "wavelength_high": 2.},
+                                       good_trans={"wavelength_low": 1.,  "wavelength_high": 2.})
 
-        state.fit[convert_reduction_data_type_to_string(DataType.Can)].wavelength_low = 10.0
-        state.fit[convert_reduction_data_type_to_string(DataType.Can)].wavelength_high = 20.0
-        state.fit[convert_reduction_data_type_to_string(DataType.Can)].polynomial_order = 0
-        state.fit[convert_reduction_data_type_to_string(DataType.Can)].fit_type = FitType.Linear
-
-        # Act + Assert
-        self.assertRaises(ValueError, state.validate)
-
-    def test_validate_method_raises_when_no_transmission_is_specified(self):
-        # Arrange
-        state = SANSStateCalculateTransmissionISIS()
-
-        state.prompt_peak_correction_min = 12.0
-        state.prompt_peak_correction_max = 17.0
-
-        state.rebin_type = RebinType.Rebin
-        state.wavelength_low = 1.5
-        state.wavelength_high = 2.7
-        state.wavelength_step = 0.5
-        state.wavelength_step_type = RangeStepType.Lin
-        state.use_full_wavelength_range = True
-        state.wavelength_full_range_low = 123.0
-        state.wavelength_full_range_high = 343.0
-
-        state.incident_monitor = 1
-
-        state.background_TOF_general_start = 1.4
-        state.background_TOF_general_stop = 34.6
-        state.background_TOF_monitor_start = {"1": 12, "2": 13}
-        state.background_TOF_monitor_stop = {"1": 14, "2": 16}
-        state.background_TOF_roi_start = 3.4
-        state.background_TOF_roi_stop = 6.8
-
-        state.fit[convert_reduction_data_type_to_string(DataType.Sample)].wavelength_low = 10.0
-        state.fit[convert_reduction_data_type_to_string(DataType.Sample)].wavelength_high = 20.0
-        state.fit[convert_reduction_data_type_to_string(DataType.Sample)].polynomial_order = 3
-        state.fit[convert_reduction_data_type_to_string(DataType.Sample)].fit_type = FitType.Polynomial
-
-        state.fit[convert_reduction_data_type_to_string(DataType.Can)].wavelength_low = 10.0
-        state.fit[convert_reduction_data_type_to_string(DataType.Can)].wavelength_high = 20.0
-        state.fit[convert_reduction_data_type_to_string(DataType.Can)].polynomial_order = 0
-        state.fit[convert_reduction_data_type_to_string(DataType.Can)].fit_type = FitType.Linear
-
-        # Act + Assert
-        self.assertRaises(ValueError, state.validate)
-
-    def test_validate_method_raises_value_error_if_start_is_larger_than_stop(self):
-        # Arrange
-        state = SANSStateCalculateTransmissionISIS()
-        state.background_TOF_monitor_start = {"1": 12, "2": 13}
-        state.background_TOF_monitor_stop = {"1": 11, "2": 13}
-        state.rebin_type = RebinType.Rebin
-        state.wavelength_low = 1.5
-        state.wavelength_high = 2.7
-        state.wavelength_step = 0.5
-        state.wavelength_step_type = RangeStepType.Lin
-        state.incident_monitor = 1
-
-        # Act + Assert
-        self.assertRaises(ValueError, state.validate)
-
-    def test_that_dict_can_be_generated_from_state_object_and_property_manager_read_in(self):
-        class FakeAlgorithm(Algorithm):
-            def PyInit(self):
-                self.declareProperty(PropertyManagerProperty("Args"))
-
-            def PyExec(self):
-                pass
-
-        # Arrange
-        state = SANSStateCalculateTransmissionLOQ()
-
-        state.rebin_type = RebinType.Rebin
-        state.wavelength_low = 1.5
-        state.wavelength_high = 2.7
-        state.wavelength_step = 0.5
-        state.wavelength_step_type = RangeStepType.Lin
-        state.use_full_wavelength_range = True
-        state.wavelength_full_range_low = 123.0
-        state.wavelength_full_range_high = 343.0
-
-        state.incident_monitor = 1
-        state.transmission_monitor = 2
-        state.default_transmission_monitor = 3
-        state.transmission_roi_files = ["sfsdf", "sdfsdfsf"]
-        state.transmission_radius_on_detector = 2.6
-
-        state.background_TOF_general_start = 1.4
-        state.background_TOF_general_stop = 34.6
-        state.background_TOF_monitor_start = {"1": 123, "2": 123}
-        state.background_TOF_monitor_stop = {"1": 234, "2": 2323}
-        state.background_TOF_roi_start = 3.4
-        state.background_TOF_roi_stop = 6.8
-
-        state.fit[convert_reduction_data_type_to_string(DataType.Sample)].wavelength_low = 10.0
-        state.fit[convert_reduction_data_type_to_string(DataType.Sample)].wavelength_high = 20.0
-        state.fit[convert_reduction_data_type_to_string(DataType.Sample)].polynomial_order = 3
-        state.fit[convert_reduction_data_type_to_string(DataType.Sample)].fit_type = FitType.Polynomial
-
-        state.fit[convert_reduction_data_type_to_string(DataType.Can)].wavelength_low = 10.0
-        state.fit[convert_reduction_data_type_to_string(DataType.Can)].wavelength_high = 20.0
-        state.fit[convert_reduction_data_type_to_string(DataType.Can)].polynomial_order = 0
-        state.fit[convert_reduction_data_type_to_string(DataType.Can)].fit_type = FitType.Linear
-
-        # Act
-        serialized = state.property_manager
-        fake = FakeAlgorithm()
-        fake.initialize()
-        fake.setProperty("Args", serialized)
-        property_manager = fake.getProperty("Args").value
-
-        # Assert
-        self.assertTrue(type(serialized) == dict)
-        self.assertTrue(type(property_manager) == PropertyManager)
-        state_2 = SANSStateCalculateTransmissionISIS()
-        state_2.property_manager = property_manager
-
-        self.assertTrue(state_2.prompt_peak_correction_min == 19000.0)
-        self.assertTrue(state_2.prompt_peak_correction_max == 20500.0)
-
-        self.assertTrue(state_2.rebin_type is RebinType.Rebin)
-        self.assertTrue(state_2.wavelength_low == 1.5)
-        self.assertTrue(state_2.wavelength_high == 2.7)
-        self.assertTrue(state_2.wavelength_step == 0.5)
-        self.assertTrue(state_2.wavelength_step_type is RangeStepType.Lin)
-        self.assertTrue(state_2.use_full_wavelength_range is True)
-        self.assertTrue(state_2.wavelength_full_range_low == 123.0)
-        self.assertTrue(state_2.wavelength_full_range_high == 343.0)
-
-        self.assertTrue(state_2.incident_monitor == 1)
-        self.assertTrue(state_2.transmission_monitor == 2)
-        self.assertTrue(state_2.default_transmission_monitor == 3)
-        self.assertTrue(state_2.transmission_roi_files == ["sfsdf", "sdfsdfsf"])
-        self.assertTrue(state_2.transmission_radius_on_detector == 2.6)
-
-        self.assertTrue(state_2.background_TOF_general_start == 1.4)
-        self.assertTrue(state_2.background_TOF_general_stop == 34.6)
-        self.assertTrue(state_2.background_TOF_roi_start == 3.4)
-        self.assertTrue(state_2.background_TOF_roi_stop == 6.8)
-
-        self.assertTrue(len(set(state_2.background_TOF_monitor_start.items()) & set({"1": 123, "2": 123}.items())) == 2)
-        self.assertTrue(len(set(state_2.background_TOF_monitor_stop.items()) & set({"1": 234, "2": 2323}.items())) == 2)
-
-        self.assertTrue(state.fit[convert_reduction_data_type_to_string(DataType.Sample)].wavelength_low == 10.0)
-        self.assertTrue(state.fit[convert_reduction_data_type_to_string(DataType.Sample)].wavelength_high == 20.0)
-        self.assertTrue(state.fit[convert_reduction_data_type_to_string(DataType.Sample)].polynomial_order == 3)
-        self.assertTrue(state.fit[convert_reduction_data_type_to_string(DataType.Sample)].fit_type
-                        is FitType.Polynomial)
-
-        self.assertTrue(state.fit[convert_reduction_data_type_to_string(DataType.Can)].wavelength_low == 10.0)
-        self.assertTrue(state.fit[convert_reduction_data_type_to_string(DataType.Can)].wavelength_high == 20.0)
-        self.assertTrue(state.fit[convert_reduction_data_type_to_string(DataType.Can)].polynomial_order == 0)
-        self.assertTrue(state.fit[convert_reduction_data_type_to_string(DataType.Can)].fit_type is FitType.Linear)
+    def test_that_raises_for_lower_bound_larger_than_upper_bound_for_wavelength_in_fit(self):
+        self.check_bad_and_good_values(bad_trans={"wavelength_low": 2.,  "wavelength_high": 1.},
+                                       good_trans={"wavelength_low": 1.,  "wavelength_high": 2.})
 
 
 if __name__ == '__main__':

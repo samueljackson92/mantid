@@ -3,6 +3,7 @@
 
 
 class SANSConfigurations(object):
+
     class LARMOR(object):
         # The full wavelength range of the instrument
         wavelength_full_range_low = 0.5

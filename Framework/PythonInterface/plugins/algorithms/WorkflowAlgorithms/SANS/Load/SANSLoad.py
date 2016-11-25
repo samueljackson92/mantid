@@ -7,7 +7,7 @@ from mantid.kernel import (Direction, PropertyManagerProperty, FloatArrayPropert
 from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, AlgorithmFactory, PropertyMode, Progress)
 
 from SANS2.State.SANSStateBase import create_deserialized_sans_state_from_property_manager
-from SANS2.Common.SANSEnumerations import SANSDataType
+from SANS2.Common.SANSType import SANSDataType
 from SANS2.Common.SANSFunctions import create_unmanaged_algorithm
 from SANS.Load.SANSLoadData import SANSLoadDataFactory
 
@@ -144,11 +144,11 @@ class SANSLoad(DataProcessorAlgorithm):
             progress_move.report("Finished moving the workspaces.")
 
         # Set output workspaces
-        for workspace_type, workspace in workspaces.iteritems():
+        for workspace_type, workspace in workspaces.items():
             self.set_output_for_workspaces(workspace_type, workspace)
 
         # Set the output monitor workspaces
-        for workspace_type, workspace in workspace_monitors.iteritems():
+        for workspace_type, workspace in workspace_monitors.items():
             self.set_output_for_monitor_workspaces(workspace_type, workspace)
 
     def validateInputs(self):

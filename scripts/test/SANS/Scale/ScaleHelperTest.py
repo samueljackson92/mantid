@@ -6,7 +6,7 @@ from SANS2.Scale.ScaleHelpers import (DivideByVolumeFactory, DivideByVolumeISIS,
                                       MultiplyByAbsoluteScaleFactory, MultiplyByAbsoluteScaleLOQ,
                                       MultiplyByAbsoluteScaleISIS)
 from SANS2.Common.SANSFunctions import create_unmanaged_algorithm
-from SANS2.Common.SANSEnumerations import (SampleShape, SANSFacility, DataType)
+from SANS2.Common.SANSType import (SampleShape, SANSFacility, DataType)
 from SANS2.State.StateBuilder.SANSStateScaleBuilder import get_scale_builder
 from SANS2.State.StateBuilder.SANSStateDataBuilder import get_data_builder
 

@@ -1,5 +1,5 @@
 from collections import (namedtuple, Sequence)
-from SANS2.Common.SANSEnumerations import (SANSInstrument, DetectorOrientation, DetectorType)
+from SANS2.Common.SANSType import (SANSInstrument, DetectorOrientation, DetectorType)
 from SANS2.Common.XMLParsing import get_named_elements_from_ipf_file
 
 

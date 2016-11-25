@@ -2,7 +2,7 @@ import unittest
 import mantid
 
 from SANS2.State.StateBuilder.SANSStateDataBuilder import get_data_builder
-from SANS2.Common.SANSEnumerations import (SANSFacility, SANSInstrument)
+from SANS2.Common.SANSType import (SANSFacility, SANSInstrument)
 
 
 class SANSStateDataBuilderTest(unittest.TestCase):

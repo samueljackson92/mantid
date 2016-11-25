@@ -9,7 +9,7 @@ from mantid.kernel import (Quat, V3D)
 from SANS.Move.SANSMoveWorkspaces import (SANSMoveFactory, SANSMoveLOQ, SANSMoveSANS2D, SANSMoveLARMORNewStyle,
                                           SANSMoveLARMOROldStyle)
 from SANS2.Common.SANSConstants import SANSConstants
-from SANS2.Common.SANSEnumerations import SANSFacility
+from SANS2.Common.SANSType import SANSFacility
 # Not clear why the names in the module are not found by Pylint, but it seems to get confused. Hence this check
 # needs to be disabled here.
 # pylint: disable=no-name-in-module

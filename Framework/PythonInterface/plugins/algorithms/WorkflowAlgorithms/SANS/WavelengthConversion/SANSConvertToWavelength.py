@@ -6,7 +6,7 @@ from mantid.kernel import (Direction, StringListValidator, Property, PropertyMan
 from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, AlgorithmFactory, PropertyMode)
 from SANS2.Common.SANSConstants import SANSConstants
 from SANS2.Common.SANSFunctions import (create_unmanaged_algorithm, append_to_sans_file_tag)
-from SANS2.Common.SANSEnumerations import (convert_rebin_type_to_string, convert_range_step_type_to_string)
+from SANS2.Common.SANSType import (convert_rebin_type_to_string, convert_range_step_type_to_string)
 from SANS2.State.SANSStateBase import create_deserialized_sans_state_from_property_manager
 
 

@@ -1,7 +1,7 @@
 import unittest
 import mantid
 import os
-from SANS2.Common.SANSEnumerations import (ISISReductionMode, DetectorType, RangeStepType, FitType)
+from SANS2.Common.SANSType import (ISISReductionMode, DetectorType, RangeStepType, FitType)
 from SANS2.UserFile.UserFileReader import UserFileReader
 from SANS2.UserFile.UserFileCommon import *
 from UserFileTestHelper import create_user_file, sample_user_file

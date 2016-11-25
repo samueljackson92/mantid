@@ -4,7 +4,7 @@
 
 from SANS2.State.SANSStateBase import (SANSStateBase, BoolParameter, StringParameter,
                                        ClassTypeListParameter, sans_parameters)
-from SANS2.Common.SANSEnumerations import SaveType
+from SANS2.Common.SANSType import SaveType
 
 
 # ------------------------------------------------

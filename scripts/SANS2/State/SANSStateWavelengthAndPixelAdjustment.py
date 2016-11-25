@@ -5,7 +5,8 @@
 import json
 from SANS2.State.SANSStateBase import (SANSStateBase, sans_parameters, StringParameter,
                                        ClassTypeParameter, PositiveFloatParameter, DictParameter)
-from SANS2.Common.SANSEnumerations import (RangeStepType, DetectorType, convert_detector_type_to_string)
+from SANS2.State.SANSStateFunctions import (is_not_none_and_first_larger_than_second, one_is_none, validation_message)
+from SANS2.Common.SANSType import (RangeStepType, DetectorType, convert_detector_type_to_string)
 
 
 # ------------------------------------------------
@@ -49,19 +50,21 @@ class SANSStateWavelengthAndPixelAdjustmentISIS(SANSStateBase, SANSStateWaveleng
     def validate(self):
         is_invalid = {}
 
-        if self.wavelength_step_type is None:
-            is_invalid.update({"wavelength_step_type": "A wavelength range step type has to be specified."})
-        if self.wavelength_step is None:
-            is_invalid.update({"wavelength_step": "A wavelength step has to be specified."})
-        if self.wavelength_low is None:
-            is_invalid.update({"wavelength_low": "A lower wavelength value for rebinning has to be specified."})
-        if self.wavelength_high is None:
-            is_invalid.update({"wavelength_high": "An high wavelength value for rebinning has to be specified."})
-        if self.wavelength_low is not None and self.wavelength_high is not None:
-            if self.wavelength_low > self.wavelength_high:
-                is_invalid.update({"wavelength_high": "The lower wavelength bound needs to be smaller than the upper "
-                                                      "bound. The lower bound is {0} and the upper "
-                                                      "is {1}.".format(self.wavelength_low, self.wavelength_high)})
+        if one_is_none([self.wavelength_low, self.wavelength_high, self.wavelength_step, self.wavelength_step_type]):
+            entry = validation_message("A wavelength entry has not been set.",
+                                       "Make sure that all entries are set.",
+                                       {"wavelength_low": self.wavelength_low,
+                                        "wavelength_high": self.wavelength_high,
+                                        "wavelength_step": self.wavelength_step,
+                                        "wavelength_step_type": self.wavelength_step_type})
+            is_invalid.update(entry)
+
+        if is_not_none_and_first_larger_than_second([self.wavelength_low, self.wavelength_high]):
+            entry = validation_message("Incorrect wavelength bounds.",
+                                       "Make sure that lower wavelength bound is smaller then upper bound.",
+                                       {"wavelength_low": self.wavelength_low,
+                                        "wavelength_high": self.wavelength_high})
+            is_invalid.update(entry)
 
         try:
             self.adjustment_files[convert_detector_type_to_string(DetectorType.Lab)].validate()

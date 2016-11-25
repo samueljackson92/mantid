@@ -14,7 +14,7 @@ from SANS2.Common.SANSConstants import SANSConstants
 # needs to be disabled here.
 # pylint: disable=no-name-in-module
 from SANS2.State.StateDirector.TestDirector import TestDirector
-from SANS2.Common.SANSEnumerations import SANSFacility
+from SANS2.Common.SANSType import SANSFacility
 from SANS2.State.StateBuilder.SANSStateDataBuilder import get_data_builder
 
 
@@ -123,6 +123,7 @@ class SANSLoadTest(unittest.TestCase):
         # Get the sample state
         test_director = TestDirector()
         test_director.set_states(data_state=data_info)
+
         return test_director.construct()
 
     def _evaluate_workspace_type(self, load_alg, num_workspaces, workspace_name, workspace_type, index):

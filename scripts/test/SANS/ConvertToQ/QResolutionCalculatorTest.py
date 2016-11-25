@@ -10,7 +10,7 @@ from math import sqrt
 from SANS2.ConvertToQ.QResolutionCalculator import (QResolutionCalculatorFactory, NullQResolutionCalculator,
                                                     QResolutionCalculatorISIS, get_aperture_diameters,
                                                     load_sigma_moderator_workspace, create_q_resolution_workspace)
-from SANS2.Common.SANSEnumerations import SANSInstrument
+from SANS2.Common.SANSType import SANSInstrument
 
 
 class MockContainer:

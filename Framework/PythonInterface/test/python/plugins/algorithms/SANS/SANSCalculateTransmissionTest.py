@@ -3,7 +3,7 @@ import mantid
 import numpy as np
 from SANS2.State.StateDirector.TestDirector import TestDirector
 from SANS2.State.StateBuilder.SANSStateCalculateTransmissionBuilder import get_calculate_transmission_builder
-from SANS2.Common.SANSEnumerations import (RebinType, RangeStepType, FitType)
+from SANS2.Common.SANSType import (RebinType, RangeStepType, FitType)
 from SANS2.Common.SANSFunctions import (create_unmanaged_algorithm)
 from SANS2.Common.SANSConstants import SANSConstants
 

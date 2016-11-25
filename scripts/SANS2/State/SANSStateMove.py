@@ -6,8 +6,8 @@ import json
 from SANS2.State.SANSStateBase import (SANSStateBase, FloatParameter, DictParameter, ClassTypeParameter,
                                        StringParameter, sans_parameters)
 from SANS2.Common.SANSConstants import (SANSConstants)
-from SANS2.Common.SANSEnumerations import (Coordinates, CanonicalCoordinates)
-
+from SANS2.Common.SANSType import (Coordinates, CanonicalCoordinates)
+from SANS2.State.SANSStateFunctions import validation_message
 
 # ------------------------------------------------
 # SANSStateData
@@ -62,8 +62,14 @@ class SANSStateMoveDetectorISIS(SANSStateBase, SANSStateMove):
     def validate(self):
         is_invalid = {}
         if not self.detector_name:
-            is_invalid.update({"detector_name": "The detector name has not been specified."})
+            entry = validation_message("Missing detector name",
+                                       "Make sure that a detector name was specified.",
+                                       {"detector_name": self.detector_name})
+            is_invalid.update(entry)
         if not self.detector_name_short:
+            entry = validation_message("Missing short detector name",
+                                       "Make sure that a short detector name was specified.",
+                                       {"detector_name_short": self.detector_name_short})
             is_invalid.update({"detector_name_short": "The short detector name has not been specified."})
         if is_invalid:
             raise ValueError("SANSStateMoveDetectorISIS: The provided inputs are illegal. "

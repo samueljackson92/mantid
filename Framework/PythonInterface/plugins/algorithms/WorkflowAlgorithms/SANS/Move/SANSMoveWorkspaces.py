@@ -4,7 +4,7 @@ import math
 from mantid.api import MatrixWorkspace
 from abc import (ABCMeta, abstractmethod)
 from SANS2.State.SANSStateMove import SANSStateMove
-from SANS2.Common.SANSEnumerations import (SANSInstrument, convert_string_to_sans_instrument, CanonicalCoordinates)
+from SANS2.Common.SANSType import (SANSInstrument, convert_string_to_sans_instrument, CanonicalCoordinates)
 from SANS2.Common.SANSConstants import SANSConstants
 from SANS2.Common.SANSFunctions import (create_unmanaged_algorithm, get_single_valued_logs_from_workspace,
                                         quaternion_to_angle_and_axis)

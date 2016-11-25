@@ -1,7 +1,7 @@
 from mantid.kernel import logger
 
 from SANS2.Common.SANSConstants import SANSConstants
-from SANS2.Common.SANSEnumerations import (DetectorType, FitModeForMerge, RebinType, DataType,
+from SANS2.Common.SANSType import (DetectorType, FitModeForMerge, RebinType, DataType,
                                            convert_reduction_data_type_to_string, convert_detector_type_to_string)
 from SANS2.Common.SANSFileInformation import find_full_file_path
 from SANS2.UserFile.UserFileReader import UserFileReader
@@ -788,8 +788,10 @@ class UserFileStateDirectorISIS(object):
             if radius.start > 0 and radius.stop > 0 and radius.start > radius.stop:
                 raise RuntimeError("UserFileStateDirector: The inner radius {0} appears to be larger that the outer"
                                    " radius {1} of the mask.".format(radius.start, radius.stop))
-            self._mask_builder.set_radius_min(convert_mm_to_m(radius.start))
-            self._mask_builder.set_radius_max(convert_mm_to_m(radius.stop))
+            min_value = None if radius.start is None else convert_mm_to_m(radius.start)
+            max_value = None if radius.stop is None else convert_mm_to_m(radius.stop)
+            self._mask_builder.set_radius_min(min_value)
+            self._mask_builder.set_radius_max(convert_mm_to_m(max_value))
 
     def _set_up_wavelength_state(self, user_file_items):
         if user_file_limits_wavelength in user_file_items:

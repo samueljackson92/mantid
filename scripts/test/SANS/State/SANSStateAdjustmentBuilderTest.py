@@ -4,8 +4,8 @@ import mantid
 from SANS2.State.StateBuilder.SANSStateDataBuilder import get_data_builder
 from SANS2.State.StateBuilder.SANSStateAdjustmentBuilder import get_adjustment_builder
 from SANS2.State.StateDirector.TestDirector import TestDirector
-from SANS2.Common.SANSEnumerations import (RebinType, RangeStepType, DataType, convert_reduction_data_type_to_string)
-from SANS2.Common.SANSEnumerations import (SANSFacility, SANSInstrument, FitType)
+from SANS2.Common.SANSType import (RebinType, RangeStepType, DataType, convert_reduction_data_type_to_string)
+from SANS2.Common.SANSType import (SANSFacility, SANSInstrument, FitType)
 
 
 class SANSStateAdjustmentBuilderTest(unittest.TestCase):

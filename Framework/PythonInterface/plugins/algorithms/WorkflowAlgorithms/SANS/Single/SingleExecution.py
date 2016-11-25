@@ -3,7 +3,7 @@ from SANS2.Common.SANSFunctions import create_unmanaged_algorithm
 from SANS.Single.StripEndNansAndInfs import strip_end_nans
 from SANS.Single.MergeReductions import (MergeFactory, is_sample, is_can)
 from SANS.Single.Bundles import (OutputBundle, OutputPartsBundle)
-from SANS2.Common.SANSEnumerations import (ISISReductionMode)
+from SANS2.Common.SANSType import (ISISReductionMode)
 
 
 def run_core_reduction(reduction_alg, reduction_setting_bundle, use_optimizations):

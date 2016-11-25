@@ -3,7 +3,7 @@ import mantid
 
 from SANS2.State.StateDirector.TestDirector import TestDirector
 from SANS2.State.StateBuilder.SANSStateNormalizeToMonitorBuilder import get_normalize_to_monitor_builder
-from SANS2.Common.SANSEnumerations import (RebinType, RangeStepType)
+from SANS2.Common.SANSType import (RebinType, RangeStepType)
 from SANS2.Common.SANSFunctions import (create_unmanaged_algorithm)
 from SANS2.Common.SANSConstants import SANSConstants
 

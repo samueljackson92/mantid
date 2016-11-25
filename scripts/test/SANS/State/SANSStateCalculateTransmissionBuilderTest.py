@@ -3,8 +3,8 @@ import mantid
 
 from SANS2.State.StateBuilder.SANSStateDataBuilder import get_data_builder
 from SANS2.State.StateBuilder.SANSStateCalculateTransmissionBuilder import get_calculate_transmission_builder
-from SANS2.Common.SANSEnumerations import (RebinType, RangeStepType, DataType, convert_reduction_data_type_to_string)
-from SANS2.Common.SANSEnumerations import (SANSFacility, SANSInstrument, FitType)
+from SANS2.Common.SANSType import (RebinType, RangeStepType, DataType, convert_reduction_data_type_to_string)
+from SANS2.Common.SANSType import (SANSFacility, SANSInstrument, FitType)
 
 
 class SANSStateCalculateTransmissionBuilderTest(unittest.TestCase):

@@ -7,7 +7,7 @@ from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, Algorit
 
 from SANS2.State.SANSStateBase import create_deserialized_sans_state_from_property_manager
 from SANS2.State.SANSStateFunctions import add_workspace_name
-from SANS2.Common.SANSEnumerations import (ReductionMode, DataType, ISISReductionMode)
+from SANS2.Common.SANSType import (ReductionMode, DataType, ISISReductionMode)
 from SANS2.Common.SANSFunctions import (create_unmanaged_algorithm)
 from SANS.Single.SingleExecution import (run_core_reduction, get_final_output_workspaces,
                                          get_merge_bundle_for_merge_request)

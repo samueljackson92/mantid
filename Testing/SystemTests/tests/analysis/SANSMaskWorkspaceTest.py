@@ -7,7 +7,7 @@ import os
 import mantid
 from mantid.api import AlgorithmManager
 
-from SANS2.Common.SANSEnumerations import SANSFacility
+from SANS2.Common.SANSType import SANSFacility
 from SANS2.State.StateDirector.TestDirector import TestDirector
 from SANS2.State.StateBuilder.SANSStateDataBuilder import get_data_builder
 from SANS2.State.StateBuilder.SANSStateMaskBuilder import get_mask_builder

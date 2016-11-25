@@ -5,7 +5,7 @@ import copy
 from SANS2.State.SANSStateCalculateTransmission import (SANSStateCalculateTransmissionLOQ,
                                                         SANSStateCalculateTransmissionSANS2D,
                                                         SANSStateCalculateTransmissionLARMOR)
-from SANS2.Common.SANSEnumerations import SANSInstrument
+from SANS2.Common.SANSType import SANSInstrument
 from SANS2.State.StateBuilder.AutomaticSetters import (automatic_setters)
 from SANS2.Common.XMLParsing import get_named_elements_from_ipf_file
 from SANS2.Common.SANSFileInformation import (get_instrument_paths_for_sans_file)

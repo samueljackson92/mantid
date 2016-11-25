@@ -4,7 +4,7 @@ import mantid
 from SANS2.State.StateBuilder.SANSStateMaskBuilder import get_mask_builder
 from SANS2.State.StateBuilder.SANSStateDataBuilder import get_data_builder
 from SANS2.Common.SANSConstants import SANSConstants
-from SANS2.Common.SANSEnumerations import (SANSFacility, SANSInstrument)
+from SANS2.Common.SANSType import (SANSFacility, SANSInstrument)
 
 
 class SANSStateMaskBuilderTest(unittest.TestCase):

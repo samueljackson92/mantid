@@ -7,7 +7,7 @@ import stresstesting
 import mantid
 from SANS2.UserFile.UserFileStateDirector import UserFileStateDirectorISIS
 from SANS2.State.StateBuilder.SANSStateDataBuilder import get_data_builder
-from SANS2.Common.SANSEnumerations import SANSFacility
+from SANS2.Common.SANSType import SANSFacility
 from SANS2.Common.SANSConstants import SANSConstants
 from SANS2.Common.SANSFunctions import create_unmanaged_algorithm
 from mantid.api import AnalysisDataService

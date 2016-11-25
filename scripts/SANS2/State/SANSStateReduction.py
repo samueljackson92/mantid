@@ -6,7 +6,7 @@ from abc import (ABCMeta, abstractmethod)
 
 from SANS2.State.SANSStateBase import (SANSStateBase, ClassTypeParameter, FloatParameter, DictParameter,
                                        FloatWithNoneParameter, sans_parameters)
-from SANS2.Common.SANSEnumerations import (ReductionMode, ISISReductionMode, ReductionDimensionality, FitModeForMerge)
+from SANS2.Common.SANSType import (ReductionMode, ISISReductionMode, ReductionDimensionality, FitModeForMerge)
 from SANS2.Common.SANSConstants import SANSConstants
 
 

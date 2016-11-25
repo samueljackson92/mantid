@@ -2,7 +2,7 @@ from abc import (ABCMeta, abstractmethod)
 from math import sqrt
 
 from SANS2.Common.SANSConstants import SANSConstants
-from SANS2.Common.SANSEnumerations import (SANSInstrument)
+from SANS2.Common.SANSType import (SANSInstrument)
 from SANS2.Common.SANSFunctions import create_unmanaged_algorithm
 
 

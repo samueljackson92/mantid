@@ -2,8 +2,7 @@ import unittest
 import mantid
 
 from mantid.kernel import (V3D, Quat)
-from SANS2.Common.SANSFunctions import (quaternion_to_angle_and_axis, create_unmanaged_algorithm, add_to_sample_log,
-                                        is_pure_none_or_not_none)
+from SANS2.Common.SANSFunctions import (quaternion_to_angle_and_axis, create_unmanaged_algorithm, add_to_sample_log)
 
 
 class SANSFunctionsTest(unittest.TestCase):
@@ -93,37 +92,6 @@ class SANSFunctionsTest(unittest.TestCase):
             did_raise = True
         self.assertTrue(did_raise)
 
-    def test_that_returns_true_if_all_entries_are_none(self):
-        # Arrange
-        collection = [None, None, None]
-        # Act
-        result = is_pure_none_or_not_none(collection)
-        # Assert
-        self.assertTrue(result)
-
-    def test_that_returns_true_if_all_entries_are_not_none(self):
-        # Arrange
-        collection = [1, 2, 3]
-        # Act
-        result = is_pure_none_or_not_none(collection)
-        # Assert
-        self.assertTrue(result)
-
-    def test_that_returns_false_if_has_mixed_entries(self):
-        # Arrange
-        collection = [1, None, 3]
-        # Act
-        result = is_pure_none_or_not_none(collection)
-        # Assert
-        self.assertFalse(result)
-
-    def test_that_returns_true_if_list_is_empty(self):
-        # Arrange
-        collection = []
-        # Act
-        result = is_pure_none_or_not_none(collection)
-        # Assert
-        self.assertTrue(result)
 
 if __name__ == '__main__':
     unittest.main()

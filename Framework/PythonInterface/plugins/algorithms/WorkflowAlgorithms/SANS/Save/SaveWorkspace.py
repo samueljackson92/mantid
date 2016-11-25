@@ -5,7 +5,7 @@ from mantid.dataobjects import EventWorkspace
 
 from SANS2.Common.SANSFunctions import create_unmanaged_algorithm
 from SANS2.Common.SANSConstants import SANSConstants
-from SANS2.Common.SANSEnumerations import SaveType
+from SANS2.Common.SANSType import SaveType
 
 ZERO_ERROR_DEFAULT = 1e6
 

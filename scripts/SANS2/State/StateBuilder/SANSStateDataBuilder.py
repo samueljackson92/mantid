@@ -2,7 +2,7 @@
 
 import copy
 
-from SANS2.Common.SANSEnumerations import SANSFacility
+from SANS2.Common.SANSType import SANSFacility
 from SANS2.State.StateBuilder.AutomaticSetters import automatic_setters
 from SANS2.State.SANSStateData import SANSStateDataISIS
 from SANS2.Common.SANSFileInformation import SANSFileInformationFactory

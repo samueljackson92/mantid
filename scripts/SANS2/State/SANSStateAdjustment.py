@@ -3,8 +3,8 @@
 """State describing the adjustment workspace creation of the SANS reduction."""
 
 import json
-from SANS2.State.SANSStateFunctions import validator_sub_state
-from SANS2.State.SANSStateBase import (SANSStateBase, TypedParameter, sans_parameters, BoolParameter)
+from SANS2.State.SANSStateBase import (SANSStateBase, TypedParameter, sans_parameters, BoolParameter,
+                                       validator_sub_state)
 from SANS2.State.SANSStateCalculateTransmission import SANSStateCalculateTransmission
 from SANS2.State.SANSStateNormalizeToMonitor import SANSStateNormalizeToMonitor
 from SANS2.State.SANSStateWavelengthAndPixelAdjustment import SANSStateWavelengthAndPixelAdjustment

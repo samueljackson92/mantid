@@ -1,6 +1,6 @@
 import math
 from abc import (ABCMeta, abstractmethod)
-from SANS2.Common.SANSEnumerations import (SANSInstrument, SampleShape, convert_int_to_shape, DataType)
+from SANS2.Common.SANSType import (SANSInstrument, SampleShape, convert_int_to_shape, DataType)
 from SANS2.Common.SANSFunctions import create_unmanaged_algorithm
 from SANS2.Common.SANSConstants import SANSConstants
 

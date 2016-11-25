@@ -1,7 +1,7 @@
 # pylint: disable=too-few-public-methods
 
 import copy
-from SANS2.Common.SANSEnumerations import (SANSInstrument)
+from SANS2.Common.SANSType import (SANSInstrument)
 from SANS2.State.SANSStateSave import (SANSStateSaveISIS)
 from SANS2.State.StateBuilder.AutomaticSetters import (automatic_setters)
 

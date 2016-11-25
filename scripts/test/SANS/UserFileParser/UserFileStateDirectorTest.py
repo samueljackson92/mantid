@@ -4,7 +4,7 @@ import mantid
 
 
 from SANS2.UserFile.UserFileStateDirector import UserFileStateDirectorISIS
-from SANS2.Common.SANSEnumerations import (SANSFacility, ISISReductionMode, RangeStepType, RebinType,
+from SANS2.Common.SANSType import (SANSFacility, ISISReductionMode, RangeStepType, RebinType,
                                            DataType, convert_reduction_data_type_to_string, FitType,
                                            convert_detector_type_to_string, DetectorType)
 from SANS2.Common.SANSConfigurations import SANSConfigurations

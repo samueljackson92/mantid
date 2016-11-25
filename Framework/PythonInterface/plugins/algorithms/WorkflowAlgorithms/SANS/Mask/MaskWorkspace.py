@@ -1,6 +1,6 @@
 from abc import (ABCMeta, abstractmethod)
 from SANS2.Common.SANSConstants import SANSConstants
-from SANS2.Common.SANSEnumerations import (SANSInstrument, convert_detector_type_to_string)
+from SANS2.Common.SANSType import (SANSInstrument, convert_detector_type_to_string)
 from SANS2.Common.SANSFunctions import create_unmanaged_algorithm
 from SANS2.Common.SANSFileInformation import (find_full_file_path, get_instrument_paths_for_sans_file)
 from SANS.Mask.XMLShapes import (add_cylinder, add_outside_cylinder, create_phi_mask, create_line_mask)

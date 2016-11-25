@@ -34,13 +34,15 @@ class SANSConstants(object):
     sans_file_tag = "sans_file_tag"
 
 
-    # String names for SANSEnumerations
+    # String names for SANSType
     rebin = "Rebin"
     intperpolating_rebin = "InterpolatingRebin"
     range_step_lin = "lin"
     range_step_log = "log"
     sample = "Sample"
     can = "Can"
+
+    ALL_PERIODS = 0
 
     class Calibration(object):
         calibration_workspace_tag = "sans_applied_calibration_file"

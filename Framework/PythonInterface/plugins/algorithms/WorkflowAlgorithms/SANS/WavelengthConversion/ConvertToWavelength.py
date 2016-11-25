@@ -7,7 +7,7 @@ from mantid.dataobjects import EventWorkspace
 from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, AlgorithmFactory, PropertyMode, Progress)
 from SANS2.Common.SANSConstants import SANSConstants
 from SANS2.Common.SANSFunctions import (create_unmanaged_algorithm, append_to_sans_file_tag)
-from SANS2.Common.SANSEnumerations import (RebinType, RangeStepType, convert_rebin_type_to_string,
+from SANS2.Common.SANSType import (RebinType, RangeStepType, convert_rebin_type_to_string,
                                            convert_string_to_rebin_type, convert_string_to_range_step_type,
                                            convert_range_step_type_to_string)
 

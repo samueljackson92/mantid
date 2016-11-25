@@ -2745,6 +2745,7 @@ class ConvertToQISIS(ReductionStep):
                     WavePixelAdj=wavepixeladj,
                     ExtraLength=self._grav_extra_length,
                     QResolution=qResolution)
+                SaveNexusProcessed(Filename="C:/Users/pica/Desktop/SANS2D_ws_D20_reference.nxs", InputWorkspace=workspace)
             elif self._Q_alg == 'Qxy':
                 Qxy(InputWorkspace=workspace,
                     OutputWorkspace=workspace,

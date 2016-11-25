@@ -3,7 +3,7 @@ import mantid
 from SANS2.State.StateDirector.TestDirector import TestDirector
 from SANS2.Common.SANSFunctions import create_unmanaged_algorithm
 from SANS2.Common.SANSConstants import SANSConstants
-from SANS2.Common.SANSEnumerations import (DetectorType, DataType,
+from SANS2.Common.SANSType import (DetectorType, DataType,
                                            convert_detector_type_to_string, convert_reduction_data_type_to_string)
 
 

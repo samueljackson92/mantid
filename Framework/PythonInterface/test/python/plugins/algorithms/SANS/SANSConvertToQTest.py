@@ -6,7 +6,7 @@ from SANS2.Common.SANSConstants import SANSConstants
 from SANS2.State.StateDirector.TestDirector import TestDirector
 from SANS2.State.StateBuilder.SANSStateConvertToQBuilder import get_convert_to_q_builder
 from SANS2.State.StateBuilder.SANSStateDataBuilder import get_data_builder
-from SANS2.Common.SANSEnumerations import (SANSFacility, SampleShape, ReductionDimensionality, RangeStepType)
+from SANS2.Common.SANSType import (SANSFacility, SampleShape, ReductionDimensionality, RangeStepType)
 
 
 class SANSConvertToQTest(unittest.TestCase):

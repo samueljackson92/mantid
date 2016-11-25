@@ -3,7 +3,7 @@ import mantid
 
 from SANS2.State.StateBuilder.SANSStateScaleBuilder import get_scale_builder
 from SANS2.State.StateBuilder.SANSStateDataBuilder import get_data_builder
-from SANS2.Common.SANSEnumerations import (SANSFacility, SANSInstrument, SampleShape)
+from SANS2.Common.SANSType import (SANSFacility, SANSInstrument, SampleShape)
 
 
 class SANSStateSliceEventBuilderTest(unittest.TestCase):

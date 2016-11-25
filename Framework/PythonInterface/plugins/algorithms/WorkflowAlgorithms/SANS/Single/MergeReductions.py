@@ -4,7 +4,7 @@ from abc import (ABCMeta, abstractmethod)
 
 from SANS2.Common.SANSConstants import SANSConstants
 from SANS2.Common.SANSFunctions import create_unmanaged_algorithm
-from SANS2.Common.SANSEnumerations import (SANSInstrument, DataType, convert_fit_mode_for_merge_to_string)
+from SANS2.Common.SANSType import (SANSInstrument, DataType, convert_fit_mode_for_merge_to_string)
 from SANS.Single.Bundles import MergeBundle
 
 

@@ -87,6 +87,7 @@ def validator_sub_state(sub_state):
         is_valid = False
     return is_valid
 
+
 # -------------------------------------------------------
 # Parameters
 # -------------------------------------------------------
@@ -178,7 +179,7 @@ class ClassTypeParameter(TypedParameter):
     """
     This TypedParameter variant allows for storing a class type.
 
-    This could be for example something from the SANSEnumerations module, e.g. CanonicalCoordinates.X
+    This could be for example something from the SANSType module, e.g. CanonicalCoordinates.X
     It is something that is used frequently with the main of moving away from using strings where types
     should be used instead.
     """
