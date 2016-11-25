@@ -126,7 +126,7 @@ class SANSCreateAdjustmentWorkspaces(DataProcessorAlgorithm):
 
     def _get_wavelength_and_pixel_adjustment_workspaces(self, state,
                                                         monitor_normalization_workspace,
-                                                        calculated_transmission_workspace,):
+                                                        calculated_transmission_workspace):
         component = self.getProperty("Component").value
 
         wave_pixel_adjustment_name = "SANSCreateWavelengthAndPixelAdjustment"

@@ -37,7 +37,9 @@ class SANSSingleReductionTest(unittest.TestCase):
         self.assertTrue(load_alg.isExecuted())
         sample_scatter = load_alg.getProperty("SampleScatterWorkspace").value
         sample_scatter_monitor_workspace = load_alg.getProperty("SampleScatterMonitorWorkspace").value
-        return sample_scatter, sample_scatter_monitor_workspace
+        transmission_workspace = load_alg.getProperty("SampleTransmissionWorkspace").value
+        direct_workspace = load_alg.getProperty("SampleDirectWorkspace").value
+        return sample_scatter, sample_scatter_monitor_workspace, transmission_workspace, direct_workspace
 
     def _run_single_reduction(self, state, sample_scatter, sample_monitor, sample_transmission=None, sample_direct=None,
                               can_scatter=None, can_monitor=None, can_transmission=None, can_direct=None,
@@ -85,39 +87,19 @@ class SANSSingleReductionTest(unittest.TestCase):
         load_alg.execute()
         reference_workspace = load_alg.getProperty(SANSConstants.output_workspace).value
 
-        # In order to compare the output workspace with the reference, we need to convert it to rebin it so we
-        # get a Workspace2D and then perform a bin masking again
-        rebin_name = "Rebin"
-        rebin_option = {SANSConstants.input_workspace: workspace,
-                        SANSConstants.output_workspace: SANSConstants.dummy,
-                        "Params": "8000,-0.025,100000",
-                        "PreserveEvents": False}
-
-        rebin_alg = create_unmanaged_algorithm(rebin_name, **rebin_option)
-        rebin_alg.execute()
-        rebinned = rebin_alg.getProperty(SANSConstants.output_workspace).value
-
-        mask_name = "MaskBins"
-        mask_options = {SANSConstants.input_workspace: rebinned,
-                        SANSConstants.output_workspace: SANSConstants.dummy,
-                        "XMin": 13000.,
-                        "XMax": 15750.}
-        mask_alg = create_unmanaged_algorithm(mask_name, **mask_options)
-        mask_alg.execute()
-        masked = mask_alg.getProperty(SANSConstants.output_workspace).value
-
         # Save the workspace out and reload it again. This makes equalizes it with the reference workspace
         f_name = os.path.join(mantid.config.getString('defaultsave.directory'),
                               'SANS_temp_single_reduction_testout.nxs')
 
         save_name = "SaveNexus"
         save_options = {"Filename": f_name,
-                        "InputWorkspace": masked}
+                        "InputWorkspace": workspace}
         save_alg = create_unmanaged_algorithm(save_name, **save_options)
         save_alg.execute()
         load_alg.setProperty("Filename", f_name)
         load_alg.setProperty(SANSConstants.output_workspace, SANSConstants.dummy)
         load_alg.execute()
+
         ws = load_alg.getProperty(SANSConstants.output_workspace).value
 
         # Compare reference file with the output_workspace
@@ -127,7 +109,7 @@ class SANSSingleReductionTest(unittest.TestCase):
         compare_name = "CompareWorkspaces"
         compare_options = {"Workspace1": ws,
                            "Workspace2": reference_workspace,
-                           "Tolerance": 1e-7,
+                           "Tolerance": 1e-6,
                            "CheckInstrument": False,
                            "CheckSample": False,
                            "ToleranceRelErr": True,
@@ -162,17 +144,19 @@ class SANSSingleReductionTest(unittest.TestCase):
         state = user_file_director.construct()
 
         # Load the sample workspaces
-        workspace, workspace_monitor = self._load_workspace(state)
+        workspace, workspace_monitor, transmission_workspace, direct_workspace = self._load_workspace(state)
 
         # Act
         output_settings = {"OutputWorkspaceLAB": SANSConstants.dummy}
         single_reduction_alg = self._run_single_reduction(state, sample_scatter=workspace,
+                                                          sample_transmission=transmission_workspace,
+                                                          sample_direct=direct_workspace,
                                                           sample_monitor=workspace_monitor,
                                                           output_settings=output_settings)
         output_workspace = single_reduction_alg.getProperty("OutputWorkspaceLAB").value
 
         # Evaluate it up to a defined point
-        reference_file_name = "SANS2D_ws_D20_reference_after_masking"
+        reference_file_name = "SANS2D_ws_D20_reference.nxs"
         self._compare_workspace(output_workspace, reference_file_name)
 
 
