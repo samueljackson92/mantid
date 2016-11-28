@@ -7,6 +7,8 @@ from SANS2.Common.SANSFileInformation import find_full_file_path
 from SANS2.UserFile.UserFileReader import UserFileReader
 from SANS2.UserFile.UserFileCommon import *  # noqa
 
+
+from SANS2.State.StateBuilder.AutomaticSetters import set_up_setter_forwarding_from_director_to_builder
 from SANS2.State.StateBuilder.SANSStateBuilder import get_state_builder
 from SANS2.State.StateBuilder.SANSStateMaskBuilder import get_mask_builder
 from SANS2.State.StateBuilder.SANSStateMoveBuilder import get_move_builder
@@ -172,6 +174,25 @@ class UserFileStateDirectorISIS(object):
         self._scale_builder = get_scale_builder(self._data)
         self._adjustment_builder = get_adjustment_builder(self._data)
         self._convert_to_q_builder = get_convert_to_q_builder(self._data)
+
+        # Now that we have setup all builders in the director we want to also allow for manual setting
+        # of some components. In order to get the desired results we need to perform setter forwarding, e.g
+        # self._scale_builder has the setter set_width, then the director should have a method called
+        # set_scale_width whose input is forwarded to the actual builder. We can only set this retroactively
+        # via monkey-patching.
+        self._set_up_setter_forwarding()
+
+    def _set_up_setter_forwarding(self):
+        set_up_setter_forwarding_from_director_to_builder(self, "_state_builder")
+        set_up_setter_forwarding_from_director_to_builder(self, "_mask_builder")
+        set_up_setter_forwarding_from_director_to_builder(self, "_move_builder")
+        set_up_setter_forwarding_from_director_to_builder(self, "_reduction_builder")
+        set_up_setter_forwarding_from_director_to_builder(self, "_slice_event_builder")
+        set_up_setter_forwarding_from_director_to_builder(self, "_wavelength_builder")
+        set_up_setter_forwarding_from_director_to_builder(self, "_save_builder")
+        set_up_setter_forwarding_from_director_to_builder(self, "_scale_builder")
+        set_up_setter_forwarding_from_director_to_builder(self, "_adjustment_builder")
+        set_up_setter_forwarding_from_director_to_builder(self, "_convert_to_q_builder")
 
     def set_user_file(self, user_file):
         file_path = find_full_file_path(user_file)
@@ -791,7 +812,7 @@ class UserFileStateDirectorISIS(object):
             min_value = None if radius.start is None else convert_mm_to_m(radius.start)
             max_value = None if radius.stop is None else convert_mm_to_m(radius.stop)
             self._mask_builder.set_radius_min(min_value)
-            self._mask_builder.set_radius_max(convert_mm_to_m(max_value))
+            self._mask_builder.set_radius_max(max_value)
 
     def _set_up_wavelength_state(self, user_file_items):
         if user_file_limits_wavelength in user_file_items:

@@ -69,7 +69,7 @@ class TestDirector(object):
         if self.reduction_state is None:
             reduction_builder = get_reduction_builder(self.data_state)
             reduction_builder.set_reduction_mode(ISISReductionMode.Merged)
-            reduction_builder.set_dimensionality(ReductionDimensionality.OneDim)
+            reduction_builder.set_reduction_dimensionality(ReductionDimensionality.OneDim)
             reduction_builder.set_merge_fit_mode(FitModeForMerge.Both)
             reduction_builder.set_merge_shift(324.2)
             reduction_builder.set_merge_scale(3420.98)

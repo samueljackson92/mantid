@@ -228,11 +228,11 @@ class SANSLoad(DataProcessorAlgorithm):
         can_scatter_monitor = self.getProperty("CanScatterMonitorWorkspace").value
         can_scatter_monitor_as_string = self.getProperty("CanScatterMonitorWorkspace").valueAsStr
         can_scatter_monitor_was_set = can_scatter_monitor is not None or len(can_scatter_monitor_as_string) > 0
-        if not can_scatter_monitor_was_set and can_scatter_monitor is not None:
+        if not can_scatter_monitor_was_set and can_scatter_from_state is not None:
             errors.update({"CanScatterMonitorWorkspace": "You need to set the output for the can scatter monitor"
                                                          " workspace since it is specified to be loaded in your "
                                                          "reduction configuration."})
-        if can_scatter_monitor_was_set and can_scatter_monitor is None:
+        if can_scatter_monitor_was_set and can_scatter_from_state is None:
             errors.update({"CanScatterMonitorWorkspace": "You set an output workspace for can scatter monitor, "
                                                          "although none is specified in the reduction configuration."})
 

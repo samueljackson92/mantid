@@ -35,7 +35,7 @@ class SANSStateReduction(object):
 @sans_parameters
 class SANSStateReductionISIS(SANSStateReduction, SANSStateBase):
     reduction_mode = ClassTypeParameter(ReductionMode)
-    dimensionality = ClassTypeParameter(ReductionDimensionality)
+    reduction_dimensionality = ClassTypeParameter(ReductionDimensionality)
 
     # Fitting
     merge_fit_mode = ClassTypeParameter(FitModeForMerge)
@@ -50,7 +50,7 @@ class SANSStateReductionISIS(SANSStateReduction, SANSStateBase):
     def __init__(self):
         super(SANSStateReductionISIS, self).__init__()
         self.reduction_mode = ISISReductionMode.Lab
-        self.dimensionality = ReductionDimensionality.OneDim
+        self.reduction_dimensionality = ReductionDimensionality.OneDim
 
         # Set the shifts to defaults which essentially don't do anything.
         self.merge_shift = 0.0

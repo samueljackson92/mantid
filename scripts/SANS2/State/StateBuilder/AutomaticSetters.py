@@ -114,3 +114,33 @@ def automatic_setters(state_class, exclusions=None):
             create_automatic_setters(self, state_class, exclusions)
         return func_wrapper
     return automatic_setters_decorator
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Automatic setter for director object
+# Note that this is not a decorator, but just a free function for monkey patching.
+# ----------------------------------------------------------------------------------------------------------------------
+def forwarding_setter_for_director(value, builder, method_name):
+    method = getattr(builder, method_name)
+    method(value)
+
+
+def set_up_setter_forwarding_from_director_to_builder(director, builder_name):
+    """
+    This function creates setter forwarding from a director object to builder objects.
+
+    The method will look for any set_XXX method in the builder and add an equivalent method set_builder_XXX which is
+    forwarded to set_XXX.
+    @param director: a director object
+    @param builder_name: the name of the builder on the director
+    """
+    set_tag = "set"
+    builder_instance = getattr(director, builder_name)
+    new_methods = {}
+    for method in dir(builder_instance):
+        if method.startswith(set_tag):
+            method_name_director = set_tag + builder_name + "_" + method[4:]
+            new_method = partial(forwarding_setter_for_director, builder=builder_instance,
+                                 method_name=method)
+            new_methods.update({method_name_director: new_method})
+    director.__dict__.update(new_methods)

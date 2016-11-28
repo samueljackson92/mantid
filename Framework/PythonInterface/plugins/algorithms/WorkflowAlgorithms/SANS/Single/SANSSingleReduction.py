@@ -141,7 +141,8 @@ class SANSSingleReduction(DataProcessorAlgorithm):
         reduction_mode_vs_output_workspaces.update(output_workspaces_non_merged)
 
         # Set sample logs
-        # Todo: Set sample log
+        # Todo: Set sample log -> Userfile and unfitted transmission workspace. Should probably set on
+        # higher level (SANSBatch)
         # Set the output workspaces
         self.set_output_workspaces(reduction_mode_vs_output_workspaces, state)
 
@@ -254,7 +255,7 @@ class SANSSingleReduction(DataProcessorAlgorithm):
             elif reduction_mode is ISISReductionMode.Lab:
                 self.setProperty("OutputWorkspaceLAB", output_workspace)
             elif reduction_mode is ISISReductionMode.Hab:
-                self.setProperty("OutputWorkspaceLAB", output_workspace)
+                self.setProperty("OutputWorkspaceHAB", output_workspace)
             else:
                 raise RuntimeError("SANSSingleReduction: Cannot set the output workspace. The selected reduction "
                                    "mode {0} is unknown.".format(reduction_mode))

@@ -39,6 +39,8 @@ class UserFileStateDirectorISISTest(unittest.TestCase):
 
     def _assert_mask(self, state):
         mask = state.mask
+        print mask.radius_min
+        print mask.radius_max
         self.assertTrue(mask.radius_min == 12/1000.)
         self.assertTrue(mask.radius_max == 15/1000.)
         self.assertTrue(mask.clear is True)
@@ -180,7 +182,6 @@ class UserFileStateDirectorISISTest(unittest.TestCase):
 
         director.set_user_file(user_file_path)
         # TODO: Add manual settings
-
         state = director.construct()
 
         # Assert
@@ -196,6 +197,29 @@ class UserFileStateDirectorISISTest(unittest.TestCase):
         if os.path.exists(user_file_path):
             os.remove(user_file_path)
 
+    def test_stat_can_be_crated_from_valid_user_file_and_later_on_reset(self):
+        # Arrange
+        data_builder = get_data_builder(SANSFacility.ISIS)
+        data_builder.set_sample_scatter("SANS2D00022024")
+        data_builder.set_sample_scatter_period(3)
+        data_state = data_builder.build()
+
+        director = UserFileStateDirectorISIS(data_state)
+        user_file_path = create_user_file(sample_user_file)
+        director.set_user_file(user_file_path)
+
+        # Act
+        director.set_mask_builder_radius_min(0.001298)
+        director.set_mask_builder_radius_max(0.003298)
+        state = director.construct()
+
+        # Assert
+        self.assertTrue(state.mask.radius_min == 0.001298)
+        self.assertTrue(state.mask.radius_max == 0.003298)
+
+        # clean up
+        if os.path.exists(user_file_path):
+            os.remove(user_file_path)
 
 if __name__ == "__main__":
     unittest.main()

@@ -23,7 +23,7 @@ class SANSStateReductionBuilderTest(unittest.TestCase):
         mode = ISISReductionMode.Merged
         dim = ReductionDimensionality.OneDim
         builder.set_reduction_mode(mode)
-        builder.set_dimensionality(dim)
+        builder.set_reduction_dimensionality(dim)
 
         merge_shift = 324.2
         merge_scale = 3420.98
@@ -35,8 +35,8 @@ class SANSStateReductionBuilderTest(unittest.TestCase):
         state = builder.build()
 
         # Assert
-        self.assertTrue(state.reduction_mode == mode)
-        self.assertTrue(state.dimensionality == dim)
+        self.assertTrue(state.reduction_mode is mode)
+        self.assertTrue(state.reduction_dimensionality is dim)
         self.assertTrue(state.merge_fit_mode == fit_mode)
         self.assertTrue(state.merge_shift == merge_shift)
         self.assertTrue(state.merge_scale == merge_scale)

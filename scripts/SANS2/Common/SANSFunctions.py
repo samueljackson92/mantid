@@ -86,6 +86,19 @@ def create_unmanaged_algorithm(name, **kwargs):
     return alg
 
 
+def write_history(alg, workspace):
+    """
+    Writes the parameters of an algorithm into the history of a workspace as a comment.
+
+    Runnin the workspace
+    @param alg:
+    @param workspace:
+    @return:
+    """
+
+
+
+
 def quaternion_to_angle_and_axis(quaternion):
     """
     Converts a quaterion to an angle + an axis

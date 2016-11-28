@@ -85,12 +85,12 @@ def get_final_output_workspaces(output_bundles):
             final_output_workspace = output_sample_workspace
 
         # Tidy up the workspace by removing start/end-NANs and start/end-INFs
-        strip_end_nans(final_output_workspace)
-
+        final_output_workspace = strip_end_nans(final_output_workspace)
         final_output_workspaces.update({reduction_mode: final_output_workspace})
 
     # Finally add sample log information
     # TODO: Add log information
+
     return final_output_workspaces
 
 
@@ -140,7 +140,7 @@ def get_merge_bundle_for_merge_request(output_bundles):
     reduction_mode_vs_output_bundles = get_reduction_mode_vs_output_bundles(output_bundles)
 
     # Get the underlying state from one of the elements
-    reduction_settings_collection = output_bundles.itervalues().next()
+    reduction_settings_collection = output_bundles.items().next()
     state = reduction_settings_collection[0].state
 
     merge_factory = MergeFactory()

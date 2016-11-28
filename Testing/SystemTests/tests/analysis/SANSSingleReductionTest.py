@@ -8,7 +8,7 @@ import mantid
 from mantid.api import AlgorithmManager
 from SANS2.UserFile.UserFileStateDirector import UserFileStateDirectorISIS
 from SANS2.State.StateBuilder.SANSStateDataBuilder import get_data_builder
-from SANS2.Common.SANSType import SANSFacility
+from SANS2.Common.SANSType import (SANSFacility, ISISReductionMode, ReductionDimensionality, RangeStepType)
 from SANS2.Common.SANSConstants import SANSConstants
 from SANS2.Common.SANSFunctions import create_unmanaged_algorithm
 
@@ -27,10 +27,16 @@ class SANSSingleReductionTest(unittest.TestCase):
         load_alg.setProperty("PublishToCache", False)
         load_alg.setProperty("UseCached", False)
         load_alg.setProperty("MoveWorkspace", False)
-        load_alg.setProperty("SampleScatterWorkspace", "dummy")
-        load_alg.setProperty("SampleScatterMonitorWorkspace", "dummy")
-        load_alg.setProperty("SampleTransmissionWorkspace", "dummy")
-        load_alg.setProperty("SampleDirectWorkspace", "dummy")
+
+        load_alg.setProperty("SampleScatterWorkspace", SANSConstants.dummy)
+        load_alg.setProperty("SampleScatterMonitorWorkspace", SANSConstants.dummy)
+        load_alg.setProperty("SampleTransmissionWorkspace", SANSConstants.dummy)
+        load_alg.setProperty("SampleDirectWorkspace", SANSConstants.dummy)
+
+        load_alg.setProperty("CanScatterWorkspace", SANSConstants.dummy)
+        load_alg.setProperty("CanScatterMonitorWorkspace", SANSConstants.dummy)
+        load_alg.setProperty("CanTransmissionWorkspace", SANSConstants.dummy)
+        load_alg.setProperty("CanDirectWorkspace", SANSConstants.dummy)
 
         # Act
         load_alg.execute()
@@ -39,7 +45,14 @@ class SANSSingleReductionTest(unittest.TestCase):
         sample_scatter_monitor_workspace = load_alg.getProperty("SampleScatterMonitorWorkspace").value
         transmission_workspace = load_alg.getProperty("SampleTransmissionWorkspace").value
         direct_workspace = load_alg.getProperty("SampleDirectWorkspace").value
-        return sample_scatter, sample_scatter_monitor_workspace, transmission_workspace, direct_workspace
+
+        can_scatter_workspace = load_alg.getProperty("CanScatterWorkspace").value
+        can_scatter_monitor_workspace = load_alg.getProperty("CanScatterMonitorWorkspace").value
+        can_transmission_workspace = load_alg.getProperty("CanTransmissionWorkspace").value
+        can_direct_workspace = load_alg.getProperty("CanDirectWorkspace").value
+
+        return sample_scatter, sample_scatter_monitor_workspace, transmission_workspace, direct_workspace, \
+               can_scatter_workspace, can_scatter_monitor_workspace, can_transmission_workspace, can_direct_workspace
 
     def _run_single_reduction(self, state, sample_scatter, sample_monitor, sample_transmission=None, sample_direct=None,
                               can_scatter=None, can_monitor=None, can_transmission=None, can_direct=None,
@@ -87,27 +100,12 @@ class SANSSingleReductionTest(unittest.TestCase):
         load_alg.execute()
         reference_workspace = load_alg.getProperty(SANSConstants.output_workspace).value
 
-        # Save the workspace out and reload it again. This makes equalizes it with the reference workspace
-        f_name = os.path.join(mantid.config.getString('defaultsave.directory'),
-                              'SANS_temp_single_reduction_testout.nxs')
-
-        save_name = "SaveNexus"
-        save_options = {"Filename": f_name,
-                        "InputWorkspace": workspace}
-        save_alg = create_unmanaged_algorithm(save_name, **save_options)
-        save_alg.execute()
-        load_alg.setProperty("Filename", f_name)
-        load_alg.setProperty(SANSConstants.output_workspace, SANSConstants.dummy)
-        load_alg.execute()
-
-        ws = load_alg.getProperty(SANSConstants.output_workspace).value
-
         # Compare reference file with the output_workspace
         # We need to disable the instrument comparison, it takes way too long
         # We need to disable the sample -- Not clear why yet
         # operation how many entries can be found in the sample logs
         compare_name = "CompareWorkspaces"
-        compare_options = {"Workspace1": ws,
+        compare_options = {"Workspace1": workspace,
                            "Workspace2": reference_workspace,
                            "Tolerance": 1e-6,
                            "CheckInstrument": False,
@@ -124,10 +122,6 @@ class SANSSingleReductionTest(unittest.TestCase):
         result = compare_alg.getProperty("Result").value
         self.assertTrue(result)
 
-        # Remove file
-        if os.path.exists(f_name):
-            os.remove(f_name)
-
     def test_that_single_reduction_evaluates_LAB(self):
         # Arrange
         # Build the data information
@@ -135,29 +129,155 @@ class SANSSingleReductionTest(unittest.TestCase):
         data_builder.set_sample_scatter("SANS2D00034484")
         data_builder.set_sample_transmission("SANS2D00034505")
         data_builder.set_sample_direct("SANS2D00034461")
+        data_builder.set_can_scatter("SANS2D00034481")
+        data_builder.set_can_transmission("SANS2D00034502")
+        data_builder.set_can_direct("SANS2D00034461")
+
         data_builder.set_calibration("TUBE_SANS2D_BOTH_31681_25Sept15.nxs")
         data_info = data_builder.build()
 
         # Get the rest of the state from the user file
         user_file_director = UserFileStateDirectorISIS(data_info)
         user_file_director.set_user_file("USER_SANS2D_154E_2p4_4m_M3_Xpress_8mm_SampleChanger.txt")
+        # Set the reduction mode to LAB
+        user_file_director.set_reduction_builder_reduction_mode(ISISReductionMode.Lab)
         state = user_file_director.construct()
 
         # Load the sample workspaces
-        workspace, workspace_monitor, transmission_workspace, direct_workspace = self._load_workspace(state)
+        sample, sample_monitor, transmission_workspace, direct_workspace, can, can_monitor,\
+        can_transmission, can_direct = self._load_workspace(state)
 
         # Act
         output_settings = {"OutputWorkspaceLAB": SANSConstants.dummy}
-        single_reduction_alg = self._run_single_reduction(state, sample_scatter=workspace,
+        single_reduction_alg = self._run_single_reduction(state, sample_scatter=sample,
                                                           sample_transmission=transmission_workspace,
                                                           sample_direct=direct_workspace,
-                                                          sample_monitor=workspace_monitor,
+                                                          sample_monitor=sample_monitor,
+                                                          can_scatter=can,
+                                                          can_monitor=can_monitor,
+                                                          can_transmission=can_transmission,
+                                                          can_direct=can_direct,
                                                           output_settings=output_settings)
         output_workspace = single_reduction_alg.getProperty("OutputWorkspaceLAB").value
 
-        # Evaluate it up to a defined point
-        reference_file_name = "SANS2D_ws_D20_reference.nxs"
+        # Compare the output of the reduction with the reference
+        reference_file_name = "SANS2D_ws_D20_reference_LAB_1D.nxs"
         self._compare_workspace(output_workspace, reference_file_name)
+
+    # def test_that_single_reduction_evaluates_LAB_for_2D_reduction(self):
+    #     # Arrange
+    #     # Build the data information
+    #     data_builder = get_data_builder(SANSFacility.ISIS)
+    #     data_builder.set_sample_scatter("SANS2D00034484")
+    #     data_builder.set_sample_transmission("SANS2D00034505")
+    #     data_builder.set_sample_direct("SANS2D00034461")
+    #     data_builder.set_calibration("TUBE_SANS2D_BOTH_31681_25Sept15.nxs")
+    #     data_info = data_builder.build()
+    #
+    #     # Get the rest of the state from the user file
+    #     user_file_director = UserFileStateDirectorISIS(data_info)
+    #     user_file_director.set_user_file("USER_SANS2D_154E_2p4_4m_M3_Xpress_8mm_SampleChanger.txt")
+    #
+    #     # Set the reduction mode to HAB
+    #     user_file_director.set_reduction_builder_reduction_mode(ISISReductionMode.Lab
+    #     user_file_director.set_reduction_builder_reduction_dimensionality(ReductionDimensionality.TwoDim)
+    #
+    #     user_file_director.set_convert_to_q_builder_reduction_dimensionality(ReductionDimensionality.TwoDim)
+    #     user_file_director.set_convert_to_q_builder_q_xy_max(2.)
+    #     user_file_director.set_convert_to_q_builder_q_xy_step(1.)
+    #     user_file_director.set_convert_to_q_builder_q_xy_step_type(RangeStepType.Lin)
+    #
+    #     user_file_director.set_convert_to_q_builder_reduction_dimensionality(ReductionDimensionality.TwoDim)
+    #     state = user_file_director.construct()
+    #
+    #     # Load the sample workspaces
+    #     workspace, workspace_monitor, transmission_workspace, direct_workspace = self._load_workspace(state)
+    #
+    #     # Act
+    #     output_settings = {"OutputWorkspaceLAB": SANSConstants.dummy}
+    #     single_reduction_alg = self._run_single_reduction(state, sample_scatter=workspace,
+    #                                                       sample_transmission=transmission_workspace,
+    #                                                       sample_direct=direct_workspace,
+    #                                                       sample_monitor=workspace_monitor,
+    #                                                       output_settings=output_settings)
+    #     output_workspace = single_reduction_alg.getProperty("OutputWorkspaceLAB").value
+    #
+    #     # Evaluate it up to a defined point
+    #     reference_file_name = "SANS2D_ws_D20_reference.nxs"
+    #     self._compare_workspace(output_workspace, reference_file_name)
+
+
+    # def test_that_single_reduction_evaluates_HAB(self):
+    #     # Arrange
+    #     # Build the data information
+    #     data_builder = get_data_builder(SANSFacility.ISIS)
+    #     data_builder.set_sample_scatter("SANS2D00034484")
+    #     data_builder.set_sample_transmission("SANS2D00034505")
+    #     data_builder.set_sample_direct("SANS2D00034461")
+    #     data_builder.set_calibration("TUBE_SANS2D_BOTH_31681_25Sept15.nxs")
+    #     data_info = data_builder.build()
+    #
+    #     # Get the rest of the state from the user file
+    #     user_file_director = UserFileStateDirectorISIS(data_info)
+    #     user_file_director.set_user_file("USER_SANS2D_154E_2p4_4m_M3_Xpress_8mm_SampleChanger.txt")
+    #
+    #     # Set the reduction mode to HAB
+    #     user_file_director.set_reduction_builder_reduction_mode(ISISReductionMode.Hab)
+    #
+    #     state = user_file_director.construct()
+    #
+    #     # Load the sample workspaces
+    #     workspace, workspace_monitor, transmission_workspace, direct_workspace = self._load_workspace(state)
+    #
+    #     # Act
+    #     output_settings = {"OutputWorkspaceLAB": SANSConstants.dummy}
+    #     single_reduction_alg = self._run_single_reduction(state, sample_scatter=workspace,
+    #                                                       sample_transmission=transmission_workspace,
+    #                                                       sample_direct=direct_workspace,
+    #                                                       sample_monitor=workspace_monitor,
+    #                                                       output_settings=output_settings)
+    #     output_workspace = single_reduction_alg.getProperty("OutputWorkspaceHAB").value
+    #
+    #     self.assertTrue(output_workspace is not None)
+    #     # Evaluate it up to a defined point
+    #     reference_file_name = "SANS2D_ws_D20_reference.nxs"
+    #     self._compare_workspace(output_workspace, reference_file_name)
+
+    # def test_that_single_reduction_evaluates_Merged(self):
+    #     # Arrange
+    #     # Build the data information
+    #     data_builder = get_data_builder(SANSFacility.ISIS)
+    #     data_builder.set_sample_scatter("SANS2D00034484")
+    #     data_builder.set_sample_transmission("SANS2D00034505")
+    #     data_builder.set_sample_direct("SANS2D00034461")
+    #     data_builder.set_calibration("TUBE_SANS2D_BOTH_31681_25Sept15.nxs")
+    #     data_info = data_builder.build()
+    #
+    #     # Get the rest of the state from the user file
+    #     user_file_director = UserFileStateDirectorISIS(data_info)
+    #     user_file_director.set_user_file("USER_SANS2D_154E_2p4_4m_M3_Xpress_8mm_SampleChanger.txt")
+    #
+    #     # Set the reduction mode to Merged
+    #     user_file_director.set_reduction_builder_reduction_mode(ISISReductionMode.Merged)
+    #
+    #     state = user_file_director.construct()
+    #
+    #     # Load the sample workspaces
+    #     workspace, workspace_monitor, transmission_workspace, direct_workspace = self._load_workspace(state)
+    #
+    #     # Act
+    #     output_settings = {"OutputWorkspaceLAB": SANSConstants.dummy}
+    #     single_reduction_alg = self._run_single_reduction(state, sample_scatter=workspace,
+    #                                                       sample_transmission=transmission_workspace,
+    #                                                       sample_direct=direct_workspace,
+    #                                                       sample_monitor=workspace_monitor,
+    #                                                       output_settings=output_settings)
+    #     output_workspace = single_reduction_alg.getProperty("OutputWorkspaceMerged").value
+    #
+    #     self.assertTrue(output_workspace is not None)
+    #     # Evaluate it up to a defined point
+    #     reference_file_name = "SANS2D_ws_D20_reference.nxs"
+    #     #self._compare_workspace(output_workspace, reference_file_name)
 
 
 class SANSReductionRunnerTest(stresstesting.MantidStressTest):
