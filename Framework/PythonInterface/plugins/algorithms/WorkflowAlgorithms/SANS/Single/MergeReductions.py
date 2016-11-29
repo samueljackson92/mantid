@@ -34,6 +34,7 @@ class ISIS1DMerger(Merger):
         # Get the primary and secondary detectors for stitching. This is normally LAB and HAB, but in other scenarios
         # there might be completely different detectors. This approach allows future adjustments to the stitching
         # configuration. The data from the secondary detector will be stitched to the data from the primary detector.
+
         primary_detector, secondary_detector = get_detectors_for_merge(reduction_mode_vs_output_bundles)
         sample_count_primary, sample_norm_primary, sample_count_secondary, sample_norm_secondary = \
             get_partial_workspaces(primary_detector, secondary_detector, reduction_mode_vs_output_bundles, is_sample)

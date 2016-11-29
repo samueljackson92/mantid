@@ -131,7 +131,7 @@ class SANSConvertToQ(DataProcessorAlgorithm):
         sum_of_counts_workspace, sum_of_norms_workspace = self._get_partial_output(output_parts, q1d_alg,
                                                                                    do_clean=False)
 
-        return reduced_workspace, sum_of_counts_workspace, sum_of_counts_workspace
+        return reduced_workspace, sum_of_counts_workspace, sum_of_norms_workspace
 
     def _run_q_2d(self, state):
         """

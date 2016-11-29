@@ -32,8 +32,8 @@ def run_core_reduction(reduction_alg, reduction_setting_bundle, use_optimization
         reduction_alg.setProperty("DirectWorkspace", reduction_setting_bundle.direct_workspace)
 
     reduction_alg.setProperty(SANSConstants.output_workspace, SANSConstants.dummy)
-    reduction_alg.setProperty("SumOfCounts", "dummy2")
-    reduction_alg.setProperty("SumOfNormFactors", "dummy3")
+    reduction_alg.setProperty("SumOfCounts", SANSConstants.dummy)
+    reduction_alg.setProperty("SumOfNormFactors", SANSConstants.dummy)
 
     # Run the reduction core
     reduction_alg.execute()
@@ -133,15 +133,14 @@ def correct_q_resolution_for_can(sample_workspace, can_workspace, subtracted_wor
 
 def get_merge_bundle_for_merge_request(output_bundles):
     """
-    Get merge the reduction outputs and perform stitching if required
+    Create a merge bundle for the reduction outputs and perform stitching if required
     """
     # Order the reductions. This leaves us with a dict mapping from the reduction type (i.e. HAB, LAB) to
     # a list of reduction settings which contain the information for sample and can.
     reduction_mode_vs_output_bundles = get_reduction_mode_vs_output_bundles(output_bundles)
 
     # Get the underlying state from one of the elements
-    reduction_settings_collection = output_bundles.items().next()
-    state = reduction_settings_collection[0].state
+    state = output_bundles[0].state
 
     merge_factory = MergeFactory()
     merger = merge_factory.create_merger(state)
@@ -163,6 +162,7 @@ def get_reduction_mode_vs_output_bundles(output_bundles):
             outputs[key].append(output_bundle)
         else:
             outputs.update({key: [output_bundle]})
+
     return outputs
 
 

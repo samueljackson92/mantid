@@ -187,7 +187,6 @@ class SANSReductionCore(DataProcessorAlgorithm):
         # ------------------------------------------------------------
         # Diagnostic output
         # ------------------------------------------------------------
-        # We abuse output fields for testing at this point
         if sum_of_counts:
             self.setProperty("SumOfCounts", sum_of_counts)
         if sum_of_norms:
