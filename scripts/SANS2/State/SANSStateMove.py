@@ -142,7 +142,7 @@ class SANSStateMoveSANS2D(SANSStateMoveISIS):
     def __init__(self):
         super(SANSStateMoveSANS2D, self).__init__()
         # Set the descriptors which corresponds to information which we gain through the IPF
-        self.hab_detector_radius = 306.0
+        self.hab_detector_radius = 306.0 /1000.
         self.hab_detector_default_sd_m = 4.0
         self.hab_detector_default_x_m = 1.1
         self.lab_detector_default_sd_m = 4.0

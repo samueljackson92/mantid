@@ -27,7 +27,7 @@ def move_component(workspace, offsets, component_to_move):
     move_options = {"Workspace": workspace,
                     "ComponentName": component_to_move,
                     "RelativePosition": True}
-    for key, value in offsets.iteritems():
+    for key, value in offsets.items():
         if key is CanonicalCoordinates.X:
             move_options.update({"X": value})
         elif key is CanonicalCoordinates.Y:
@@ -55,7 +55,7 @@ def rotate_component(workspace, angle, direction, component_to_rotate):
     rotate_options = {"Workspace": workspace,
                       "ComponentName": component_to_rotate,
                       "RelativeRotation": "1"}
-    for key, value in direction.iteritems():
+    for key, value in direction.items():
         if key is CanonicalCoordinates.X:
             rotate_options.update({"X": value})
         elif key is CanonicalCoordinates.Y:
@@ -359,6 +359,9 @@ class SANSMoveSANS2D(SANSMove):
 
         hab_detector_rotation = move_info.hab_detector_rotation \
             if log_values[hab_detector_rotation_tag] is None else log_values[hab_detector_rotation_tag]
+        # When we read in the FRONT_Det_ROT tag, we divided by 1000. (since we converted the others to meter)
+        if log_values[hab_detector_rotation_tag] is not None:
+            hab_detector_rotation *= 1000.
 
         lab_detector_x = move_info.lab_detector_x \
             if log_values[lab_detector_x_tag] is None else log_values[lab_detector_x_tag]
@@ -433,6 +436,7 @@ class SANSMoveSANS2D(SANSMove):
                   CanonicalCoordinates.Z: z_shift}
         move_component(workspace, offset, detector_name)
 
+
     @staticmethod
     def _move_monitor_4(workspace, move_info):
         if move_info.monitor_4_offset != 0.0:
@@ -461,7 +465,7 @@ class SANSMoveSANS2D(SANSMove):
         # For LOQ we only have to coordinates
         assert len(coordinates) == 2
 
-        _component = component # noqa
+        _component = component  # noqa
 
         # Move the high angle bank
         self._move_high_angle_bank(move_info, workspace, coordinates)

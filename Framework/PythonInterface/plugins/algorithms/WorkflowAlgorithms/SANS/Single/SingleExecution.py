@@ -3,7 +3,7 @@ from SANS2.Common.SANSFunctions import create_unmanaged_algorithm
 from SANS.Single.StripEndNansAndInfs import strip_end_nans
 from SANS.Single.MergeReductions import (MergeFactory, is_sample, is_can)
 from SANS.Single.Bundles import (OutputBundle, OutputPartsBundle)
-from SANS2.Common.SANSType import (ISISReductionMode)
+from SANS2.Common.SANSType import (ISISReductionMode, convert_detector_type_to_string, DetectorType)
 
 
 def run_core_reduction(reduction_alg, reduction_setting_bundle, use_optimizations):
@@ -177,9 +177,9 @@ def get_component_to_reduce(reduction_setting_bundle):
     reduction_mode = reduction_setting_bundle.reduction_mode
 
     if reduction_mode is ISISReductionMode.Lab:
-        reduction_mode_setting = "LAB"
+        reduction_mode_setting = convert_detector_type_to_string(DetectorType.Lab)
     elif reduction_mode is ISISReductionMode.Hab:
-        reduction_mode_setting = "HAB"
+        reduction_mode_setting = convert_detector_type_to_string(DetectorType.Hab)
     else:
         raise RuntimeError("SingleExecution: An unknown reduction mode was selected: {}. "
                            "Currently only Hab and Lab are supported.".format(reduction_mode))

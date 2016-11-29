@@ -422,19 +422,24 @@ class UserFileStateDirectorISIS(object):
         # ---------------------------
         if user_file_set_centre in user_file_items:
             beam_centres = user_file_items[user_file_set_centre]
-            for beam_centre in beam_centres:
-                detector_type = beam_centre.detector_type
+            beam_centres_for_hab = [beam_centre for beam_centre in beam_centres if beam_centre.detector_type
+                                    is DetectorType.Hab]
+            beam_centres_for_lab = [beam_centre for beam_centre in beam_centres if beam_centre.detector_type
+                                    is DetectorType.Lab]
+            for beam_centre in beam_centres_for_lab:
                 pos1 = beam_centre.pos1
                 pos2 = beam_centre.pos2
-                if detector_type is DetectorType.Hab:
-                    self._move_builder.set_HAB_sample_centre_pos1(self._move_builder.convert_pos1(pos1))
-                    self._move_builder.set_HAB_sample_centre_pos2(self._move_builder.convert_pos2(pos2))
-                elif detector_type is DetectorType.Lab:
-                    self._move_builder.set_LAB_sample_centre_pos1(self._move_builder.convert_pos1(pos1))
-                    self._move_builder.set_LAB_sample_centre_pos2(self._move_builder.convert_pos2(pos2))
-                else:
-                    raise RuntimeError("UserFileStateDirector: An unknown detector {0} was used for the"
-                                       " beam centre.".format(beam_centre.detector_type))
+                self._move_builder.set_LAB_sample_centre_pos1(self._move_builder.convert_pos1(pos1))
+                self._move_builder.set_LAB_sample_centre_pos2(self._move_builder.convert_pos2(pos2))
+                self._move_builder.set_HAB_sample_centre_pos1(self._move_builder.convert_pos1(pos1))
+                self._move_builder.set_HAB_sample_centre_pos2(self._move_builder.convert_pos2(pos2))
+
+            for beam_centre in beam_centres_for_hab:
+                pos1 = beam_centre.pos1
+                pos2 = beam_centre.pos2
+                self._move_builder.set_HAB_sample_centre_pos1(self._move_builder.convert_pos1(pos1))
+                self._move_builder.set_HAB_sample_centre_pos2(self._move_builder.convert_pos2(pos2))
+
 
     def _set_up_reduction_state(self, user_file_items):
         # There are several things that can be extracted from the user file

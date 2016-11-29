@@ -104,18 +104,11 @@ class SANSReductionCore(DataProcessorAlgorithm):
 
         # --------------------------------------------------------------------------------------------------------------
         # 3. Create event slice
-        #    If we are dealing with an event workspace as input, this will cut out a time-based (use-defined) slice.
+        #    If we are dealing with an event workspace as input, this will cut out a time-based (user-defined) slice.
         #    In case of a histogram workspace, nothing happens.
         # --------------------------------------------------------------------------------------------------------------
         monitor_workspace = self._get_monitor_workspace()
         workspace, monitor_workspace, slice_event_factor = self._slice(state, workspace, monitor_workspace)
-
-        # ------------------------------------------------------------
-        # 4. Move the workspace into the correct position
-        #    The detectors in the workspaces are set such that the beam centre is at (0,0). The position is
-        #    a user-specified value which can be obtained with the help of the beam centre finder.
-        # ------------------------------------------------------------
-        workspace = self._move(state, workspace, component_as_string)
 
         # **************************************************
         # ONLY FOR DEVELOPMENT AND TESTING -- BEGIN
@@ -135,6 +128,13 @@ class SANSReductionCore(DataProcessorAlgorithm):
         # **************************************************
         # ONLY FOR DEVELOPMENT AND TESTING -- END
         # **************************************************
+
+        # ------------------------------------------------------------
+        # 4. Move the workspace into the correct position
+        #    The detectors in the workspaces are set such that the beam centre is at (0,0). The position is
+        #    a user-specified value which can be obtained with the help of the beam centre finder.
+        # ------------------------------------------------------------
+        workspace = self._move(state, workspace, component_as_string)
 
         # --------------------------------------------------------------------------------------------------------------
         # 5. Apply masking (pixel masking and time masking)
@@ -181,9 +181,8 @@ class SANSReductionCore(DataProcessorAlgorithm):
 
         # ------------------------------------------------------------
         # Populate the output
-        self.setProperty(SANSConstants.output_workspace, workspace)
         # ------------------------------------------------------------
-
+        self.setProperty(SANSConstants.output_workspace, workspace)
 
         # ------------------------------------------------------------
         # Diagnostic output
