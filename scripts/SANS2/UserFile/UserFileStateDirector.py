@@ -866,6 +866,22 @@ class UserFileStateDirectorISIS(object):
                 self._convert_to_q_builder.set_q_step(limits_q.step)
                 self._convert_to_q_builder.set_q_step_type(limits_q.step_type)
 
+        # Get the 2D q values
+        if user_file_limits_qxy in user_file_items:
+            limits_qxy = user_file_items[user_file_limits_qxy]
+            check_if_contains_only_one_element(limits_qxy, user_file_limits_qxy)
+            limits_qxy = limits_qxy[-1]
+            # Now we have to check if we have a simple pattern or a more complex pattern at hand
+            is_complex = isinstance(limits_qxy, complex_range)
+            self._convert_to_q_builder.set_q_xy_max(limits_qxy.stop)
+            if is_complex:
+                # Note that it has not been implemented in the old reducer, but the documentation is
+                #  suggesting that it is available. Hence we throw here.
+                raise RuntimeError("Qxy cannot handle settings of type: L/Q l1,dl1,l3,dl2,l2 [/LIN|/LOG] ")
+            else:
+                self._convert_to_q_builder.set_q_xy_step(limits_qxy.step)
+                self._convert_to_q_builder.set_q_xy_step_type(limits_qxy.step_type)
+
         # Get the Gravity settings
         set_single_entry(self._convert_to_q_builder, "set_use_gravity", user_file_gravity_on_off, user_file_items)
         set_single_entry(self._convert_to_q_builder, "set_gravity_extra_length", user_file_gravity_extra_length, user_file_items)
