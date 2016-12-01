@@ -22,7 +22,7 @@ class SANSFileInformationTest(unittest.TestCase):
         self.assertTrue(file_information.get_instrument() == SANSInstrument.SANS2D)
         self.assertTrue(file_information.get_type() == SANSFileType.ISISNexus)
         self.assertTrue(file_information.get_run_number() == 22024)
-        self.assertTrue(file_information.is_event_mode() == False)
+        self.assertFalse(file_information.is_event_mode())
 
     def test_that_can_extract_information_from_file_for_LOQ_single_period_and_raw_format(self):
         # Arrange

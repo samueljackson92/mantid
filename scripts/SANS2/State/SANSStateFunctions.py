@@ -1,3 +1,5 @@
+"""Set of general purpose functions which are related to the SANSState approach."""
+
 from copy import deepcopy
 from SANS2.Common.SANSType import (ReductionDimensionality, ISISReductionMode, OutputParts)
 from SANS2.Common.SANSConstants import SANSConstants
@@ -145,6 +147,14 @@ def one_is_none(elements_to_check):
 
 
 def validation_message(error_message, instruction, variables):
+    """
+    Generates a validation message for the SANSState.
+
+    @param error_message: A message describing the error.
+    @param instruction: A message describing what to do to fix the error
+    @param variables: A dictionary which contains the variable names and values which are involved in the error.
+    @return: a formatted validation message string.
+    """
     message = ""
     for key, value in variables.items():
         message += "{0}: {1}\n".format(key, value)

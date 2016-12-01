@@ -39,7 +39,7 @@ class XMLParsingTest(unittest.TestCase):
 
         # Assert
         self.assertTrue(len(results) == 10)
-        for key, value in results.iteritems():
+        for key, value in results.items():
             self.assertTrue(value == ("monitor"+str(key)))
 
     def test_that_monitors_can_be_found_v2(self):
@@ -56,9 +56,8 @@ class XMLParsingTest(unittest.TestCase):
 
         # Assert
         self.assertTrue(len(results) == 2)
-        for key, value in results.iteritems():
+        for key, value in results.items():
             self.assertTrue(value == ("monitor"+str(key)))
-
 
 
 if __name__ == '__main__':

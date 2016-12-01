@@ -77,7 +77,7 @@ class SANSStateWavelengthAndPixelAdjustmentISIS(SANSStateBase, SANSStateWaveleng
                              "Please see: {0}".format(json.dumps(is_invalid)))
 
 
-# -----------------------------------------------
-# SANSStateNormalizeMonitor setup for other facilities/techniques/scenarios.
-# Needs to derive from SANSStateNormalizeMonitor and SANSStateBase and fulfill its contract.
-# -----------------------------------------------
+# -----------------------------------------------------------------------------------------
+# SANSStateWavelengthAndPixelAdjustment setup for other facilities/techniques/scenarios.
+# Needs to derive from SANSStateWavelengthAndPixelAdjustment and SANSStateBase and fulfill its contract.
+# -------------------------------------------------------------------------------------------

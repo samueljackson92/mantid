@@ -1,3 +1,5 @@
+""" The SANSConstants class holds constants which are used in the SANS reducer framework."""
+
 # pylint: disable=too-few-public-methods
 
 

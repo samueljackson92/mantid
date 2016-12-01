@@ -9,6 +9,7 @@ from SANS2.Common.SANSConstants import (SANSConstants)
 from SANS2.Common.SANSType import (Coordinates, CanonicalCoordinates)
 from SANS2.State.SANSStateFunctions import validation_message
 
+
 # ------------------------------------------------
 # SANSStateData
 # ------------------------------------------------
@@ -70,7 +71,7 @@ class SANSStateMoveDetectorISIS(SANSStateBase, SANSStateMove):
             entry = validation_message("Missing short detector name",
                                        "Make sure that a short detector name was specified.",
                                        {"detector_name_short": self.detector_name_short})
-            is_invalid.update({"detector_name_short": "The short detector name has not been specified."})
+            is_invalid.update(entry)
         if is_invalid:
             raise ValueError("SANSStateMoveDetectorISIS: The provided inputs are illegal. "
                              "Please see: {0}".format(json.dumps(is_invalid)))
@@ -182,6 +183,6 @@ class SANSStateMoveLARMOR(SANSStateMoveISIS):
 
 
 # -----------------------------------------------
-# SANSStateData setup for other facilities/techniques/scenarios.
-# Needs to derive from SANSStateData and SANSStateBase and fulfill its contract.
+# SANSStateMove setup for other facilities/techniques/scenarios.
+# Needs to derive from SANSStateMove and SANSStateBase and fulfill its contract.
 # -----------------------------------------------

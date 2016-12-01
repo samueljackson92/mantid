@@ -1,3 +1,5 @@
+""" Defines the main SANSState object."""
+
 # pylint: disable=too-few-public-methods
 
 import json

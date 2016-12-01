@@ -1,3 +1,5 @@
+""" The elements of this module manage and add specific entries in the sample log."""
+
 # pylint: disable=invalid-name
 
 from hashlib import sha224

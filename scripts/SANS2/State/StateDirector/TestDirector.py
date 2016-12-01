@@ -1,3 +1,4 @@
+""" A Test director """
 from SANS2.State.StateBuilder.SANSStateBuilder import get_state_builder
 from SANS2.State.StateBuilder.SANSStateDataBuilder import get_data_builder
 from SANS2.State.StateBuilder.SANSStateMoveBuilder import get_move_builder

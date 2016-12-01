@@ -63,7 +63,7 @@ class SANSStateMoveWorkspaceSANS2DTest(unittest.TestCase):
     def test_that_sans2d_has_default_values_set_up(self):
         # Arrange
         state = SANSStateMoveSANS2D()
-        self.assertTrue(state.hab_detector_radius == 306.0)
+        self.assertTrue(state.hab_detector_radius == 306.0/1000.)
         self.assertTrue(state.hab_detector_default_sd_m == 4.0)
         self.assertTrue(state.hab_detector_default_x_m == 1.1)
         self.assertTrue(state.lab_detector_default_sd_m == 4.0)

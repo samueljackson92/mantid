@@ -1,4 +1,5 @@
-﻿# pylint: disable=too-few-public-methods, invalid-name
+﻿
+# pylint: disable=too-few-public-methods, invalid-name
 
 """ Fundamental classes and Descriptors for the SANSState mechanism."""
 from abc import (ABCMeta, abstractmethod)
@@ -24,11 +25,21 @@ def is_positive_or_none(value):
     return value >= 0 or value is None
 
 
-def all_list_elements_are_of_type_and_not_empty(value, comparison_type, additional_comparison=lambda x: True):
+def all_list_elements_are_of_specific_type_and_not_empty(value, comparison_type,
+                                                         additional_comparison=lambda x: True, type_check=isinstance):
+    """
+    Ensures that all elements of a list are of a specific type and that the list is not empty
+
+    @param value: the list to check
+    @param comparison_type: the expected type of the elements of the list.
+    @param additional_comparison: additional comparison lambda.
+    @param type_check: the method which performs type checking.
+    @return: True if the list is not empty and all types are as expected, else False.
+    """
     is_of_type = True
     for element in value:
         # Perform type check
-        if not isinstance(element, comparison_type):
+        if not type_check(element, comparison_type):
             is_of_type = False
         # Perform additional check
         if not additional_comparison(element):
@@ -37,46 +48,45 @@ def all_list_elements_are_of_type_and_not_empty(value, comparison_type, addition
     if not value:
         is_of_type = False
     return is_of_type
+
+
+def all_list_elements_are_of_instance_type_and_not_empty(value, comparison_type, additional_comparison=lambda x: True):
+    """
+    Ensures that all elements of a list are of a certain INSTANCE type and that the list is not empty.
+    """
+    return all_list_elements_are_of_specific_type_and_not_empty(value=value, comparison_type=comparison_type,
+                                                                additional_comparison=additional_comparison,
+                                                                type_check=isinstance)
 
 
 def all_list_elements_are_of_class_type_and_not_empty(value, comparison_type, additional_comparison=lambda x: True):
-    is_of_type = True
-    for element in value:
-        # Perform type check
-        if not issubclass(element, comparison_type):
-            is_of_type = False
-        # Perform additional check
-        if not additional_comparison(element):
-            is_of_type = False
-
-    if not value:
-        is_of_type = False
-    return is_of_type
+    """
+    Ensures that all elements of a list are of a certain INSTANCE type and that the list is not empty.
+    """
+    return all_list_elements_are_of_specific_type_and_not_empty(value=value, comparison_type=comparison_type,
+                                                                additional_comparison=additional_comparison,
+                                                                type_check=issubclass)
 
 
 def all_list_elements_are_float_and_not_empty(value):
-    typed_comparison = partial(all_list_elements_are_of_type_and_not_empty, comparison_type=float)
+    typed_comparison = partial(all_list_elements_are_of_instance_type_and_not_empty, comparison_type=float)
     return typed_comparison(value)
 
 
 def all_list_elements_are_string_and_not_empty(value):
-    typed_comparison = partial(all_list_elements_are_of_type_and_not_empty, comparison_type=str)
+    typed_comparison = partial(all_list_elements_are_of_instance_type_and_not_empty, comparison_type=str)
     return typed_comparison(value)
 
 
 def all_list_elements_are_int_and_not_empty(value):
-    typed_comparison = partial(all_list_elements_are_of_type_and_not_empty, comparison_type=int)
+    typed_comparison = partial(all_list_elements_are_of_instance_type_and_not_empty, comparison_type=int)
     return typed_comparison(value)
 
 
 def all_list_elements_are_int_and_positive_and_not_empty(value):
-    typed_comparison = partial(all_list_elements_are_of_type_and_not_empty, comparison_type=int,
-                               additional_comparison=lambda x: x>=0)
+    typed_comparison = partial(all_list_elements_are_of_instance_type_and_not_empty, comparison_type=int,
+                               additional_comparison=lambda x: x >= 0)
     return typed_comparison(value)
-
-
-def all_list_elements_are_class_type(value):
-    pass
 
 
 def validator_sub_state(sub_state):
@@ -283,10 +293,22 @@ def sans_parameters(cls):
     :param cls: The class with the TypedParameters
     :return: The class with the TypedParameters
     """
-    for attribute_name, attribute_value in cls.__dict__.iteritems():
+    for attribute_name, attribute_value in cls.__dict__.items():
         if isinstance(attribute_value, TypedParameter):
             attribute_value.name = '_{0}#{1}'.format(type(attribute_value).__name__, attribute_name)
     return cls
+
+
+# ------------------------------------------------
+# Serialization of the State
+# ------------------------------------------------
+# Serialization of the state object is currently done via generating a dict object. Reversely, we can generate a
+# SANSState object from a property manager object, not a dict object. This quirk results from the way Mantid
+# treats property manager inputs and outputs (it reads in dicts and converts them to property manager objects).
+# We might have to live with that for now.
+#
+# During serialization we place identifier tags into the serialized object, e.g. we add a specifier if the item
+# is a SANSState type at all and if so which state it is.
 
 
 STATE_NAME = "state_name"
@@ -296,9 +318,6 @@ class_type_parameter_id = "ClassTypeParameterID#"
 MODULE = "__module__"
 
 
-# ------------------------------------------------
-# Serialization of the State
-# ------------------------------------------------
 def is_state(property_manager):
     return property_manager.existsProperty(STATE_NAME) and property_manager.existsProperty(STATE_MODULE)
 
@@ -406,6 +425,12 @@ def get_class_descriptor_types(instance):
 
 
 def convert_state_to_dict(instance):
+    """
+    Converts the state object to a dictionary.
+
+    @param instance: the instance which is to be converted
+    @return: a serialized state object in the form of a dict
+    """
     descriptor_values, descriptor_types = get_descriptor_values(instance)
     # Add the descriptors to a dict
     state_dict = dict()
@@ -448,6 +473,12 @@ def convert_state_to_dict(instance):
 
 
 def set_state_from_property_manager(instance, property_manager):
+    """
+    Set the SANSState object from the information stored on a property manager object. This is the deserialization step.
+
+    @param instance: the instance which is to be set with a values of the propery manager
+    @param property_manager: the property manager withe the stored setting
+    """
     def _set_element(inst, k_element, v_element):
         if k_element != STATE_NAME and k_element != STATE_MODULE:
             setattr(inst, k_element, v_element)

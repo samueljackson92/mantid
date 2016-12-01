@@ -4,6 +4,7 @@ import json
 from SANS2.State.SANSStateBase import (SANSStateBase, sans_parameters, FloatListParameter)
 from SANS2.State.SANSStateFunctions import (is_pure_none_or_not_none, validation_message)
 
+
 # ------------------------------------------------
 # SANSStateReduction
 # ------------------------------------------------

@@ -6,7 +6,8 @@ from SANS2.Common.SANSFunctions import (quaternion_to_angle_and_axis, create_unm
 
 
 class SANSFunctionsTest(unittest.TestCase):
-    def _create_sample_workspace(self):
+    @staticmethod
+    def _create_sample_workspace():
         sample_name = "CreateSampleWorkspace"
         sample_options = {"OutputWorkspace": "dummy"}
         sample_alg = create_unmanaged_algorithm(sample_name, **sample_options)
@@ -49,7 +50,7 @@ class SANSFunctionsTest(unittest.TestCase):
 
     def test_that_sample_log_is_added(self):
         # Arrange
-        workspace = self._create_sample_workspace()
+        workspace = SANSFunctionsTest._create_sample_workspace()
         log_name = "TestName"
         log_value = "TestValue"
         log_type = "String"
@@ -64,7 +65,7 @@ class SANSFunctionsTest(unittest.TestCase):
 
     def test_that_sample_log_raises_for_non_string_type_arguments(self):
         # Arrange
-        workspace = self._create_sample_workspace()
+        workspace = SANSFunctionsTest._create_sample_workspace()
         log_name = "TestName"
         log_value = 123
         log_type = "String"
@@ -79,7 +80,7 @@ class SANSFunctionsTest(unittest.TestCase):
 
     def test_that_sample_log_raises_for_wrong_type_selection(self):
         # Arrange
-        workspace = self._create_sample_workspace()
+        workspace = SANSFunctionsTest._create_sample_workspace()
         log_name = "TestName"
         log_value = "test"
         log_type = "sdfsdfsdf"

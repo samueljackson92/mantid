@@ -1,16 +1,18 @@
+""" The elements of this module define types which are used in the SANS reduction framework."""
+
 # pylint: disable=too-few-public-methods, invalid-name
 
 from SANS2.Common.SANSConstants import SANSConstants
 
 
 # -------------------------------------------
-# Strongly Typed enum class decorator
+# SANS Type decorator
 # -------------------------------------------
 def sans_type(*inner_classes):
     """
     Class decorator which changes the name of an inner class to include the name of the outer class. The inner class
     gets a method to determine the name of the outer class. This information is needed for serialization at the
-    algorithm input boundary
+    algorithm input boundary.
     """
     def inner_class_builder(cls):
         # Add each inner class to the outer class
@@ -27,9 +29,9 @@ def sans_type(*inner_classes):
     return inner_class_builder
 
 
-# ---------------------------
+# --------------------------------
 #  Instrument and facility types
-# --------------------------
+# --------------------------------
 @sans_type("LOQ", "LARMOR", "SANS2D", "NoInstrument")
 class SANSInstrument(object):
     pass
@@ -151,6 +153,9 @@ class ISISReductionMode(ReductionMode):
     pass
 
 
+# --------------------------
+#  Reduction dimensionality
+# --------------------------
 @sans_type("OneDim", "TwoDim")
 class ReductionDimensionality(object):
     """
@@ -159,6 +164,9 @@ class ReductionDimensionality(object):
     pass
 
 
+# --------------------------
+#  Reduction data
+# --------------------------
 @sans_type("Scatter", "Transmission", "Direct")
 class ReductionData(object):
     """
@@ -168,10 +176,13 @@ class ReductionData(object):
     pass
 
 
+# --------------------------
+#  Type of data
+# --------------------------
 @sans_type("Sample", "Can")
 class DataType(object):
     """
-    Defines the type of reduction data. This can be either be with the sample or without the sample, i.e. Can
+    Defines the type of reduction data. This can either the sample or only the can.
     """
     pass
 
@@ -196,6 +207,9 @@ def convert_string_to_reduction_data_type(data_string):
     return data_type
 
 
+# ---------------------------------
+#  Partial reduction output setting
+# ---------------------------------
 @sans_type("Count", "Norm")
 class OutputParts(object):
     """
@@ -204,6 +218,9 @@ class OutputParts(object):
     pass
 
 
+# -----------------------------------------------------
+#  The fit type during merge of HAB and LAB reductions
+# -----------------------------------------------------
 @sans_type("Both", "NoFit", "ShiftOnly", "ScaleOnly")
 class FitModeForMerge(object):
     """
@@ -237,6 +254,9 @@ class DetectorOrientation(object):
     pass
 
 
+# --------------------------
+#  Detector Type
+# --------------------------
 @sans_type("Hab", "Lab")
 class DetectorType(object):
     """
@@ -358,9 +378,9 @@ def convert_save_type_to_string(save_type):
     return as_string
 
 
-# --------------------
-# Fit
-# --------------------
+# ------------------------------------------
+# Fit type for the transmission calculation
+# ------------------------------------------
 @sans_type("Linear", "Log", "Polynomial", "NoFit")
 class FitType(object):
     """
@@ -403,3 +423,20 @@ def convert_int_to_shape(shape_int):
     else:
         raise ValueError("SampleShape: Cannot convert unknown sample shape integer: {0}".format(shape_int))
     return as_type
+
+
+# ---------------------------
+# FileTypes
+# ---------------------------
+class SANSFileType(object):
+    class ISISNexus(object):
+        pass
+
+    class ISISNexusAdded(object):
+        pass
+
+    class ISISRaw(object):
+        pass
+
+    class NoFileType(object):
+        pass

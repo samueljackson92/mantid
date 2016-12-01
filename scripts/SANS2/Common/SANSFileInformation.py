@@ -1,3 +1,5 @@
+""" The elements of this module coordinate file access and information extraction from files."""
+
 # pylint: disable=too-few-public-methods, invalid-name
 
 import os
@@ -7,24 +9,7 @@ from abc import (ABCMeta, abstractmethod)
 from mantid.api import FileFinder
 from mantid.kernel import (DateAndTime, ConfigService)
 from mantid.api import (AlgorithmManager, ExperimentInfo)
-from SANS2.Common.SANSType import (SANSInstrument, convert_sans_instrument_to_string)
-
-
-# ------------------------------------
-# Types
-# ------------------------------------
-class SANSFileType(object):
-    class ISISNexus(object):
-        pass
-
-    class ISISNexusAdded(object):
-        pass
-
-    class ISISRaw(object):
-        pass
-
-    class NoFileType(object):
-        pass
+from SANS2.Common.SANSType import (SANSInstrument, convert_sans_instrument_to_string, SANSFileType)
 
 
 # -----------------------------------
@@ -67,12 +52,13 @@ def get_extension_for_file_type(file_info):
     :param file_info: a SANSFileInformation object.
     :return: the extension a stirng. This can be either nxs or raw.
     """
-    if file_info.get_type() == SANSFileType.ISISNexus or file_info.get_type() == SANSFileType.ISISNexusAdded():
+    if file_info.get_type() is SANSFileType.ISISNexus or file_info.get_type() is SANSFileType.ISISNexusAdded:
         extension = "nxs"
-    elif file_info.get_type() == SANSFileType.ISISRaw:
+    elif file_info.get_type() is SANSFileType.ISISRaw:
         extension = "raw"
     else:
-        raise RuntimeError("The file extension type for a file of type {0} is unknown".format(str(file_info.get_type())))
+        raise RuntimeError("The file extension type for a file of type {0} is unknown"
+                           "".format(str(file_info.get_type())))
     return extension
 
 
@@ -544,7 +530,7 @@ class SANSFileInformationFactory(object):
             file_information = SANSFileInformationISISNexus(full_file_name)
         elif is_raw_single_period(full_file_name) or is_raw_multi_period(full_file_name):
             file_information = SANSFileInformationRaw(full_file_name)
-        # TD: ADD added nexus files here
+        # TODO: ADD added nexus files here
         else:
             raise NotImplementedError("The file type you have provided is not implemented yet.")
         return file_information

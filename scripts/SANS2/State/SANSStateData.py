@@ -10,6 +10,7 @@ from SANS2.Common.SANSConstants import SANSConstants
 from SANS2.State.SANSStateFunctions import (is_pure_none_or_not_none, is_not_none_and_first_larger_than_second,
                                             one_is_none, validation_message)
 
+
 # ------------------------------------------------
 # SANSStateData
 # ------------------------------------------------

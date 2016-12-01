@@ -1,3 +1,5 @@
+""" The elements of this module contain various general-purpose functions for the SANS reduction framework."""
+
 # pylint: disable=invalid-name
 
 from math import (acos, sqrt, degrees)
@@ -11,9 +13,16 @@ from SANS2.Common.SANSLogTagger import (get_tag, has_tag, set_tag)
 # Free functions
 # -------------------------------------------
 def get_log_value(run, log_name, log_type):
-    # Find the logs.  There are two options here. Either the log is a scalar or a vector.
-    # In the case of a scalar there is not much left to do.
-    # In the case of a vector we select the first element whose time_stamp is after the start time of the run
+    """
+    Find a log value.
+
+    There are two options here. Either the log is a scalar or a vector. In the case of a scalar there is not much
+    left to do. In the case of a vector we select the first element whose time_stamp is after the start time of the run
+    @param run: a Run object.
+    @param log_name: the name of the log entry
+    @param log_type: the expected type fo the log entry
+    @return: the log entry
+    """
     try:
         # Scalar case
         output = log_type(run.getLogData(log_name).value)
@@ -55,7 +64,7 @@ def get_single_valued_logs_from_workspace(workspace, log_names, log_types, conve
     :param log_names: the log names which are to be extracted.
     :param log_types: the types of log entries, ie strings or numeric
     :param convert_from_millimeter_to_meter:
-    :return:
+    :return: the log results
     """
     assert len(log_names) == len(log_types)
     # Find the desired log names.

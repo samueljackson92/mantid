@@ -31,6 +31,7 @@ def set_default_monitors(calculate_transmission_info, data_info):
     if transmission_tag in found_monitor_spectrum:
         calculate_transmission_info.default_transmission_monitor = found_monitor_spectrum[transmission_tag]
 
+
 # ---------------------------------------
 # State builders
 # ---------------------------------------
@@ -74,7 +75,7 @@ class SANSStateCalculateTransmissionBuilderLARMOR(object):
 
 
 # ------------------------------------------
-# Factory method for SANSStateNormalizeToMonitorBuilder
+# Factory method for SANSStateCalculateTransmissionBuilder
 # ------------------------------------------
 def get_calculate_transmission_builder(data_info):
     instrument = data_info.instrument
