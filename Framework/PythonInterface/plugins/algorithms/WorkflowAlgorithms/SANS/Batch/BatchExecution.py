@@ -3,34 +3,27 @@ from collections import namedtuple
 from mantid.api import AnalysisDataService
 
 from SANS2.Common.SANSFunctions import create_unmanaged_algorithm
-from SANS2.Common.SANSType import (SANSDataType, SaveType)
+from SANS2.Common.SANSType import (SANSDataType, SaveType, OutputMode)
 from SANS2.Common.SANSConstants import SANSConstants
 from SANS2.State.SANSStateFunctions import get_output_workspace_name_from_workspace
 from SANS2.Common.SANSFileInformation import (get_extension_for_file_type, SANSFileInformationFactory)
 from SANS2.State.SANSStateData import SANSStateData
 
 
-class OutputMode(object):
-    class SaveToFile(object):
-        pass
-
-    class PublishToADS(object):
-        pass
-
 batch_reduction_return_bundle = namedtuple('batch_reduction_return_bundle', 'state, lab, hab, merged')
 
 
-def single_reduction_for_batch(state, use_optimizations, output_modes):
+def single_reduction_for_batch(state, use_optimizations, output_mode):
     """
     Runs a single reduction.
 
     This function creates reduction packages which essentially contain information for a single valid reduction, run it
-    and store the results according to the user specified setting (output_modes). Although this is considered a single
+    and store the results according to the user specified setting (output_mode). Although this is considered a single
     reduction it can contain still several reductions since the SANSState object can at this point contain slice
     settings which require on reduction per time slice.
     :param state: a SANSState object
     :param use_optimizations: if true then the optimizations of child algorithms are enabled.
-    :param output_modes: a list of output options, i.e. saving to file and/or publishing to ADS
+    :param output_mode: the output mode
     """
     # Load the data
     workspace_to_name = {SANSDataType.SampleScatter: "SampleScatterWorkspace",
@@ -64,9 +57,12 @@ def single_reduction_for_batch(state, use_optimizations, output_modes):
         reduced_merged = reduction_alg.getProperty("OutputWorkspaceMerged").value
 
         # Perform output
-        if OutputMode.PublishToADS in output_modes:
+        if output_mode is OutputMode.PublishToADS:
             publish_to_ads(reduced_lab, reduced_hab, reduced_merged)
-        if OutputMode.SaveToFile in output_modes:
+        elif output_mode is OutputMode.SaveToFile:
+            save_workspaces_to_file(reduced_lab, reduced_hab, reduced_merged, reduction_package.state)
+        elif output_mode is OutputMode.Both:
+            publish_to_ads(reduced_lab, reduced_hab, reduced_merged)
             save_workspaces_to_file(reduced_lab, reduced_hab, reduced_merged, reduction_package.state)
 
 

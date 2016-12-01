@@ -378,6 +378,41 @@ def convert_save_type_to_string(save_type):
     return as_string
 
 
+# --------------------------
+#  OutputMode
+# --------------------------
+@sans_type("PublishToADS", "SaveToFile", "Both")
+class OutputMode(object):
+    """
+    Defines the way the reduced data is being provided.
+    """
+    pass
+
+
+def convert_output_mode_to_string(output_mode):
+    if output_mode is OutputMode.PublishToADS:
+        as_string = "PublishToADS"
+    elif output_mode is OutputMode.SaveToFile:
+        as_string = "SaveToFile"
+    elif output_mode is OutputMode.Both:
+        as_string = "Both"
+    else:
+        raise ValueError("BatchMode: Cannot convert unknown output mode: {0}".format(output_mode))
+    return as_string
+
+
+def convert_string_to_batch_mode(output_mode_as_string):
+    if output_mode_as_string == "PublishToADS":
+        output_mode = OutputMode.PublishToADS
+    elif output_mode_as_string == "SaveToFile":
+        output_mode = OutputMode.SaveToFile
+    elif output_mode_as_string == "Both":
+        output_mode = OutputMode.Both
+    else:
+        raise ValueError("BatchMode: Cannot convert unknown output mode string: {0}".format(output_mode_as_string))
+    return output_mode
+
+
 # ------------------------------------------
 # Fit type for the transmission calculation
 # ------------------------------------------

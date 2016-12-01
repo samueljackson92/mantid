@@ -8,6 +8,7 @@ from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, Algorit
 
 from SANS2.State.SANSStateBase import create_deserialized_sans_state_from_property_manager
 from SANS.Batch.BatchExecution import (single_reduction_for_batch, OutputMode)
+from SANS2.Common.SANSType import (BatchMode, convert_output_mode_to_string, convert_string_to_output_mode)
 
 
 class SANSBatchReduction(DataProcessorAlgorithm):
@@ -30,7 +31,9 @@ class SANSBatchReduction(DataProcessorAlgorithm):
                                  "Depending on your concrete reduction, this could provide a significant"
                                  " performance boost")
 
-        allowed_detectors = StringListValidator(["PublishToADS", "SaveToFile", "Both"])
+        allowed_detectors = StringListValidator([convert_output_mode_to_string(BatchMode.PublishToADS),
+                                                 convert_output_mode_to_string(BatchMode.SaveToFile),
+                                                 convert_output_mode_to_string(BatchMode.Both)])
         self.declareProperty("OutputMode", "PublishToADS", validator=allowed_detectors, direction=Direction.Input,
                              doc="There are two output modes available./n"
                                  "PublishToADS: publishes the workspaces to the ADS. /n"
@@ -44,11 +47,11 @@ class SANSBatchReduction(DataProcessorAlgorithm):
         use_optimizations = self.getProperty("UseOptimizations").value
 
         # Check how the output is to be handled
-        output_modes = self._get_output_modes()
+        output_mode = self._get_output_mode()
 
         # We now iterate over each state, load the data and perform the reduction
         for state in states:
-            single_reduction_for_batch(state, use_optimizations, output_modes)
+            single_reduction_for_batch(state, use_optimizations, output_mode)
 
     def validateInputs(self):
         errors = dict()
@@ -61,17 +64,9 @@ class SANSBatchReduction(DataProcessorAlgorithm):
             errors.update({"SANSBatchReduction": str(err)})
         return errors
 
-    def _get_output_modes(self):
-        output_mode = self.getProperty("OutputMode").value
-        if output_mode == "PublishToADS":
-            mode = [OutputMode.PublishToADS]
-        elif output_mode == "SaveToFile":
-            mode = [OutputMode.SaveToFile]
-        elif output_mode == "Both":
-            mode = [OutputMode.PublishToADS, OutputMode.SaveToFile]
-        else:
-            raise ValueError("SANSBatchReduction: Unknown publication mode {0}".format(output_mode))
-        return mode
+    def _get_output_mode(self):
+        output_mode_as_string = self.getProperty("OutputMode").value
+        return convert_string_to_output_mode(output_mode_as_string)
 
     def _get_states(self):
         # The property manager contains a collection of states

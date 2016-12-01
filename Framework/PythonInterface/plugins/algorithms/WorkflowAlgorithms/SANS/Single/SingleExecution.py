@@ -203,8 +203,25 @@ def run_optimized_for_can(reduction_alg, reduction_setting_bundle):
     # Set the results on the output bundle
     output_bundle = OutputBundle(state=state, data_type=data_type, reduction_mode=reduction_mode,
                                  output_workspace=reduced_can_workspace)
-    output_parts_bundle = None
+    output_parts_bundle = OutputPartsBundle(state=state, data_type=data_type, reduction_mode=reduction_mode,
+                                            output_workspace_count=reduced_can_workspace_count,
+                                            output_workspace_norm=reduced_can_workspace_norm)
+    # The logic table for the recalculation of the partial outputs is:
+    # | output_parts | reduced_can_workspace_count is None |  reduced_can_workspace_norm is None | Recalculate |
+    # ----------------------------------------------------------------------------------------------------------
+    # |  False       |        True                         |           True                      |    False    |
+    # |  False       |        True                         |           False                     |    False    |
+    # |  False       |        False                        |           True                      |    False    |
+    # |  False       |        False                        |           False                     |    False    |
+    # |  True        |        True                         |           True                      |    False    |
+    # |  True        |        True                         |           False                     |    True     |
+    # |  True        |        False                        |           True                      |    True     |
+    # |  True        |        False                        |           False                     |    False    |
 
-    if output_bundle.output_workspace is None:
+    is_valid_partial_workspace = output_parts_bundle.output_workspace_count is None and \
+                                 output_parts_bundle.output_workspace_norm is None  # noqa
+    partial_output_require_reload = output_parts and not is_valid_partial_workspace
+
+    if output_bundle.output_workspace is None or partial_output_require_reload:
         output_bundle, output_parts_bundle = run_core_reduction(reduction_alg, reduction_setting_bundle, True)
     return output_bundle, output_parts_bundle
