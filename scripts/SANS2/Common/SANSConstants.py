@@ -32,7 +32,7 @@ class SANSConstants(object):
 
     reduced_workspace_name_in_logs = "reduced_workspace_name"
     sans_file_tag = "sans_file_tag"
-
+    reduced_can_tag = "reduced_can_hash"
 
     # String names for SANSType
     rebin = "Rebin"

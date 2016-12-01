@@ -1,11 +1,15 @@
 import unittest
 import mantid
 
+from mantid.api import AnalysisDataService
 from SANS2.State.SANSStateFunctions import (get_output_workspace_name, is_pure_none_or_not_none, one_is_none,
-                                            validation_message, is_not_none_and_first_larger_than_second)
+                                            validation_message, is_not_none_and_first_larger_than_second,
+                                            write_hash_into_reduced_can_workspace, get_reduced_can_workspace_from_ads)
 from SANS2.State.StateDirector.TestDirector import TestDirector
 from SANS2.State.SANSStateData import SANSStateData
-from SANS2.Common.SANSType import (ReductionDimensionality, ISISReductionMode)
+from SANS2.Common.SANSType import (ReductionDimensionality, ISISReductionMode, OutputParts)
+from SANS2.Common.SANSFunctions import create_unmanaged_algorithm
+from SANS2.Common.SANSConstants import SANSConstants
 
 
 class SANSStateFunctionsTest(unittest.TestCase):
@@ -28,6 +32,35 @@ class SANSStateFunctionsTest(unittest.TestCase):
         state.slice.start_time = [4.56778]
         state.slice.end_time = [12.373938]
         return state
+
+    @staticmethod
+    def _prepare_workspaces(number_of_workspaces, tagged_workspace_names=None, state=None):
+        create_name = "CreateSampleWorkspace"
+        create_options = {SANSConstants.output_workspace: SANSConstants.dummy,
+                          "NumBanks": 1,
+                          "BankPixelWidth": 2,
+                          "XMin": 1,
+                          "XMax": 10,
+                          "BinWidth": 2}
+        create_alg = create_unmanaged_algorithm(create_name, **create_options)
+
+        for index in range(number_of_workspaces):
+            create_alg.execute()
+            workspace = create_alg.getProperty(SANSConstants.output_workspace).value
+            workspace_name = SANSConstants.dummy + "_" + str(index)
+            AnalysisDataService.addOrReplace(workspace_name, workspace)
+
+        if tagged_workspace_names is not None:
+            for key, value in tagged_workspace_names.items():
+                create_alg.execute()
+                workspace = create_alg.getProperty(SANSConstants.output_workspace).value
+                AnalysisDataService.addOrReplace(value, workspace)
+                write_hash_into_reduced_can_workspace(state, workspace, key)
+
+    @staticmethod
+    def _remove_workspaces():
+        for element in AnalysisDataService.getObjectNames():
+            AnalysisDataService.remove(element)
 
     def test_that_unknown_reduction_mode_raises(self):
         # Arrange
@@ -80,6 +113,46 @@ class SANSStateFunctionsTest(unittest.TestCase):
         self.assertTrue(val_message.keys()[0] == error_message)
         self.assertTrue(val_message[error_message] == expected_text)
 
+    def test_that_can_find_can_reduction_if_it_exists(self):
+        # Arrange
+        test_director = TestDirector()
+        state = test_director.construct()
+        tagged_workspace_names = {None: "test_ws",
+                                  OutputParts.Count: "test_ws_count",
+                                  OutputParts.Norm: "test_ws_norm"}
+        SANSStateFunctionsTest._prepare_workspaces(number_of_workspaces=4,
+                                                   tagged_workspace_names=tagged_workspace_names,
+                                                   state=state)
+        # Act
+        workspace, workspace_count, workspace_norm = get_reduced_can_workspace_from_ads(state, output_parts=True)
+
+        # Assert
+        self.assertTrue(workspace is not None)
+        self.assertTrue(workspace.name() == AnalysisDataService.retrieve("test_ws").name())
+        self.assertTrue(workspace_count is not None)
+        self.assertTrue(workspace_count.name() == AnalysisDataService.retrieve("test_ws_count").name())
+        self.assertTrue(workspace_norm is not None)
+        self.assertTrue(workspace_norm.name() == AnalysisDataService.retrieve("test_ws_norm").name())
+
+        # Clean up
+        SANSStateFunctionsTest._remove_workspaces()
+
+    def test_that_returns_none_if_it_does_not_exist(self):
+        # Arrange
+        test_director = TestDirector()
+        state = test_director.construct()
+        SANSStateFunctionsTest._prepare_workspaces(number_of_workspaces=4, tagged_workspace_names=None, state=state)
+
+        # Act
+        workspace, workspace_count, workspace_norm = get_reduced_can_workspace_from_ads(state, output_parts=False)
+
+        # Assert
+        self.assertTrue(workspace is None)
+        self.assertTrue(workspace_count is None)
+        self.assertTrue(workspace_norm is None)
+
+        # Clean up
+        SANSStateFunctionsTest._remove_workspaces()
 
 if __name__ == '__main__':
     unittest.main()

@@ -8,7 +8,7 @@ from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, Algorit
 
 from SANS2.Common.SANSConstants import SANSConstants
 from SANS2.State.SANSStateBase import create_deserialized_sans_state_from_property_manager
-from SANS2.Common.SANSFunctions import create_unmanaged_algorithm
+from SANS2.Common.SANSFunctions import (create_unmanaged_algorithm, append_to_sans_file_tag)
 from SANS2.Common.SANSType import (DetectorType, convert_detector_type_to_string,
                                            convert_reduction_data_type_to_string, DataType)
 
@@ -309,6 +309,8 @@ class SANSReductionCore(DataProcessorAlgorithm):
             convert_alg = create_unmanaged_algorithm(convert_name, **convert_options)
             convert_alg.execute()
             workspace = convert_alg.getProperty(SANSConstants.output_workspace).value
+            append_to_sans_file_tag(workspace, "_histogram")
+
         return workspace
 
     def _convert_to_q(self, state, workspace, wavelength_adjustment_workspace, pixel_adjustment_workspace,

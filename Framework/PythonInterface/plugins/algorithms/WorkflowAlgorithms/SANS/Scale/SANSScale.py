@@ -11,6 +11,7 @@ from SANS2.Common.SANSConstants import SANSConstants
 from SANS2.Scale.ScaleHelpers import (DivideByVolumeFactory, MultiplyByAbsoluteScaleFactory)
 from SANS2.Common.SANSType import (convert_reduction_data_type_to_string, convert_string_to_reduction_data_type,
                                            DataType)
+from SANS2.Common.SANSFunctions import (append_to_sans_file_tag)
 
 
 class SANSScale(DataProcessorAlgorithm):
@@ -60,6 +61,7 @@ class SANSScale(DataProcessorAlgorithm):
         progress.report("Applying absolute scale.")
         workspace = self._multiply_by_absolute_scale(workspace, state)
 
+        append_to_sans_file_tag(workspace, "_scale")
         self.setProperty(SANSConstants.output_workspace, workspace)
         progress.report("Finished applying absolute scale")
 

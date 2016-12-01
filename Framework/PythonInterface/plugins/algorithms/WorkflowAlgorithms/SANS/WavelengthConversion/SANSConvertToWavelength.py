@@ -51,6 +51,7 @@ class SANSConvertToWavelength(DataProcessorAlgorithm):
         wavelength_alg = create_unmanaged_algorithm(wavelength_name, **wavelength_options)
         wavelength_alg.execute()
         converted_workspace = wavelength_alg.getProperty(SANSConstants.output_workspace).value
+        append_to_sans_file_tag(converted_workspace, "_wavelength")
         self.setProperty(SANSConstants.output_workspace, converted_workspace)
 
     def validateInputs(self):

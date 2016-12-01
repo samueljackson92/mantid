@@ -1,7 +1,7 @@
 # pylint: disable=invalid-name
 
 from math import (acos, sqrt, degrees)
-from mantid.api import AlgorithmManager
+from mantid.api import AlgorithmManager, AnalysisDataService
 from mantid.kernel import (DateAndTime)
 from SANS2.Common.SANSConstants import SANSConstants
 from SANS2.Common.SANSLogTagger import (get_tag, has_tag, set_tag)
@@ -86,22 +86,9 @@ def create_unmanaged_algorithm(name, **kwargs):
     return alg
 
 
-def write_history(alg, workspace):
-    """
-    Writes the parameters of an algorithm into the history of a workspace as a comment.
-
-    Runnin the workspace
-    @param alg:
-    @param workspace:
-    @return:
-    """
-
-
-
-
 def quaternion_to_angle_and_axis(quaternion):
     """
-    Converts a quaterion to an angle + an axis
+    Converts a quaternion to an angle + an axis
 
     The conversion from a quaternion to an angle + axis is explained here:
     http://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToAngle/
@@ -173,3 +160,13 @@ def append_to_sans_file_tag(workspace, to_append):
         value = get_tag(SANSConstants.sans_file_tag, workspace)
         value += to_append
         set_tag(SANSConstants.sans_file_tag, value, workspace)
+
+
+def get_ads_workspace_references():
+    """
+    Gets a list of handles of available workspaces on the ADS
+
+    @return: the workspaces on the ADS.
+    """
+    for workspace_name in AnalysisDataService.getObjectNames():
+        yield AnalysisDataService.retrieve(workspace_name)

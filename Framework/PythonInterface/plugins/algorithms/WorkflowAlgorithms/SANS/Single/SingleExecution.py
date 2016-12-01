@@ -4,6 +4,7 @@ from SANS.Single.StripEndNansAndInfs import strip_end_nans
 from SANS.Single.MergeReductions import (MergeFactory, is_sample, is_can)
 from SANS.Single.Bundles import (OutputBundle, OutputPartsBundle)
 from SANS2.Common.SANSType import (ISISReductionMode, convert_detector_type_to_string, DetectorType)
+from SANS2.State.SANSStateFunctions import (get_reduced_can_workspace_from_ads, write_hash_into_reduced_can_workspace)
 
 
 def run_core_reduction(reduction_alg, reduction_setting_bundle, use_optimizations):
@@ -162,7 +163,6 @@ def get_reduction_mode_vs_output_bundles(output_bundles):
             outputs[key].append(output_bundle)
         else:
             outputs.update({key: [output_bundle]})
-
     return outputs
 
 
@@ -170,8 +170,8 @@ def get_component_to_reduce(reduction_setting_bundle):
     """
     Gets the component to reduce as string. Currently we encode this as LAB or HAB.
 
-    :param reduction_setting_bundle: a  ReductionSettingBundle tuple.
-    :return: the reduction mode as a string
+    :param reduction_setting_bundle: a ReductionSettingBundle tuple.
+    :return: the reduction mode as a string.
     """
     # Get the reduction mode
     reduction_mode = reduction_setting_bundle.reduction_mode
@@ -184,3 +184,27 @@ def get_component_to_reduce(reduction_setting_bundle):
         raise RuntimeError("SingleExecution: An unknown reduction mode was selected: {}. "
                            "Currently only Hab and Lab are supported.".format(reduction_mode))
     return reduction_mode_setting
+
+
+def run_optimized_for_can(reduction_alg, reduction_setting_bundle):
+    """
+    Check if the state can reduction already exists, and if so, use it else reduce it and add it to the ADS.
+
+    @param reduction_alg: a handle to the SANSReductionCore algorithm
+    @param reduction_setting_bundle: a ReductionSettingBundle tuple.
+    @return: a reduced workspace, a partial output workspace for the counts, a partial workspace for the normalization.
+    """
+    state = reduction_setting_bundle.state
+    output_parts = reduction_setting_bundle.output_parts
+    reduction_mode = reduction_setting_bundle.reduction_mode
+    data_type = reduction_setting_bundle.data_type
+    reduced_can_workspace, reduced_can_workspace_count, reduced_can_workspace_norm = \
+        get_reduced_can_workspace_from_ads(state, output_parts)
+    # Set the results on the output bundle
+    output_bundle = OutputBundle(state=state, data_type=data_type, reduction_mode=reduction_mode,
+                                 output_workspace=reduced_can_workspace)
+    output_parts_bundle = None
+
+    if output_bundle.output_workspace is None:
+        output_bundle, output_parts_bundle = run_core_reduction(reduction_alg, reduction_setting_bundle, True)
+    return output_bundle, output_parts_bundle

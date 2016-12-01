@@ -10,7 +10,7 @@ from SANS2.State.SANSStateFunctions import add_workspace_name
 from SANS2.Common.SANSType import (ReductionMode, DataType, ISISReductionMode)
 from SANS2.Common.SANSFunctions import (create_unmanaged_algorithm)
 from SANS.Single.SingleExecution import (run_core_reduction, get_final_output_workspaces,
-                                         get_merge_bundle_for_merge_request)
+                                         get_merge_bundle_for_merge_request, run_optimized_for_can)
 from SANS.Single.Bundles import ReductionSettingBundle
 
 
@@ -124,9 +124,15 @@ class SANSSingleReduction(DataProcessorAlgorithm):
         output_bundles = []
         output_parts_bundles = []
         for reduction_setting_bundle in reduction_setting_bundles:
-            output_bundle, output_parts_bundle = run_core_reduction(reduction_alg,
-                                                                    reduction_setting_bundle,
-                                                                    use_optimizations)
+            # We want to make use of optimizations here. If a can workspace has already been reduced with the same can
+            # settings and is stored in the ADS, then we should use it (provided the user has optimizations enabled).
+            if use_optimizations and reduction_setting_bundle.data_type is DataType.Can:
+                output_bundle, output_parts_bundle = run_optimized_for_can(reduction_alg,
+                                                                           reduction_setting_bundle)
+            else:
+                output_bundle, output_parts_bundle = run_core_reduction(reduction_alg,
+                                                                        reduction_setting_bundle,
+                                                                        use_optimizations)
             output_bundles.append(output_bundle)
             output_parts_bundles.append(output_parts_bundle)
 

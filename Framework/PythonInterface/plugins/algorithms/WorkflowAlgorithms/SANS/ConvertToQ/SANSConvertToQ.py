@@ -9,7 +9,7 @@ from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, Algorit
 from SANS2.Common.SANSConstants import SANSConstants
 from SANS2.Common.SANSType import (ReductionDimensionality, RangeStepType)
 from SANS2.State.SANSStateBase import create_deserialized_sans_state_from_property_manager
-from SANS2.Common.SANSFunctions import create_unmanaged_algorithm
+from SANS2.Common.SANSFunctions import (create_unmanaged_algorithm, append_to_sans_file_tag)
 from SANS2.ConvertToQ.QResolutionCalculator import QResolutionCalculatorFactory
 
 
@@ -80,6 +80,7 @@ class SANSConvertToQ(DataProcessorAlgorithm):
             output_workspace, sum_of_counts_workspace, sum_of_norms_workspace = self._run_q_2d(state)
 
         # Set the output
+        append_to_sans_file_tag(output_workspace, "_convertq")
         self.setProperty(SANSConstants.output_workspace, output_workspace)
         if sum_of_counts_workspace and sum_of_norms_workspace:
             self._set_partial_workspaces(sum_of_counts_workspace, sum_of_norms_workspace)

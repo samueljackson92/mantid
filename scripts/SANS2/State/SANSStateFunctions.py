@@ -1,6 +1,8 @@
-from SANS2.Common.SANSType import (ReductionDimensionality, ISISReductionMode)
+from copy import deepcopy
+from SANS2.Common.SANSType import (ReductionDimensionality, ISISReductionMode, OutputParts)
 from SANS2.Common.SANSConstants import SANSConstants
-from SANS2.Common.SANSFunctions import add_to_sample_log
+from SANS2.Common.SANSFunctions import (add_to_sample_log, get_ads_workspace_references)
+from SANS2.Common.SANSLogTagger import (has_hash, get_hash_value, set_hash)
 
 
 def add_workspace_name(workspace, state, reduction_mode):
@@ -148,3 +150,76 @@ def validation_message(error_message, instruction, variables):
         message += "{0}: {1}\n".format(key, value)
     message += instruction
     return {error_message: message}
+
+
+def get_state_hash_for_can_reduction(state, partial_type=None):
+    """
+    Creates a hash for a (modified) state object.
+
+    Note that we need to modify the state object to exclude elements which are not relevant for the can reduction.
+    This is primarily the setting of the sample workspaces. This is the only place where we directly alter the value
+    of a state object
+    @param state: a SANSState object.
+    @param partial_type: if it is a partial type, then it needs to be specified here.
+    @return: the hash of the state
+    """
+    def remove_sample_related_information(full_state):
+        state_to_hash = deepcopy(full_state)
+        state_to_hash.data.sample_scatter = SANSConstants.dummy
+        state_to_hash.data.sample_scatter_period = SANSConstants.ALL_PERIODS
+        state_to_hash.data.sample_transmission = SANSConstants.dummy
+        state_to_hash.data.sample_transmission_period = SANSConstants.ALL_PERIODS
+        state_to_hash.data.sample_direct = SANSConstants.dummy
+        state_to_hash.data.sample_direct_period = SANSConstants.ALL_PERIODS
+        state_to_hash.data.sample_scatter_run_number = 1
+        return state_to_hash
+    new_state = remove_sample_related_information(state)
+    new_state_serialized = new_state.property_manager
+
+    # If we are dealing with a partial output workspace, then mark it as such
+    if partial_type is OutputParts.Count:
+        state_string = str(new_state_serialized) + "counts"
+    elif partial_type is OutputParts.Norm:
+        state_string = str(new_state_serialized) + "norm"
+    else:
+        state_string = str(new_state_serialized)
+    return str(get_hash_value(state_string))
+
+
+def get_workspace_from_ads_based_on_hash(hash_value):
+    for workspace in get_ads_workspace_references():
+        if has_hash(SANSConstants.reduced_can_tag, hash_value, workspace):
+            return workspace
+
+
+def get_reduced_can_workspace_from_ads(state, output_parts):
+    """
+    Get the reduced can workspace from the ADS if it exists else nothing
+
+    @param state: a SANSState object.
+    @param output_parts: if true then search also for the partial workspaces
+    @return: a reduced can object or None.
+    """
+    # Get the standard reduced can workspace
+    hashed_state = get_state_hash_for_can_reduction(state)
+    reduced_can = get_workspace_from_ads_based_on_hash(hashed_state)
+    reduced_can_count = None
+    reduced_can_norm = None
+    if output_parts:
+        hashed_state_count = get_state_hash_for_can_reduction(state, OutputParts.Count)
+        reduced_can_count = get_workspace_from_ads_based_on_hash(hashed_state_count)
+        hashed_state_norm = get_state_hash_for_can_reduction(state, OutputParts.Norm)
+        reduced_can_norm = get_workspace_from_ads_based_on_hash(hashed_state_norm)
+    return reduced_can, reduced_can_count, reduced_can_norm
+
+
+def write_hash_into_reduced_can_workspace(state, workspace, partial_type=None):
+    """
+    Writes the state hash into a reduced can workspace.
+
+    @param state: a SANSState object.
+    @param workspace: a reduced can workspace
+    @param partial_type: if it is a partial type, then it needs to be specified here.
+    """
+    hashed_state = get_state_hash_for_can_reduction(state, partial_type=partial_type)
+    set_hash(SANSConstants.reduced_can_tag, hashed_state, workspace)
