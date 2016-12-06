@@ -38,6 +38,5 @@ class UserFileReader(object):
                 parsed = parser.parse_line(line)
                 UserFileReader._add_to_output(output, parsed)
 
-
         # Provide the read elements
         return output

@@ -2,7 +2,9 @@ import unittest
 import mantid
 
 from mantid.kernel import (V3D, Quat)
-from SANS2.Common.SANSFunctions import (quaternion_to_angle_and_axis, create_unmanaged_algorithm, add_to_sample_log)
+from SANS2.Common.SANSFunctions import (quaternion_to_angle_and_axis, create_unmanaged_algorithm, add_to_sample_log,
+                                        convert_bank_name_to_detector_type_isis, parse_event_slice_setting)
+from SANS2.Common.SANSType import DetectorType
 
 
 class SANSFunctionsTest(unittest.TestCase):
@@ -92,6 +94,36 @@ class SANSFunctionsTest(unittest.TestCase):
         except ValueError:
             did_raise = True
         self.assertTrue(did_raise)
+
+    def test_that_can_convert_detector_name_to_correct_detector_type_when_valid(self):
+        self.assertTrue(convert_bank_name_to_detector_type_isis(" main-detector-bank") is DetectorType.Lab)
+        self.assertTrue(convert_bank_name_to_detector_type_isis("rEAR-detector") is DetectorType.Lab)
+        self.assertTrue(convert_bank_name_to_detector_type_isis("dEtectorBench  ") is DetectorType.Lab)
+        self.assertTrue(convert_bank_name_to_detector_type_isis("front-detector") is DetectorType.Hab)
+        self.assertTrue(convert_bank_name_to_detector_type_isis("Hab") is DetectorType.Hab)
+
+    def test_that_raises_when_detector_name_is_not_known(self):
+        self.assertRaises(RuntimeError, convert_bank_name_to_detector_type_isis, "rear-detector-bank")
+        self.assertRaises(RuntimeError, convert_bank_name_to_detector_type_isis, "detectorBenc")
+        self.assertRaises(RuntimeError, convert_bank_name_to_detector_type_isis, "front")
+
+    def test_that_can_parse_event_slices_when_they_are_valid(self):
+        slice_string = "1:2:4.5, 4-6.6, 34:79:87, <5, >3.2"
+        parsed_ranges = parse_event_slice_setting(slice_string)
+        self.assertTrue(parsed_ranges[0] == [1, 3])
+        self.assertTrue(parsed_ranges[1] == [3, 4.5])
+        self.assertTrue(parsed_ranges[2] == [4, 6.6])
+        self.assertTrue(parsed_ranges[3] == [34, 87])
+        self.assertTrue(parsed_ranges[4] == [None, 5])
+        self.assertTrue(parsed_ranges[5] == [3.2, None])
+
+    def test_that_raises_when_min_is_larger_than_max(self):
+        self.assertRaises(ValueError, parse_event_slice_setting, "4:2:2.5")
+        self.assertRaises(ValueError, parse_event_slice_setting, "10.4-2.3")
+
+    def test_that_raises_when_unknown_search_string_appears(self):
+        self.assertRaises(ValueError, parse_event_slice_setting, "4:2.5")
+        self.assertRaises(ValueError, parse_event_slice_setting, "4:2-2.5, 1:4")
 
 
 if __name__ == '__main__':

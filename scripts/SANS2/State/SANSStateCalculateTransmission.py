@@ -62,6 +62,12 @@ class SANSStateTransmissionFit(SANSStateBase):
 
 @sans_parameters
 class SANSStateCalculateTransmissionISIS(SANSStateBase, SANSStateCalculateTransmission):
+    # ----------------------------
+    # TransmissionWorkspace Names
+    # ----------------------------
+    transmission_workspace_name_sample = StringParameter()
+    transmission_workspace_name_can = StringParameter()
+
     # -----------------------
     # Transmission
     # -----------------------
@@ -190,7 +196,8 @@ class SANSStateCalculateTransmissionISIS(SANSStateBase, SANSStateCalculateTransm
                                            {"wavelength_full_range_low": self.wavelength_full_range_low,
                                             "wavelength_full_range_high": self.wavelength_full_range_high})
                 is_invalid.update(entry)
-            if is_not_none_and_first_larger_than_second([self.wavelength_full_range_low, self.wavelength_full_range_high]):
+            if is_not_none_and_first_larger_than_second([self.wavelength_full_range_low,
+                                                         self.wavelength_full_range_high]):
                 entry = validation_message("Incorrect wavelength bounds.",
                                            "Make sure that lower full wavelength bound is smaller then upper bound.",
                                            {"wavelength_full_range_low": self.wavelength_full_range_low,

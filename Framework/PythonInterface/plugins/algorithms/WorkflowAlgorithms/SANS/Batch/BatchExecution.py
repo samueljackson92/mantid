@@ -497,7 +497,7 @@ def publish_to_ads(reduced_lab, reduced_hab, reduced_merged):
 
     :param reduced_lab: a reduced workspace for LAB.
     :param reduced_hab: a reduced workspace for HAB.
-    :param reduced_merged: a reduced worksapce for a merged operation.
+    :param reduced_merged: a reduced workspace for a merged operation.
     """
     if reduced_lab is not None:
         do_publish_to_ads(reduced_lab)
@@ -539,17 +539,17 @@ def save_workspace_to_file(workspace, state):
     save_options.update({SANSConstants.file_name: file_name})
 
     file_formats = save_info.file_format
-    if SaveType.Nexus is file_formats:
+    if SaveType.Nexus in file_formats:
         save_options.update({"Nexus": True})
-    if SaveType.CanSAS is file_formats:
+    if SaveType.CanSAS in file_formats:
         save_options.update({"CanSAS": True})
-    if SaveType.NXcanSAS is file_formats:
+    if SaveType.NXcanSAS in file_formats:
         save_options.update({"NXcanSAS": True})
-    if SaveType.NistQxy is file_formats:
+    if SaveType.NistQxy in file_formats:
         save_options.update({"NistQxy": True})
-    if SaveType.RKH is file_formats:
+    if SaveType.RKH in file_formats:
         save_options.update({"RKH": True})
-    if SaveType.CSV is file_formats:
+    if SaveType.CSV in file_formats:
         save_options.update({"CSV": True})
 
     save_alg = create_unmanaged_algorithm(save_name, **save_options)

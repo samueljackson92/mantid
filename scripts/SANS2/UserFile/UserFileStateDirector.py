@@ -5,8 +5,13 @@ from SANS2.Common.SANSType import (DetectorType, FitModeForMerge, RebinType, Dat
                                            convert_reduction_data_type_to_string, convert_detector_type_to_string)
 from SANS2.Common.SANSFileInformation import find_full_file_path
 from SANS2.UserFile.UserFileReader import UserFileReader
-from SANS2.UserFile.UserFileCommon import *  # noqa
-
+from SANS2.UserFile.UserFileCommon import (DetectorId, BackId, range_entry, back_single_monitor_entry,
+                                           single_entry_with_detector, mask_angle_entry, LimitsId, rebin_string_values,
+                                           simple_range, complex_range, MaskId, mask_block, mask_block_cross,
+                                           mask_line, range_entry_with_detector, SampleId, SetId, set_scales_entry,
+                                           position_entry, TransId, TubeCalibrationFileId, QResolutionId, FitId,
+                                           fit_general, MonId, monitor_length, monitor_file, GravityId,
+                                           monitor_spectrum, PrintId)
 
 from SANS2.State.StateBuilder.AutomaticSetters import set_up_setter_forwarding_from_director_to_builder
 from SANS2.State.StateBuilder.SANSStateBuilder import get_state_builder
@@ -75,44 +80,44 @@ def convert_mm_to_m(value):
     return value/1000.
 
 
-def set_background_TOF_general(builder, user_file_items):
+def set_background_tof_general(builder, user_file_items):
     # The general background settings
-    if user_file_back_all_monitors in user_file_items:
-        back_all_monitors = user_file_items[user_file_back_all_monitors]
+    if BackId.all_monitors in user_file_items:
+        back_all_monitors = user_file_items[BackId.all_monitors]
         # Should the user have chosen several values, then the last element is selected
-        check_if_contains_only_one_element(back_all_monitors, user_file_back_all_monitors)
+        check_if_contains_only_one_element(back_all_monitors, BackId.all_monitors)
         back_all_monitors = back_all_monitors[-1]
         builder.set_background_TOF_general_start(back_all_monitors.start)
         builder.set_background_TOF_general_stop(back_all_monitors.stop)
 
 
-def set_background_TOF_monitor(builder, user_file_items):
+def set_background_tof_monitor(builder, user_file_items):
     # The monitor off switches. Get all monitors which should not have an individual background setting
     monitor_exclusion_list = []
-    if user_file_back_monitor_off in user_file_items:
-        back_monitor_off = user_file_items[user_file_back_monitor_off]
+    if BackId.monitor_off in user_file_items:
+        back_monitor_off = user_file_items[BackId.monitor_off]
         monitor_exclusion_list = back_monitor_off.values()
 
     # Get all individual monitor background settings. But ignore those settings where there was an explicit
     # off setting. Those monitors were collected in the monitor_exclusion_list collection
-    if user_file_back_single_monitors in user_file_items:
-        background_TOF_monitor_start = {}
-        background_TOF_monitor_stop = {}
-        back_single_monitors = user_file_items[user_file_back_single_monitors]
+    if BackId.single_monitors in user_file_items:
+        background_tof_monitor_start = {}
+        background_tof_monitor_stop = {}
+        back_single_monitors = user_file_items[BackId.single_monitors]
         for element in back_single_monitors:
             monitor = element.monitor
             if monitor not in monitor_exclusion_list:
                 # We need to set it to string since Mantid's Property manager cannot handle integers as a key.
-                background_TOF_monitor_start.update({str(monitor): element.start})
-                background_TOF_monitor_stop.update({str(monitor): element.stop})
-        builder.set_background_TOF_monitor_start(background_TOF_monitor_start)
-        builder.set_background_TOF_monitor_stop(background_TOF_monitor_stop)
+                background_tof_monitor_start.update({str(monitor): element.start})
+                background_tof_monitor_stop.update({str(monitor): element.stop})
+        builder.set_background_TOF_monitor_start(background_tof_monitor_start)
+        builder.set_background_TOF_monitor_stop(background_tof_monitor_stop)
 
 
 def set_wavelength_limits(builder, user_file_items):
-    if user_file_limits_wavelength in user_file_items:
-        wavelength_limits = user_file_items[user_file_limits_wavelength]
-        check_if_contains_only_one_element(wavelength_limits, user_file_limits_wavelength)
+    if LimitsId.wavelength in user_file_items:
+        wavelength_limits = user_file_items[LimitsId.wavelength]
+        check_if_contains_only_one_element(wavelength_limits, LimitsId.wavelength)
         wavelength_limits = wavelength_limits[-1]
         builder.set_wavelength_low(wavelength_limits.start)
         builder.set_wavelength_high(wavelength_limits.stop)
@@ -121,10 +126,10 @@ def set_wavelength_limits(builder, user_file_items):
 
 
 def set_prompt_peak_correction(builder, user_file_items):
-    if user_file_fit_monitor_times in user_file_items:
-        fit_monitor_times = user_file_items[user_file_fit_monitor_times]
+    if FitId.monitor_times in user_file_items:
+        fit_monitor_times = user_file_items[FitId.monitor_times]
         # Should the user have chosen several values, then the last element is selected
-        check_if_contains_only_one_element(fit_monitor_times, user_file_fit_monitor_times)
+        check_if_contains_only_one_element(fit_monitor_times, FitId.monitor_times)
         fit_monitor_times = fit_monitor_times[-1]
         builder.set_prompt_peak_correction_min(fit_monitor_times.start)
         builder.set_prompt_peak_correction_max(fit_monitor_times.stop)
@@ -156,6 +161,338 @@ def set_single_entry(builder, method_name, tag, all_entries, apply_to_value=None
         method(entry)
 
 
+def set_mask_entries(director, user_file_items):
+    """
+    Setting the mask files is done in an free function since this is something we reuse in other places.
+
+    @param director: a UserFileStateDirector object.
+    @param user_file_items: a list of user file commands
+    """
+    # Check for the various possible masks that can be present in the user file
+    # This can be:
+    # 1. A line mask
+    # 2. A time mask
+    # 3. A detector-bound time mask
+    # 4. A clean command
+    # 5. A time clear command
+    # 6. A single spectrum mask
+    # 7. A spectrum range mask
+    # 8. A vertical single strip mask
+    # 9. A vertical range strip mask
+    # 10. A horizontal single strip mask
+    # 11. A horizontal range strip mask
+    # 12. A block mask
+    # 13. A cross-type block mask
+    # 14. Angle masking
+    # 15. Mask files
+
+    # ---------------------------------
+    # 1. Line Mask
+    # ---------------------------------
+    if MaskId.line in user_file_items:
+        mask_lines = user_file_items[MaskId.line]
+        # If there were several arms specified then we take only the last
+        check_if_contains_only_one_element(mask_lines, MaskId.line)
+        mask_line = mask_lines[-1]
+        # We need the width and the angle
+        angle = mask_line.angle
+        width = convert_mm_to_m(mask_line.width)
+        # The position is already specified in meters in the user file
+        pos1 = mask_line.x
+        pos2 = mask_line.y
+        if angle is None or width is None:
+            raise RuntimeError("UserFileStateDirector: You specified a line mask without an angle or a width."
+                               "The parameters were: width {0}; angle {1}; x {2}; y {3}".format(width, angle,
+                                                                                                pos1, pos2))
+        pos1 = 0.0 if pos1 is None else pos1
+        pos2 = 0.0 if pos2 is None else pos2
+
+        director.set_mask_builder_beam_stop_arm_width(width)
+        director.set_mask_builder_beam_stop_arm_angle(angle)
+        director.set_mask_builder_beam_stop_arm_pos1(pos1)
+        director.set_mask_builder_beam_stop_arm_pos2(pos2)
+
+    # ---------------------------------
+    # 2. General time mask
+    # ---------------------------------
+    if MaskId.time in user_file_items:
+        mask_time_general = user_file_items[MaskId.time]
+        start_time = []
+        stop_time = []
+        for times in mask_time_general:
+            if times.start > times.start:
+                raise RuntimeError("UserFileStateDirector: You specified a general time mask with a start time {0}"
+                                   " which is larger than the stop time {1} of the mask. This is not"
+                                   " valid.".format(times.start, times.stop))
+            start_time.append(times.start)
+            stop_time.append(times.stop)
+        director.set_mask_builder_bin_mask_general_start(start_time)
+        director.set_mask_builder_bin_mask_general_stop(stop_time)
+
+    # ---------------------------------
+    # 3. Detector-bound time mask
+    # ---------------------------------
+    if MaskId.time_detector in user_file_items:
+        mask_times = user_file_items[MaskId.time_detector]
+        start_times_hab = []
+        stop_times_hab = []
+        start_times_lab = []
+        stop_times_lab = []
+        for times in mask_times:
+            if times.start > times.start:
+                raise RuntimeError("UserFileStateDirector: You specified a general time mask with a start time {0}"
+                                   " which is larger than the stop time {1} of the mask. This is not"
+                                   " valid.".format(times.start, times.stop))
+            if times.detector_type is DetectorType.Hab:
+                start_times_hab.append(times.start)
+                stop_times_hab.append(times.stop)
+            elif times.detector_type is DetectorType.Lab:
+                start_times_hab.append(times.start)
+                stop_times_hab.append(times.stop)
+            else:
+                RuntimeError("UserFileStateDirector: The specified detector {0} is not "
+                             "known".format(times.detector_type))
+        director.set_mask_builder_HAB_bin_mask_start(start_times_hab)
+        director.set_mask_builder_HAB_bin_mask_stop(stop_times_hab)
+        director.set_mask_builder_LAB_bin_mask_start(start_times_lab)
+        director.set_mask_builder_LAB_bin_mask_stop(stop_times_lab)
+
+    # ---------------------------------
+    # 4. Clear detector
+    # ---------------------------------
+    if MaskId.clear_detector_mask in user_file_items:
+        clear_detector_mask = user_file_items[MaskId.clear_detector_mask]
+        check_if_contains_only_one_element(clear_detector_mask, MaskId.clear_detector_mask)
+        # We select the entry which was added last.
+        clear_detector_mask = clear_detector_mask[-1]
+        director.set_mask_builder_clear(clear_detector_mask)
+
+    # ---------------------------------
+    # 5. Clear time
+    # ---------------------------------
+    if MaskId.clear_time_mask in user_file_items:
+        clear_time_mask = user_file_items[MaskId.clear_time_mask]
+        check_if_contains_only_one_element(clear_time_mask, MaskId.clear_time_mask)
+        # We select the entry which was added last.
+        clear_time_mask = clear_time_mask[-1]
+        director.set_mask_builder_clear_time(clear_time_mask)
+
+    # ---------------------------------
+    # 6. Single Spectrum
+    # ---------------------------------
+    if MaskId.single_spectrum_mask in user_file_items:
+        single_spectra = user_file_items[MaskId.single_spectrum_mask]
+        director.set_mask_builder_single_spectra(single_spectra)
+
+    # ---------------------------------
+    # 7. Spectrum Range
+    # ---------------------------------
+    if MaskId.spectrum_range_mask in user_file_items:
+        spectrum_ranges = user_file_items[MaskId.spectrum_range_mask]
+        start_range = []
+        stop_range = []
+        for spectrum_range in spectrum_ranges:
+            if spectrum_range.start > spectrum_range.start:
+                raise RuntimeError("UserFileStateDirector: You specified a spectrum range with a start value {0}"
+                                   " which is larger than the stop value {1}. This is not"
+                                   " valid.".format(spectrum_range.start, spectrum_range.stop))
+            start_range.append(spectrum_range.start)
+            stop_range.append(spectrum_range.stop)
+        director.set_mask_builder_spectrum_range_start(start_range)
+        director.set_mask_builder_spectrum_range_stop(stop_range)
+
+    # ---------------------------------
+    # 8. Vertical single strip
+    # ---------------------------------
+    if MaskId.vertical_single_strip_mask in user_file_items:
+        single_vertical_strip_masks = user_file_items[MaskId.vertical_single_strip_mask]
+        entry_hab = []
+        entry_lab = []
+        for single_vertical_strip_mask in single_vertical_strip_masks:
+            if single_vertical_strip_mask.detector_type is DetectorType.Hab:
+                entry_hab.append(single_vertical_strip_mask.entry)
+            elif single_vertical_strip_mask.detector_type is DetectorType.Lab:
+                entry_lab.append(single_vertical_strip_mask.entry)
+            else:
+                raise RuntimeError("UserFileStateDirector: The vertical single strip mask {0} has an unknown "
+                                   "detector {1} associated"
+                                   " with it.".format(single_vertical_strip_mask.entry,
+                                                      single_vertical_strip_mask.detector_type))
+        director.set_mask_builder_HAB_single_vertical_strip_mask(entry_hab)
+        director.set_mask_builder_LAB_single_vertical_strip_mask(entry_lab)
+
+    # ---------------------------------
+    # 9. Vertical range strip
+    # ---------------------------------
+    if MaskId.vertical_range_strip_mask in user_file_items:
+        range_vertical_strip_masks = user_file_items[MaskId.vertical_range_strip_mask]
+        start_hab = []
+        stop_hab = []
+        start_lab = []
+        stop_lab = []
+        for range_vertical_strip_mask in range_vertical_strip_masks:
+            if range_vertical_strip_mask.detector_type is DetectorType.Hab:
+                start_hab.append(range_vertical_strip_mask.start)
+                stop_hab.append(range_vertical_strip_mask.stop)
+            elif range_vertical_strip_mask.detector_type is DetectorType.Lab:
+                start_lab.append(range_vertical_strip_mask.start)
+                stop_lab.append(range_vertical_strip_mask.stop)
+            else:
+                raise RuntimeError("UserFileStateDirector: The vertical range strip mask {0} has an unknown "
+                                   "detector {1} associated "
+                                   "with it.".format(range_vertical_strip_mask.entry,
+                                                     range_vertical_strip_mask.detector_type))
+        director.set_mask_builder_HAB_range_vertical_strip_start(start_hab)
+        director.set_mask_builder_HAB_range_vertical_strip_stop(stop_hab)
+        director.set_mask_builder_LAB_range_vertical_strip_start(start_lab)
+        director.set_mask_builder_LAB_range_vertical_strip_stop(stop_lab)
+
+    # ---------------------------------
+    # 10. Horizontal single strip
+    # ---------------------------------
+    if MaskId.horizontal_single_strip_mask in user_file_items:
+        single_horizontal_strip_masks = user_file_items[MaskId.horizontal_single_strip_mask]
+        entry_hab = []
+        entry_lab = []
+        for single_horizontal_strip_mask in single_horizontal_strip_masks:
+            if single_horizontal_strip_mask.detector_type is DetectorType.Hab:
+                entry_hab.append(single_horizontal_strip_mask.entry)
+            elif single_horizontal_strip_mask.detector_type is DetectorType.Lab:
+                entry_lab.append(single_horizontal_strip_mask.entry)
+            else:
+                raise RuntimeError("UserFileStateDirector: The horizontal single strip mask {0} has an unknown "
+                                   "detector {1} associated"
+                                   " with it.".format(single_horizontal_strip_mask.entry,
+                                                      single_horizontal_strip_mask.detector_type))
+        director.set_mask_builder_HAB_single_horizontal_strip_mask(entry_hab)
+        director.set_mask_builder_LAB_single_horizontal_strip_mask(entry_lab)
+
+    # ---------------------------------
+    # 11. Horizontal range strip
+    # ---------------------------------
+    if MaskId.horizontal_range_strip_mask in user_file_items:
+        range_horizontal_strip_masks = user_file_items[MaskId.horizontal_range_strip_mask]
+        start_hab = []
+        stop_hab = []
+        start_lab = []
+        stop_lab = []
+        for range_horizontal_strip_mask in range_horizontal_strip_masks:
+            if range_horizontal_strip_mask.detector_type is DetectorType.Hab:
+                start_hab.append(range_horizontal_strip_mask.start)
+                stop_hab.append(range_horizontal_strip_mask.stop)
+            elif range_horizontal_strip_mask.detector_type is DetectorType.Lab:
+                start_lab.append(range_horizontal_strip_mask.start)
+                stop_lab.append(range_horizontal_strip_mask.stop)
+            else:
+                raise RuntimeError("UserFileStateDirector: The vertical range strip mask {0} has an unknown "
+                                   "detector {1} associated "
+                                   "with it.".format(range_horizontal_strip_mask.entry,
+                                                     range_horizontal_strip_mask.detector_type))
+        director.set_mask_builder_HAB_range_horizontal_strip_start(start_hab)
+        director.set_mask_builder_HAB_range_horizontal_strip_stop(stop_hab)
+        director.set_mask_builder_LAB_range_horizontal_strip_start(start_lab)
+        director.set_mask_builder_LAB_range_horizontal_strip_stop(stop_lab)
+
+    # ---------------------------------
+    # 12. Block
+    # ---------------------------------
+    if MaskId.block in user_file_items:
+        blocks = user_file_items[MaskId.block]
+        horizontal_start_hab = []
+        horizontal_stop_hab = []
+        vertical_start_hab = []
+        vertical_stop_hab = []
+        horizontal_start_lab = []
+        horizontal_stop_lab = []
+        vertical_start_lab = []
+        vertical_stop_lab = []
+
+        for block in blocks:
+            if block.horizontal1 > block.horizontal2 or block.vertical1 > block.vertical2:
+                raise RuntimeError("UserFileStateDirector: The block mask seems to have inconsistent entries. "
+                                   "The values are horizontal_start {0}; horizontal_stop {1}; vertical_start {2};"
+                                   " vertical_stop {3}".format(block.horizontal1, block.horizontal2,
+                                                               block.vertical1, block.vertical2))
+            if block.detector_type is DetectorType.Hab:
+                horizontal_start_hab.append(block.horizontal1)
+                horizontal_stop_hab.append(block.horizontal2)
+                vertical_start_hab.append(block.vertical1)
+                vertical_stop_hab.append(block.vertical2)
+            elif block.detector_type is DetectorType.Lab:
+                horizontal_start_lab.append(block.horizontal1)
+                horizontal_stop_lab.append(block.horizontal2)
+                vertical_start_lab.append(block.vertical1)
+                vertical_stop_lab.append(block.vertical2)
+            else:
+                raise RuntimeError("UserFileStateDirector: The block mask has an unknown "
+                                   "detector {0} associated "
+                                   "with it.".format(block.detector_type))
+        director.set_mask_builder_HAB_block_horizontal_start(horizontal_start_hab)
+        director.set_mask_builder_HAB_block_horizontal_stop(horizontal_start_hab)
+        director.set_mask_builder_LAB_block_vertical_start(vertical_start_lab)
+        director.set_mask_builder_LAB_block_vertical_stop(vertical_start_lab)
+
+    # ---------------------------------
+    # 13. Block cross
+    # ---------------------------------
+    if MaskId.block_cross in user_file_items:
+        block_crosses = user_file_items[MaskId.block_cross]
+        horizontal_hab = []
+        vertical_hab = []
+        horizontal_lab = []
+        vertical_lab = []
+        for block_cross in block_crosses:
+            if block_cross.detector_type is DetectorType.Hab:
+                horizontal_hab.append(block_cross.horizontal)
+                vertical_hab.append(block_cross.vertical)
+            elif block_cross.detector_type is DetectorType.Lab:
+                horizontal_lab.append(block_cross.horizontal)
+                vertical_lab.append(block_cross.vertical)
+            else:
+                raise RuntimeError("UserFileStateDirector: The block cross mask has an unknown "
+                                   "detector {0} associated "
+                                   "with it.".format(block_cross.detector_type))
+        director.set_mask_builder_HAB_block_cross_horizontal(horizontal_hab)
+        director.set_mask_builder_HAB_block_cross_vertical(vertical_hab)
+        director.set_mask_builder_LAB_block_cross_horizontal(horizontal_lab)
+        director.set_mask_builder_LAB_block_cross_vertical(vertical_lab)
+
+    # ------------------------------------------------------------
+    # 14. Angles --> they are specified in L/Phi
+    # -----------------------------------------------------------
+    if LimitsId.angle in user_file_items:
+        angles = user_file_items[LimitsId.angle]
+        # Should the user have chosen several values, then the last element is selected
+        check_if_contains_only_one_element(angles, LimitsId.angle)
+        angle = angles[-1]
+        director.set_mask_builder_phi_min(angle.min)
+        director.set_mask_builder_phi_max(angle.max)
+        director.set_mask_builder_use_mask_phi_mirror(not angle.is_no_mirror)
+
+    # ------------------------------------------------------------
+    # 15. Maskfiles
+    # -----------------------------------------------------------
+    if MaskId.file in user_file_items:
+        mask_files = user_file_items[MaskId.file]
+        director.set_mask_builder_mask_files(mask_files)
+
+    # ------------------------------------------------------------
+    # 16. Radius masks
+    # -----------------------------------------------------------
+    if LimitsId.radius in user_file_items:
+        radii = user_file_items[LimitsId.radius]
+        # Should the user have chosen several values, then the last element is selected
+        check_if_contains_only_one_element(radii, LimitsId.radius)
+        radius = radii[-1]
+        if radius.start > radius.stop > 0:
+            raise RuntimeError("UserFileStateDirector: The inner radius {0} appears to be larger that the outer"
+                               " radius {1} of the mask.".format(radius.start, radius.stop))
+        min_value = None if radius.start is None else convert_mm_to_m(radius.start)
+        max_value = None if radius.stop is None else convert_mm_to_m(radius.stop)
+        director.set_mask_builder_radius_min(min_value)
+        director.set_mask_builder_radius_max(max_value)
+
+
 class UserFileStateDirectorISIS(object):
     def __init__(self, data_info):
         super(UserFileStateDirectorISIS, self).__init__()
@@ -172,7 +509,12 @@ class UserFileStateDirectorISIS(object):
         self._wavelength_builder = get_wavelength_builder(self._data)
         self._save_builder = get_save_builder(self._data)
         self._scale_builder = get_scale_builder(self._data)
+
         self._adjustment_builder = get_adjustment_builder(self._data)
+        self._normalize_to_monitor_builder = get_normalize_to_monitor_builder(self._data)
+        self._calculate_transmission_builder = get_calculate_transmission_builder(self._data)
+        self._wavelength_and_pixel_adjustment_builder = get_wavelength_and_pixel_adjustment_builder(self._data)
+
         self._convert_to_q_builder = get_convert_to_q_builder(self._data)
 
         # Now that we have setup all builders in the director we want to also allow for manual setting
@@ -192,6 +534,9 @@ class UserFileStateDirectorISIS(object):
         set_up_setter_forwarding_from_director_to_builder(self, "_save_builder")
         set_up_setter_forwarding_from_director_to_builder(self, "_scale_builder")
         set_up_setter_forwarding_from_director_to_builder(self, "_adjustment_builder")
+        set_up_setter_forwarding_from_director_to_builder(self, "_normalize_to_monitor_builder")
+        set_up_setter_forwarding_from_director_to_builder(self, "_calculate_transmission_builder")
+        set_up_setter_forwarding_from_director_to_builder(self, "_wavelength_and_pixel_adjustment_builder")
         set_up_setter_forwarding_from_director_to_builder(self, "_convert_to_q_builder")
 
     def set_user_file(self, user_file):
@@ -202,9 +547,21 @@ class UserFileStateDirectorISIS(object):
         self._user_file = file_path
         reader = UserFileReader(self._user_file)
         user_file_items = reader.read_user_file()
+        self.add_user_file_items(user_file_items)
+
+    def add_user_file_items(self, user_file_items):
+        """
+        This allows for a usage of the UserFileStateDirector with externally provided user_file_items or internally
+        via the set_user_file method.
+
+        @param user_file_items: a list of parsed user file items.
+        """
         # ----------------------------------------------------
         # Populate the different sub states from the user file
         # ----------------------------------------------------
+        # Data state
+        self._add_information_to_data_state(user_file_items)
+
         # Mask state
         self._set_up_mask_state(user_file_items)
 
@@ -223,9 +580,11 @@ class UserFileStateDirectorISIS(object):
         # Scale state
         self._set_up_scale_state(user_file_items)
 
-        # Adjustment state. This includes the transmission calculation, the monitor normalizeation and the generation
-        # of other adjustment workspaces
+        # Adjustment state and its substates
         self._set_up_adjustment_state(user_file_items)
+        self._set_up_normalize_to_monitor_state(user_file_items)
+        self._set_up_calculate_transmission(user_file_items)
+        self._set_up_wavelength_and_pixel_adjustment(user_file_items)
 
         # Convert to Q state
         self._set_up_convert_to_q_state(user_file_items)
@@ -267,9 +626,19 @@ class UserFileStateDirectorISIS(object):
         scale_state.validate()
         self._state_builder.set_scale(scale_state)
 
-        # Adjustment state
+        # Adjustment state with the sub states
+        normalize_to_monitor_state = self._normalize_to_monitor_builder.build()
+        self._adjustment_builder.set_normalize_to_monitor(normalize_to_monitor_state)
+
+        calculate_transmission_state = self._calculate_transmission_builder.build()
+        self._adjustment_builder.set_calculate_transmission(calculate_transmission_state)
+
+        wavelength_and_pixel_adjustment_state = self._wavelength_and_pixel_adjustment_builder.build()
+        self._adjustment_builder.set_wavelength_and_pixel_adjustment(wavelength_and_pixel_adjustment_state)
+
         adjustment_state = self._adjustment_builder.build()
         adjustment_state.validate()
+
         self._state_builder.set_adjustment(adjustment_state)
 
         # Convert to Q state
@@ -295,8 +664,8 @@ class UserFileStateDirectorISIS(object):
         # ---------------------------
         # Correction for X, Y, Z
         # ---------------------------
-        if user_file_det_correction_x in user_file_items:
-            corrections_in_x = user_file_items[user_file_det_correction_x]
+        if DetectorId.correction_x in user_file_items:
+            corrections_in_x = user_file_items[DetectorId.correction_x]
             for correction_x in corrections_in_x:
                 if correction_x.detector_type is DetectorType.Hab:
                     self._move_builder.set_HAB_x_translation_correction(convert_mm_to_m(correction_x.entry))
@@ -306,8 +675,8 @@ class UserFileStateDirectorISIS(object):
                     raise RuntimeError("UserFileStateDirector: An unknown detector {0} was used for the"
                                        " x correction.".format(correction_x.detector_type))
 
-        if user_file_det_correction_y in user_file_items:
-            corrections_in_y = user_file_items[user_file_det_correction_y]
+        if DetectorId.correction_y in user_file_items:
+            corrections_in_y = user_file_items[DetectorId.correction_y]
             for correction_y in corrections_in_y:
                 if correction_y.detector_type is DetectorType.Hab:
                     self._move_builder.set_HAB_y_translation_correction(convert_mm_to_m(correction_y.entry))
@@ -317,8 +686,8 @@ class UserFileStateDirectorISIS(object):
                     raise RuntimeError("UserFileStateDirector: An unknown detector {0} was used for the"
                                        " y correction.".format(correction_y.detector_type))
 
-        if user_file_det_correction_z in user_file_items:
-            corrections_in_z = user_file_items[user_file_det_correction_z]
+        if DetectorId.correction_z in user_file_items:
+            corrections_in_z = user_file_items[DetectorId.correction_z]
             for correction_z in corrections_in_z:
                 if correction_z.detector_type is DetectorType.Hab:
                     self._move_builder.set_HAB_z_translation_correction(convert_mm_to_m(correction_z.entry))
@@ -331,10 +700,10 @@ class UserFileStateDirectorISIS(object):
         # ---------------------------
         # Correction for Rotation
         # ---------------------------
-        if user_file_det_correction_rotation in user_file_items:
-            rotation_correction = user_file_items[user_file_det_correction_rotation]
+        if DetectorId.correction_rotation in user_file_items:
+            rotation_correction = user_file_items[DetectorId.correction_rotation]
             # Should the user have chosen several values, then the last element is selected
-            check_if_contains_only_one_element(rotation_correction, user_file_det_correction_rotation)
+            check_if_contains_only_one_element(rotation_correction, DetectorId.correction_rotation)
             rotation_correction = rotation_correction[-1]
             if rotation_correction.detector_type is DetectorType.Hab:
                 self._move_builder.set_HAB_rotation_correction(rotation_correction.entry)
@@ -347,8 +716,8 @@ class UserFileStateDirectorISIS(object):
         # ---------------------------
         # Correction for Radius
         # ---------------------------
-        if user_file_det_correction_radius in user_file_items:
-            radius_corrections = user_file_items[user_file_det_correction_radius]
+        if DetectorId.correction_radius in user_file_items:
+            radius_corrections = user_file_items[DetectorId.correction_radius]
             for radius_correction in radius_corrections:
                 if radius_correction.detector_type is DetectorType.Hab:
                     self._move_builder.set_HAB_radius_correction(convert_mm_to_m(radius_correction.entry))
@@ -361,8 +730,8 @@ class UserFileStateDirectorISIS(object):
         # ---------------------------
         # Correction for Translation
         # ---------------------------
-        if user_file_det_correction_translation in user_file_items:
-            side_corrections = user_file_items[user_file_det_correction_translation]
+        if DetectorId.correction_translation in user_file_items:
+            side_corrections = user_file_items[DetectorId.correction_translation]
             for side_correction in side_corrections:
                 if side_correction.detector_type is DetectorType.Hab:
                     self._move_builder.set_HAB_side_correction(convert_mm_to_m(side_correction.entry))
@@ -375,8 +744,8 @@ class UserFileStateDirectorISIS(object):
         # ---------------------------
         # Tilt
         # ---------------------------
-        if user_file_det_correction_x_tilt in user_file_items:
-            tilt_correction = user_file_items[user_file_det_correction_x_tilt]
+        if DetectorId.correction_x_tilt in user_file_items:
+            tilt_correction = user_file_items[DetectorId.correction_x_tilt]
             tilt_correction = tilt_correction[-1]
             if tilt_correction.detector_type is DetectorType.Hab:
                 self._move_builder.set_HAB_x_tilt_correction(tilt_correction.entry)
@@ -386,8 +755,8 @@ class UserFileStateDirectorISIS(object):
                 raise RuntimeError("UserFileStateDirector: An unknown detector {0} was used for the"
                                    " titlt correction.".format(tilt_correction.detector_type))
 
-        if user_file_det_correction_y_tilt in user_file_items:
-            tilt_correction = user_file_items[user_file_det_correction_y_tilt]
+        if DetectorId.correction_y_tilt in user_file_items:
+            tilt_correction = user_file_items[DetectorId.correction_y_tilt]
             tilt_correction = tilt_correction[-1]
             if tilt_correction.detector_type is DetectorType.Hab:
                 self._move_builder.set_HAB_y_tilt_correction(tilt_correction.entry)
@@ -400,16 +769,16 @@ class UserFileStateDirectorISIS(object):
         # ---------------------------
         # Sample offset
         # ---------------------------
-        set_single_entry(self._move_builder, "set_sample_offset", user_file_sample_offset,
+        set_single_entry(self._move_builder, "set_sample_offset", SampleId.offset,
                          user_file_items, apply_to_value=convert_mm_to_m)
 
         # ---------------------------
         # Monitor 4 offset; for now this is only SANS2D
         # ---------------------------
-        if user_file_trans_spec_shift in user_file_items:
-            monitor_4_shift = user_file_items[user_file_trans_spec_shift]
+        if TransId.spec_shift in user_file_items:
+            monitor_4_shift = user_file_items[TransId.spec_shift]
             # Should the user have chosen several values, then the last element is selected
-            check_if_contains_only_one_element(monitor_4_shift, user_file_trans_spec_shift)
+            check_if_contains_only_one_element(monitor_4_shift, TransId.spec_shift)
             monitor_4_shift = monitor_4_shift[-1]
             set_monitor_4_offset = getattr(self._move_builder, "set_monitor_4_offset", None)
             if callable(set_monitor_4_offset):
@@ -420,8 +789,8 @@ class UserFileStateDirectorISIS(object):
         # ---------------------------
         # Beam Centre, this can be for HAB and LAB
         # ---------------------------
-        if user_file_set_centre in user_file_items:
-            beam_centres = user_file_items[user_file_set_centre]
+        if SetId.centre in user_file_items:
+            beam_centres = user_file_items[SetId.centre]
             beam_centres_for_hab = [beam_centre for beam_centre in beam_centres if beam_centre.detector_type
                                     is DetectorType.Hab]
             beam_centres_for_lab = [beam_centre for beam_centre in beam_centres if beam_centre.detector_type
@@ -440,7 +809,6 @@ class UserFileStateDirectorISIS(object):
                 self._move_builder.set_HAB_sample_centre_pos1(self._move_builder.convert_pos1(pos1))
                 self._move_builder.set_HAB_sample_centre_pos2(self._move_builder.convert_pos2(pos2))
 
-
     def _set_up_reduction_state(self, user_file_items):
         # There are several things that can be extracted from the user file
         # 1. The reduction mode
@@ -450,13 +818,13 @@ class UserFileStateDirectorISIS(object):
         # ------------------------
         # Reduction mode
         # ------------------------
-        set_single_entry(self._reduction_builder, "set_reduction_mode", user_file_det_reduction_mode, user_file_items)
+        set_single_entry(self._reduction_builder, "set_reduction_mode", DetectorId.reduction_mode, user_file_items)
 
         # -------------------------------
         # Shift and rescale
         # -------------------------------
-        set_single_entry(self._reduction_builder, "set_merge_rescale", user_file_det_rescale, user_file_items)
-        set_single_entry(self._reduction_builder, "set_merge_shift", user_file_det_shift, user_file_items)
+        set_single_entry(self._reduction_builder, "set_merge_rescale", DetectorId.rescale, user_file_items)
+        set_single_entry(self._reduction_builder, "set_merge_shift", DetectorId.shift, user_file_items)
 
         # -------------------------------
         # Fitting merged
@@ -464,10 +832,10 @@ class UserFileStateDirectorISIS(object):
         q_range_min_scale = None
         q_range_max_scale = None
         has_rescale_fit = False
-        if user_file_det_rescale_fit in user_file_items:
-            rescale_fits = user_file_items[user_file_det_rescale_fit]
+        if DetectorId.rescale_fit in user_file_items:
+            rescale_fits = user_file_items[DetectorId.rescale_fit]
             # Should the user have chosen several values, then the last element is selected
-            check_if_contains_only_one_element(rescale_fits, user_file_det_rescale_fit)
+            check_if_contains_only_one_element(rescale_fits, DetectorId.rescale_fit)
             rescale_fit = rescale_fits[-1]
             q_range_min_scale = rescale_fit.start
             q_range_max_scale = rescale_fit.stop
@@ -476,10 +844,10 @@ class UserFileStateDirectorISIS(object):
         q_range_min_shift = None
         q_range_max_shift = None
         has_shift_fit = False
-        if user_file_det_shift_fit in user_file_items:
-            shift_fits = user_file_items[user_file_det_shift_fit]
+        if DetectorId.shift_fit in user_file_items:
+            shift_fits = user_file_items[DetectorId.shift_fit]
             # Should the user have chosen several values, then the last element is selected
-            check_if_contains_only_one_element(shift_fits, user_file_det_shift_fit)
+            check_if_contains_only_one_element(shift_fits, DetectorId.shift_fit)
             shift_fit = shift_fits[-1]
             q_range_min_shift = shift_fit.start
             q_range_max_shift = shift_fit.stop
@@ -526,10 +894,10 @@ class UserFileStateDirectorISIS(object):
         # ---------------------------------
         # 1. Line Mask
         # ---------------------------------
-        if user_file_mask_line in user_file_items:
-            mask_lines = user_file_items[user_file_mask_line]
+        if MaskId.line in user_file_items:
+            mask_lines = user_file_items[MaskId.line]
             # If there were several arms specified then we take only the last
-            check_if_contains_only_one_element(mask_lines, user_file_mask_line)
+            check_if_contains_only_one_element(mask_lines, MaskId.line)
             mask_line = mask_lines[-1]
             # We need the width and the angle
             angle = mask_line.angle
@@ -552,10 +920,10 @@ class UserFileStateDirectorISIS(object):
         # ---------------------------------
         # 2. General time mask
         # ---------------------------------
-        if user_file_mask_time in user_file_items:
-            mask_time_general = user_file_items[user_file_mask_time]
+        if MaskId.time in user_file_items:
+            mask_time_general = user_file_items[MaskId.time]
             start_time = []
-            stop_time =[]
+            stop_time = []
             for times in mask_time_general:
                 if times.start > times.start:
                     raise RuntimeError("UserFileStateDirector: You specified a general time mask with a start time {0}"
@@ -569,8 +937,8 @@ class UserFileStateDirectorISIS(object):
         # ---------------------------------
         # 3. Detector-bound time mask
         # ---------------------------------
-        if user_file_mask_time_detector in user_file_items:
-            mask_times = user_file_items[user_file_mask_time_detector]
+        if MaskId.time_detector in user_file_items:
+            mask_times = user_file_items[MaskId.time_detector]
             start_times_hab = []
             stop_times_hab = []
             start_times_lab = []
@@ -597,25 +965,35 @@ class UserFileStateDirectorISIS(object):
         # ---------------------------------
         # 4. Clear detector
         # ---------------------------------
-        set_single_entry(self._mask_builder, "set_clear", user_file_mask_clear_detector_mask, user_file_items)
+        if MaskId.clear_detector_mask in user_file_items:
+            clear_detector_mask = user_file_items[MaskId.clear_detector_mask]
+            check_if_contains_only_one_element(clear_detector_mask, MaskId.clear_detector_mask)
+            # We select the entry which was added last.
+            clear_detector_mask = clear_detector_mask[-1]
+            self._mask_builder.set_clear(clear_detector_mask)
 
         # ---------------------------------
         # 5. Clear time
         # ---------------------------------
-        set_single_entry(self._mask_builder, "set_clear_time", user_file_mask_clear_time_mask, user_file_items)
+        if MaskId.clear_time_mask in user_file_items:
+            clear_time_mask = user_file_items[MaskId.clear_time_mask]
+            check_if_contains_only_one_element(clear_time_mask, MaskId.clear_time_mask)
+            # We select the entry which was added last.
+            clear_time_mask = clear_time_mask[-1]
+            self._mask_builder.set_clear_time(clear_time_mask)
 
         # ---------------------------------
         # 6. Single Spectrum
         # ---------------------------------
-        if user_file_mask_single_spectrum_mask in user_file_items:
-            single_spectra = user_file_items[user_file_mask_single_spectrum_mask]
+        if MaskId.single_spectrum_mask in user_file_items:
+            single_spectra = user_file_items[MaskId.single_spectrum_mask]
             self._mask_builder.set_single_spectra(single_spectra)
 
         # ---------------------------------
         # 7. Spectrum Range
         # ---------------------------------
-        if user_file_mask_spectrum_range_mask in user_file_items:
-            spectrum_ranges = user_file_items[user_file_mask_spectrum_range_mask]
+        if MaskId.spectrum_range_mask in user_file_items:
+            spectrum_ranges = user_file_items[MaskId.spectrum_range_mask]
             start_range = []
             stop_range = []
             for spectrum_range in spectrum_ranges:
@@ -631,8 +1009,8 @@ class UserFileStateDirectorISIS(object):
         # ---------------------------------
         # 8. Vertical single strip
         # ---------------------------------
-        if user_file_mask_vertical_single_strip_mask in user_file_items:
-            single_vertical_strip_masks = user_file_items[user_file_mask_vertical_single_strip_mask]
+        if MaskId.vertical_single_strip_mask in user_file_items:
+            single_vertical_strip_masks = user_file_items[MaskId.vertical_single_strip_mask]
             entry_hab = []
             entry_lab = []
             for single_vertical_strip_mask in single_vertical_strip_masks:
@@ -651,8 +1029,8 @@ class UserFileStateDirectorISIS(object):
         # ---------------------------------
         # 9. Vertical range strip
         # ---------------------------------
-        if user_file_mask_vertical_range_strip_mask in user_file_items:
-            range_vertical_strip_masks = user_file_items[user_file_mask_vertical_range_strip_mask]
+        if MaskId.vertical_range_strip_mask in user_file_items:
+            range_vertical_strip_masks = user_file_items[MaskId.vertical_range_strip_mask]
             start_hab = []
             stop_hab = []
             start_lab = []
@@ -677,8 +1055,8 @@ class UserFileStateDirectorISIS(object):
         # ---------------------------------
         # 10. Horizontal single strip
         # ---------------------------------
-        if user_file_mask_horizontal_single_strip_mask in user_file_items:
-            single_horizontal_strip_masks = user_file_items[user_file_mask_horizontal_single_strip_mask]
+        if MaskId.horizontal_single_strip_mask in user_file_items:
+            single_horizontal_strip_masks = user_file_items[MaskId.horizontal_single_strip_mask]
             entry_hab = []
             entry_lab = []
             for single_horizontal_strip_mask in single_horizontal_strip_masks:
@@ -697,8 +1075,8 @@ class UserFileStateDirectorISIS(object):
         # ---------------------------------
         # 11. Horizontal range strip
         # ---------------------------------
-        if user_file_mask_horizontal_range_strip_mask in user_file_items:
-            range_horizontal_strip_masks = user_file_items[user_file_mask_horizontal_range_strip_mask]
+        if MaskId.horizontal_range_strip_mask in user_file_items:
+            range_horizontal_strip_masks = user_file_items[MaskId.horizontal_range_strip_mask]
             start_hab = []
             stop_hab = []
             start_lab = []
@@ -723,8 +1101,8 @@ class UserFileStateDirectorISIS(object):
         # ---------------------------------
         # 12. Block
         # ---------------------------------
-        if user_file_mask_block in user_file_items:
-            blocks = user_file_items[user_file_mask_block]
+        if MaskId.block in user_file_items:
+            blocks = user_file_items[MaskId.block]
             horizontal_start_hab = []
             horizontal_stop_hab = []
             vertical_start_hab = []
@@ -762,8 +1140,8 @@ class UserFileStateDirectorISIS(object):
         # ---------------------------------
         # 13. Block cross
         # ---------------------------------
-        if user_file_mask_block_cross in user_file_items:
-            block_crosses = user_file_items[user_file_mask_block_cross]
+        if MaskId.block_cross in user_file_items:
+            block_crosses = user_file_items[MaskId.block_cross]
             horizontal_hab = []
             vertical_hab = []
             horizontal_lab = []
@@ -787,10 +1165,10 @@ class UserFileStateDirectorISIS(object):
         # ------------------------------------------------------------
         # 14. Angles --> they are specified in L/Phi
         # -----------------------------------------------------------
-        if user_file_limits_angle in user_file_items:
-            angles = user_file_items[user_file_limits_angle]
+        if LimitsId.angle in user_file_items:
+            angles = user_file_items[LimitsId.angle]
             # Should the user have chosen several values, then the last element is selected
-            check_if_contains_only_one_element(angles, user_file_limits_angle)
+            check_if_contains_only_one_element(angles, LimitsId.angle)
             angle = angles[-1]
             self._mask_builder.set_phi_min(angle.min)
             self._mask_builder.set_phi_max(angle.max)
@@ -799,19 +1177,19 @@ class UserFileStateDirectorISIS(object):
         # ------------------------------------------------------------
         # 15. Maskfiles
         # -----------------------------------------------------------
-        if user_file_mask_file in user_file_items:
-            mask_files = user_file_items[user_file_mask_file]
+        if MaskId.file in user_file_items:
+            mask_files = user_file_items[MaskId.file]
             self._mask_builder.set_mask_files(mask_files)
 
         # ------------------------------------------------------------
         # 16. Radius masks
         # -----------------------------------------------------------
-        if user_file_limits_radius in user_file_items:
-            radii = user_file_items[user_file_limits_radius]
+        if LimitsId.radius in user_file_items:
+            radii = user_file_items[LimitsId.radius]
             # Should the user have chosen several values, then the last element is selected
-            check_if_contains_only_one_element(radii, user_file_limits_radius)
+            check_if_contains_only_one_element(radii, LimitsId.radius)
             radius = radii[-1]
-            if radius.start > 0 and radius.stop > 0 and radius.start > radius.stop:
+            if radius.start > radius.stop > 0:
                 raise RuntimeError("UserFileStateDirector: The inner radius {0} appears to be larger that the outer"
                                    " radius {1} of the mask.".format(radius.start, radius.stop))
             min_value = None if radius.start is None else convert_mm_to_m(radius.start)
@@ -820,9 +1198,9 @@ class UserFileStateDirectorISIS(object):
             self._mask_builder.set_radius_max(max_value)
 
     def _set_up_wavelength_state(self, user_file_items):
-        if user_file_limits_wavelength in user_file_items:
-            wavelength_limits = user_file_items[user_file_limits_wavelength]
-            check_if_contains_only_one_element(wavelength_limits, user_file_limits_wavelength)
+        if LimitsId.wavelength in user_file_items:
+            wavelength_limits = user_file_items[LimitsId.wavelength]
+            check_if_contains_only_one_element(wavelength_limits, LimitsId.wavelength)
             wavelength_limits = wavelength_limits[-1]
             self._wavelength_builder.set_wavelength_low(wavelength_limits.start)
             self._wavelength_builder.set_wavelength_high(wavelength_limits.stop)
@@ -830,27 +1208,27 @@ class UserFileStateDirectorISIS(object):
             self._wavelength_builder.set_wavelength_step_type(wavelength_limits.step_type)
 
     def _set_up_scale_state(self, user_file_items):
-        # We only extract the first entry here, ie the s entry. ALthough there are other entries which a user can
+        # We only extract the first entry here, ie the s entry. Although there are other entries which a user can
         # specify such as a, b, c, d they seem to be
-        if user_file_set_scales in user_file_items:
-            scales = user_file_items[user_file_set_scales]
-            check_if_contains_only_one_element(scales, user_file_set_scales)
+        if SetId.scales in user_file_items:
+            scales = user_file_items[SetId.scales]
+            check_if_contains_only_one_element(scales, SetId.scales)
             scales = scales[-1]
             self._scale_builder.set_scale(scales.s)
 
     def _set_up_convert_to_q_state(self, user_file_items):
         # Get the radius cut off if any is present
-        set_single_entry(self._convert_to_q_builder, "set_radius_cutoff", user_file_limits_radius_cut, user_file_items,
+        set_single_entry(self._convert_to_q_builder, "set_radius_cutoff", LimitsId.radius_cut, user_file_items,
                          apply_to_value=convert_mm_to_m)
 
         # Get the wavelength cut off if any is present
-        set_single_entry(self._convert_to_q_builder, "set_wavelength_cutoff", user_file_limits_wavelength_cut,
+        set_single_entry(self._convert_to_q_builder, "set_wavelength_cutoff", LimitsId.wavelength_cut,
                          user_file_items)
 
         # Get the 1D q values
-        if user_file_limits_q in user_file_items:
-            limits_q = user_file_items[user_file_limits_q]
-            check_if_contains_only_one_element(limits_q, user_file_limits_q)
+        if LimitsId.q in user_file_items:
+            limits_q = user_file_items[LimitsId.q]
+            check_if_contains_only_one_element(limits_q, LimitsId.q)
             limits_q = limits_q[-1]
             # Now we have to check if we have a simple pattern or a more complex pattern at hand
             is_complex = isinstance(limits_q, complex_range)
@@ -867,9 +1245,9 @@ class UserFileStateDirectorISIS(object):
                 self._convert_to_q_builder.set_q_step_type(limits_q.step_type)
 
         # Get the 2D q values
-        if user_file_limits_qxy in user_file_items:
-            limits_qxy = user_file_items[user_file_limits_qxy]
-            check_if_contains_only_one_element(limits_qxy, user_file_limits_qxy)
+        if LimitsId.qxy in user_file_items:
+            limits_qxy = user_file_items[LimitsId.qxy]
+            check_if_contains_only_one_element(limits_qxy, LimitsId.qxy)
             limits_qxy = limits_qxy[-1]
             # Now we have to check if we have a simple pattern or a more complex pattern at hand
             is_complex = isinstance(limits_qxy, complex_range)
@@ -883,135 +1261,110 @@ class UserFileStateDirectorISIS(object):
                 self._convert_to_q_builder.set_q_xy_step_type(limits_qxy.step_type)
 
         # Get the Gravity settings
-        set_single_entry(self._convert_to_q_builder, "set_use_gravity", user_file_gravity_on_off, user_file_items)
-        set_single_entry(self._convert_to_q_builder, "set_gravity_extra_length", user_file_gravity_extra_length, user_file_items)
+        set_single_entry(self._convert_to_q_builder, "set_use_gravity", GravityId.on_off, user_file_items)
+        set_single_entry(self._convert_to_q_builder, "set_gravity_extra_length", GravityId.extra_length,
+                         user_file_items)
 
         # Get the QResolution settings set_q_resolution_delta_r
-        set_single_entry(self._convert_to_q_builder, "set_use_q_resolution", user_file_q_resolution_on, user_file_items)
-        set_single_entry(self._convert_to_q_builder, "set_q_resolution_delta_r", user_file_q_resolution_delta_r,
+        set_single_entry(self._convert_to_q_builder, "set_use_q_resolution", QResolutionId.on, user_file_items)
+        set_single_entry(self._convert_to_q_builder, "set_q_resolution_delta_r", QResolutionId.delta_r,
                          user_file_items, apply_to_value=convert_mm_to_m)
         set_single_entry(self._convert_to_q_builder, "set_q_resolution_collimation_length",
-                         user_file_q_resolution_collimation_length, user_file_items)
-        set_single_entry(self._convert_to_q_builder, "set_q_resolution_a1", user_file_q_resolution_a1, user_file_items,
+                         QResolutionId.collimation_length, user_file_items)
+        set_single_entry(self._convert_to_q_builder, "set_q_resolution_a1", QResolutionId.a1, user_file_items,
                          apply_to_value=convert_mm_to_m)
-        set_single_entry(self._convert_to_q_builder, "set_q_resolution_a2", user_file_q_resolution_a2, user_file_items,
+        set_single_entry(self._convert_to_q_builder, "set_q_resolution_a2", QResolutionId.a2, user_file_items,
                          apply_to_value=convert_mm_to_m)
-        set_single_entry(self._convert_to_q_builder, "set_moderator_file", user_file_q_resolution_moderator,
+        set_single_entry(self._convert_to_q_builder, "set_moderator_file", QResolutionId.moderator,
                          user_file_items)
-        set_single_entry(self._convert_to_q_builder, "set_q_resolution_h1", user_file_q_resolution_h1, user_file_items,
+        set_single_entry(self._convert_to_q_builder, "set_q_resolution_h1", QResolutionId.h1, user_file_items,
                          apply_to_value=convert_mm_to_m)
-        set_single_entry(self._convert_to_q_builder, "set_q_resolution_h2", user_file_q_resolution_h2, user_file_items,
+        set_single_entry(self._convert_to_q_builder, "set_q_resolution_h2", QResolutionId.h2, user_file_items,
                          apply_to_value=convert_mm_to_m)
-        set_single_entry(self._convert_to_q_builder, "set_q_resolution_w1", user_file_q_resolution_w1, user_file_items,
+        set_single_entry(self._convert_to_q_builder, "set_q_resolution_w1", QResolutionId.w1, user_file_items,
                          apply_to_value=convert_mm_to_m)
-        set_single_entry(self._convert_to_q_builder, "set_q_resolution_w2", user_file_q_resolution_w2, user_file_items,
+        set_single_entry(self._convert_to_q_builder, "set_q_resolution_w2", QResolutionId.w2, user_file_items,
                          apply_to_value=convert_mm_to_m)
-
 
     def _set_up_adjustment_state(self, user_file_items):
-        # ------------------------------------------------
-        # Setup the normalize to monitor state
-        # ------------------------------------------------
-        normalize_to_monitor_state = self._set_up_normalize_to_monitor_state(user_file_items)
-        self._adjustment_builder.set_normalize_to_monitor(normalize_to_monitor_state)
-
-        # ------------------------------------------------
-        # Setup the transmission calculation state
-        # ------------------------------------------------
-        calculate_transmission_state = self._set_up_calculate_transmission(user_file_items)
-        self._adjustment_builder.set_calculate_transmission(calculate_transmission_state)
-
-        # ------------------------------------------------
-        # Setup the wavelength and pixel adjustment state
-        # ------------------------------------------------
-        wavelength_and_pixel_adjustment_state = self._set_up_wavelength_and_pixel_adjustment(user_file_items)
-        self._adjustment_builder.set_wavelength_and_pixel_adjustment(wavelength_and_pixel_adjustment_state)
-
         # Get the wide angle correction setting
-        set_single_entry(self._adjustment_builder, "set_wide_angle_correction", user_file_sample_path, user_file_items)
+        set_single_entry(self._adjustment_builder, "set_wide_angle_correction", SampleId.path, user_file_items)
 
     def _set_up_normalize_to_monitor_state(self, user_file_items):
-        normalize_to_state_builder = get_normalize_to_monitor_builder(self._data)
-
         # Extract the incident monitor and which type of rebinning to use (interpolating or normal)
-        if user_file_mon_spectrum in user_file_items:
-            mon_spectrum = user_file_items[user_file_mon_spectrum]
+        if MonId.spectrum in user_file_items:
+            mon_spectrum = user_file_items[MonId.spectrum]
             for monitor in mon_spectrum:
                 if not monitor.is_trans:
-                    normalize_to_state_builder.set_incident_monitor(monitor.spectrum)
+                    self._normalize_to_monitor_builder.set_incident_monitor(monitor.spectrum)
                     rebin_type = RebinType.InterpolatingRebin if monitor.interpolate else RebinType.Rebin
-                    normalize_to_state_builder.set_rebin_type(rebin_type)
+                    self._normalize_to_monitor_builder.set_rebin_type(rebin_type)
 
         # The prompt peak correction values
-        set_prompt_peak_correction(normalize_to_state_builder, user_file_items)
+        set_prompt_peak_correction(self._normalize_to_monitor_builder, user_file_items)
 
         # The general background settings
-        set_background_TOF_general(normalize_to_state_builder, user_file_items)
+        set_background_tof_general(self._normalize_to_monitor_builder, user_file_items)
 
         # The monitor-specific background settings
-        set_background_TOF_monitor(normalize_to_state_builder, user_file_items)
+        set_background_tof_monitor(self._normalize_to_monitor_builder, user_file_items)
 
         # Get the wavelength rebin settings
-        set_wavelength_limits(normalize_to_state_builder, user_file_items)
-
-        # Now get the SANSStateNormalizeToMonitor state
-        return normalize_to_state_builder.build()
+        set_wavelength_limits(self._normalize_to_monitor_builder, user_file_items)
 
     def _set_up_calculate_transmission(self, user_file_items):
-        calculate_transmission_builder = get_calculate_transmission_builder(self._data)
-
         # Transmission radius
-        set_single_entry(calculate_transmission_builder, "set_transmission_radius_on_detector", user_file_trans_radius,
-                         user_file_items,apply_to_value=convert_mm_to_m)
+        set_single_entry(self._calculate_transmission_builder, "set_transmission_radius_on_detector", TransId.radius,
+                         user_file_items, apply_to_value=convert_mm_to_m)
 
         # List of transmission roi files
-        if user_file_trans_roi in user_file_items:
-            trans_roi = user_file_items[user_file_trans_roi]
-            calculate_transmission_builder.set_transmission_roi_files(trans_roi)
+        if TransId.roi in user_file_items:
+            trans_roi = user_file_items[TransId.roi]
+            self._calculate_transmission_builder.set_transmission_roi_files(trans_roi)
 
         # List of transmission mask files
-        if user_file_trans_mask in user_file_items:
-            trans_mask = user_file_items[user_file_trans_mask]
-            calculate_transmission_builder.set_transmission_mask_files(trans_mask)
+        if TransId.mask in user_file_items:
+            trans_mask = user_file_items[TransId.mask]
+            self._calculate_transmission_builder.set_transmission_mask_files(trans_mask)
 
         # The prompt peak correction values
-        set_prompt_peak_correction(calculate_transmission_builder, user_file_items)
+        set_prompt_peak_correction(self._calculate_transmission_builder, user_file_items)
 
         # The transmission spectrum
-        if user_file_trans_spec in user_file_items:
-            trans_spec = user_file_items[user_file_trans_spec]
+        if TransId.spec in user_file_items:
+            trans_spec = user_file_items[TransId.spec]
             # Should the user have chosen several values, then the last element is selected
-            check_if_contains_only_one_element(trans_spec, user_file_trans_spec)
+            check_if_contains_only_one_element(trans_spec, TransId.spec)
             trans_spec = trans_spec[-1]
-            calculate_transmission_builder.set_transmission_monitor(trans_spec)
+            self._calculate_transmission_builder.set_transmission_monitor(trans_spec)
 
         # The incident monitor spectrum for transmission calculation
-        if user_file_mon_spectrum in user_file_items:
-            mon_spectrum = user_file_items[user_file_mon_spectrum]
+        if MonId.spectrum in user_file_items:
+            mon_spectrum = user_file_items[MonId.spectrum]
             for monitor in mon_spectrum:
                 if not monitor.is_trans:
                     rebin_type = RebinType.InterpolatingRebin if monitor.interpolate else RebinType.Rebin
-                    calculate_transmission_builder.set_rebin_type(rebin_type)
-                    calculate_transmission_builder.set_incident_monitor(monitor.spectrum)
+                    self._calculate_transmission_builder.set_rebin_type(rebin_type)
+                    self._calculate_transmission_builder.set_incident_monitor(monitor.spectrum)
 
         # The general background settings
-        set_background_TOF_general(calculate_transmission_builder, user_file_items)
+        set_background_tof_general(self._calculate_transmission_builder, user_file_items)
 
         # The monitor-specific background settings
-        set_background_TOF_monitor(calculate_transmission_builder, user_file_items)
+        set_background_tof_monitor(self._calculate_transmission_builder, user_file_items)
 
         # The roi-specific background settings
-        if user_file_back_trans in user_file_items:
-            back_trans = user_file_items[user_file_back_trans]
+        if BackId.trans in user_file_items:
+            back_trans = user_file_items[BackId.trans]
             # Should the user have chosen several values, then the last element is selected
-            check_if_contains_only_one_element(back_trans, user_file_back_trans)
+            check_if_contains_only_one_element(back_trans, BackId.trans)
             back_trans = back_trans[-1]
-            calculate_transmission_builder.set_background_TOF_roi_start(back_trans.start)
-            calculate_transmission_builder.set_background_TOF_roi_stop(back_trans.stop)
+            self._calculate_transmission_builder.set_background_TOF_roi_start(back_trans.start)
+            self._calculate_transmission_builder.set_background_TOF_roi_stop(back_trans.stop)
 
         # Set the fit settings
-        if user_file_fit_general in user_file_items:
-            fit_general = user_file_items[user_file_fit_general]
+        if FitId.general in user_file_items:
+            fit_general = user_file_items[FitId.general]
             # We can have settings for both the sample or the can or individually
             # There can be three types of settings:
             # 1. General settings where the entry data_type is not specified. Settings apply to both sample and can
@@ -1023,84 +1376,109 @@ class UserFileStateDirectorISIS(object):
             # 1. General settings
             general_settings = [item for item in fit_general if item.data_type is None]
             if general_settings:
-                check_if_contains_only_one_element(general_settings, user_file_fit_general)
+                check_if_contains_only_one_element(general_settings, FitId.general)
                 general_settings = general_settings[-1]
-                calculate_transmission_builder.set_Sample_fit_type(general_settings.fit_type)
-                calculate_transmission_builder.set_Sample_polynomial_order(general_settings.polynomial_order)
-                calculate_transmission_builder.set_Sample_wavelength_low(general_settings.start)
-                calculate_transmission_builder.set_Sample_wavelength_high(general_settings.stop)
-                calculate_transmission_builder.set_Can_fit_type(general_settings.fit_type)
-                calculate_transmission_builder.set_Can_polynomial_order(general_settings.polynomial_order)
-                calculate_transmission_builder.set_Can_wavelength_low(general_settings.start)
-                calculate_transmission_builder.set_Can_wavelength_high(general_settings.stop)
+                self._calculate_transmission_builder.set_Sample_fit_type(general_settings.fit_type)
+                self._calculate_transmission_builder.set_Sample_polynomial_order(general_settings.polynomial_order)
+                self._calculate_transmission_builder.set_Sample_wavelength_low(general_settings.start)
+                self._calculate_transmission_builder.set_Sample_wavelength_high(general_settings.stop)
+                self._calculate_transmission_builder.set_Can_fit_type(general_settings.fit_type)
+                self._calculate_transmission_builder.set_Can_polynomial_order(general_settings.polynomial_order)
+                self._calculate_transmission_builder.set_Can_wavelength_low(general_settings.start)
+                self._calculate_transmission_builder.set_Can_wavelength_high(general_settings.stop)
 
             # 2. Sample settings
             sample_settings = [item for item in fit_general if item.data_type is DataType.Sample]
             if sample_settings:
-                check_if_contains_only_one_element(sample_settings, user_file_fit_general)
+                check_if_contains_only_one_element(sample_settings, FitId.general)
                 sample_settings = sample_settings[-1]
-                calculate_transmission_builder.set_Sample_fit_type(sample_settings.fit_type)
-                calculate_transmission_builder.set_Sample_polynomial_order(sample_settings.polynomial_order)
-                calculate_transmission_builder.set_Sample_wavelength_low(sample_settings.start)
-                calculate_transmission_builder.set_Sample_wavelength_high(sample_settings.stop)
+                self._calculate_transmission_builder.set_Sample_fit_type(sample_settings.fit_type)
+                self._calculate_transmission_builder.set_Sample_polynomial_order(sample_settings.polynomial_order)
+                self._calculate_transmission_builder.set_Sample_wavelength_low(sample_settings.start)
+                self._calculate_transmission_builder.set_Sample_wavelength_high(sample_settings.stop)
 
             # 2. Can settings
             can_settings = [item for item in fit_general if item.data_type is DataType.Can]
             if can_settings:
-                check_if_contains_only_one_element(can_settings, user_file_fit_general)
+                check_if_contains_only_one_element(can_settings, FitId.general)
                 can_settings = can_settings[-1]
-                calculate_transmission_builder.set_Can_fit_type(can_settings.fit_type)
-                calculate_transmission_builder.set_Can_polynomial_order(can_settings.polynomial_order)
-                calculate_transmission_builder.set_Can_wavelength_low(can_settings.start)
-                calculate_transmission_builder.set_Can_wavelength_high(can_settings.stop)
+                self._calculate_transmission_builder.set_Can_fit_type(can_settings.fit_type)
+                self._calculate_transmission_builder.set_Can_polynomial_order(can_settings.polynomial_order)
+                self._calculate_transmission_builder.set_Can_wavelength_low(can_settings.start)
+                self._calculate_transmission_builder.set_Can_wavelength_high(can_settings.stop)
 
         # Set the wavelength default configuration
-        if user_file_limits_wavelength in user_file_items:
-            wavelength_limits = user_file_items[user_file_limits_wavelength]
-            check_if_contains_only_one_element(wavelength_limits, user_file_limits_wavelength)
+        if LimitsId.wavelength in user_file_items:
+            wavelength_limits = user_file_items[LimitsId.wavelength]
+            check_if_contains_only_one_element(wavelength_limits, LimitsId.wavelength)
             wavelength_limits = wavelength_limits[-1]
-            calculate_transmission_builder.set_wavelength_low(wavelength_limits.start)
-            calculate_transmission_builder.set_wavelength_high(wavelength_limits.stop)
-            calculate_transmission_builder.set_wavelength_step(wavelength_limits.step)
-            calculate_transmission_builder.set_wavelength_step_type(wavelength_limits.step_type)
-        return calculate_transmission_builder.build()
+            self._calculate_transmission_builder.set_wavelength_low(wavelength_limits.start)
+            self._calculate_transmission_builder.set_wavelength_high(wavelength_limits.stop)
+            self._calculate_transmission_builder.set_wavelength_step(wavelength_limits.step)
+            self._calculate_transmission_builder.set_wavelength_step_type(wavelength_limits.step_type)
 
     def _set_up_wavelength_and_pixel_adjustment(self, user_file_items):
-        wavelength_and_pixel_adjustment_builder = get_wavelength_and_pixel_adjustment_builder(self._data)
-
         # Get the flat/flood files. There can be entries for LAB and HAB.
-        if user_file_mon_flat in user_file_items:
-            mon_flat = user_file_items[user_file_mon_flat]
+        if MonId.flat in user_file_items:
+            mon_flat = user_file_items[MonId.flat]
             hab_flat_entries = [item for item in mon_flat if item.detector_type is DetectorType.Hab]
             lab_flat_entries = [item for item in mon_flat if item.detector_type is DetectorType.Lab]
             if hab_flat_entries:
                 hab_flat_entry = hab_flat_entries[-1]
-                wavelength_and_pixel_adjustment_builder.set_HAB_pixel_adjustment_file(hab_flat_entry.file_path)
+                self._wavelength_and_pixel_adjustment_builder.set_HAB_pixel_adjustment_file(hab_flat_entry.file_path)
 
             if lab_flat_entries:
                 lab_flat_entry = lab_flat_entries[-1]
-                wavelength_and_pixel_adjustment_builder.set_LAB_pixel_adjustment_file(lab_flat_entry.file_path)
+                self._wavelength_and_pixel_adjustment_builder.set_LAB_pixel_adjustment_file(lab_flat_entry.file_path)
 
         # Get the direct files. There can be entries for LAB and HAB.
-        if user_file_mon_direct in user_file_items:
-            mon_direct = user_file_items[user_file_mon_direct]
+        if MonId.direct in user_file_items:
+            mon_direct = user_file_items[MonId.direct]
             hab_direct_entries = [item for item in mon_direct if item.detector_type is DetectorType.Hab]
             lab_direct_entries = [item for item in mon_direct if item.detector_type is DetectorType.Lab]
             if hab_direct_entries:
                 hab_direct_entry = hab_direct_entries[-1]
-                wavelength_and_pixel_adjustment_builder.set_HAB_wavelength_adjustment_file(hab_direct_entry.file_path)
+                self._wavelength_and_pixel_adjustment_builder.set_HAB_wavelength_adjustment_file(
+                    hab_direct_entry.file_path)
 
             if lab_direct_entries:
                 lab_direct_entry = lab_direct_entries[-1]
-                wavelength_and_pixel_adjustment_builder.set_LAB_wavelength_adjustment_file(lab_direct_entry.file_path)
+                self._wavelength_and_pixel_adjustment_builder.set_LAB_wavelength_adjustment_file(
+                    lab_direct_entry.file_path)
 
         # Set up the wavelength
-        if user_file_limits_wavelength in user_file_items:
-            wavelength_limits = user_file_items[user_file_limits_wavelength]
-            check_if_contains_only_one_element(wavelength_limits, user_file_limits_wavelength)
+        if LimitsId.wavelength in user_file_items:
+            wavelength_limits = user_file_items[LimitsId.wavelength]
+            check_if_contains_only_one_element(wavelength_limits, LimitsId.wavelength)
             wavelength_limits = wavelength_limits[-1]
-            wavelength_and_pixel_adjustment_builder.set_wavelength_low(wavelength_limits.start)
-            wavelength_and_pixel_adjustment_builder.set_wavelength_high(wavelength_limits.stop)
-            wavelength_and_pixel_adjustment_builder.set_wavelength_step(wavelength_limits.step)
-            wavelength_and_pixel_adjustment_builder.set_wavelength_step_type(wavelength_limits.step_type)
-        return wavelength_and_pixel_adjustment_builder.build()
+            self._wavelength_and_pixel_adjustment_builder.set_wavelength_low(wavelength_limits.start)
+            self._wavelength_and_pixel_adjustment_builder.set_wavelength_high(wavelength_limits.stop)
+            self._wavelength_and_pixel_adjustment_builder.set_wavelength_step(wavelength_limits.step)
+            self._wavelength_and_pixel_adjustment_builder.set_wavelength_step_type(wavelength_limits.step_type)
+
+    def _add_information_to_data_state(self, user_file_items):
+        # The only thing that should be set on the data is the tube calibration file which is specified in
+        # the user file.
+        if TubeCalibrationFileId.file in user_file_items:
+            tube_calibration = user_file_items[TubeCalibrationFileId.file]
+            check_if_contains_only_one_element(tube_calibration, TubeCalibrationFileId.file)
+            tube_calibration = tube_calibration[-1]
+            self._data.calibration = tube_calibration
+
+    def convert_pos1(self, pos1):
+        """
+        Performs a conversion of position 1 of the beam centre. This is forwarded to the move builder.
+
+        @param pos1: the first position (this can be x in mm or for LARMOR and angle)
+        @return: the correctly scaled position
+        """
+        return self._move_builder.convert_pos1(pos1)
+
+    def convert_pos2(self, pos2):
+        """
+        Performs a conversion of position 2 of the beam centre. This is forwarded to the move builder.
+
+        @param pos2: the second position
+        @return: the correctly scaled position
+        """
+        return self._move_builder.convert_pos2(pos2)

@@ -9,7 +9,6 @@ from SANS2.Common.SANSType import (SANSFacility, ISISReductionMode, RangeStepTyp
                                            convert_detector_type_to_string, DetectorType)
 from SANS2.Common.SANSConfigurations import SANSConfigurations
 from SANS2.State.StateBuilder.SANSStateDataBuilder import get_data_builder
-from SANS2.UserFile.UserFileCommon import *
 
 from SANS2.Common.SANSConstants import SANSConstants
 from UserFileTestHelper import create_user_file, sample_user_file
@@ -19,6 +18,11 @@ from UserFileTestHelper import create_user_file, sample_user_file
 # --- Tests -------------------------------------------------------
 # -----------------------------------------------------------------
 class UserFileStateDirectorISISTest(unittest.TestCase):
+    def _assert_data(self, state):
+        # The only item which can be set by the director in the data state is the tube calibration file
+        data = state.data
+        self.assertTrue(data.calibration == "TUBE_SANS2D_BOTH_31681_25Sept15.nxs")
+
     def _assert_move(self, state):
         move = state.move
         # Check the elements which were set on move
@@ -39,8 +43,6 @@ class UserFileStateDirectorISISTest(unittest.TestCase):
 
     def _assert_mask(self, state):
         mask = state.mask
-        print mask.radius_min
-        print mask.radius_max
         self.assertTrue(mask.radius_min == 12/1000.)
         self.assertTrue(mask.radius_max == 15/1000.)
         self.assertTrue(mask.clear is True)
@@ -161,11 +163,11 @@ class UserFileStateDirectorISISTest(unittest.TestCase):
         self.assertTrue(wavelength_and_pixel_adjustment.wavelength_step == 0.125)
         self.assertTrue(wavelength_and_pixel_adjustment.wavelength_step_type is RangeStepType.Lin)
         self.assertTrue(wavelength_and_pixel_adjustment.adjustment_files[
-                            convert_detector_type_to_string(DetectorType.Lab)].wavelength_adjustment_file ==
-                            "DIRECTM1_15785_12m_31Oct12_v12.dat")
+                        convert_detector_type_to_string(DetectorType.Lab)].wavelength_adjustment_file ==
+                        "DIRECTM1_15785_12m_31Oct12_v12.dat")
         self.assertTrue(wavelength_and_pixel_adjustment.adjustment_files[
-                            convert_detector_type_to_string(DetectorType.Hab)].wavelength_adjustment_file ==
-                            "DIRECTM1_15785_12m_31Oct12_v12.dat")
+                        convert_detector_type_to_string(DetectorType.Hab)].wavelength_adjustment_file ==
+                        "DIRECTM1_15785_12m_31Oct12_v12.dat")
 
         # Assert wide angle correction
         self.assertTrue(state.adjustment.wide_angle_correction)
@@ -185,6 +187,7 @@ class UserFileStateDirectorISISTest(unittest.TestCase):
         state = director.construct()
 
         # Assert
+        self._assert_data(state)
         self._assert_move(state)
         self._assert_mask(state)
         self._assert_reduction(state)

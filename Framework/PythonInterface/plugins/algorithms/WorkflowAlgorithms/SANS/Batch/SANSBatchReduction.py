@@ -7,8 +7,8 @@ from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, Algorit
                         PropertyMode, AnalysisDataService)
 
 from SANS2.State.SANSStateBase import create_deserialized_sans_state_from_property_manager
-from SANS.Batch.BatchExecution import (single_reduction_for_batch, OutputMode)
-from SANS2.Common.SANSType import (BatchMode, convert_output_mode_to_string, convert_string_to_output_mode)
+from SANS.Batch.BatchExecution import (single_reduction_for_batch)
+from SANS2.Common.SANSType import (OutputMode, convert_output_mode_to_string, convert_string_to_output_mode)
 
 
 class SANSBatchReduction(DataProcessorAlgorithm):
@@ -31,9 +31,9 @@ class SANSBatchReduction(DataProcessorAlgorithm):
                                  "Depending on your concrete reduction, this could provide a significant"
                                  " performance boost")
 
-        allowed_detectors = StringListValidator([convert_output_mode_to_string(BatchMode.PublishToADS),
-                                                 convert_output_mode_to_string(BatchMode.SaveToFile),
-                                                 convert_output_mode_to_string(BatchMode.Both)])
+        allowed_detectors = StringListValidator([convert_output_mode_to_string(OutputMode.PublishToADS),
+                                                 convert_output_mode_to_string(OutputMode.SaveToFile),
+                                                 convert_output_mode_to_string(OutputMode.Both)])
         self.declareProperty("OutputMode", "PublishToADS", validator=allowed_detectors, direction=Direction.Input,
                              doc="There are two output modes available./n"
                                  "PublishToADS: publishes the workspaces to the ADS. /n"
@@ -79,33 +79,6 @@ class SANSBatchReduction(DataProcessorAlgorithm):
             state.property_manager = inner_property_manager
             sans_states.append(state)
         return sans_states
-
-    def _publish_to_ads(self, batch_reduction_return_bundles):
-        for bundle in batch_reduction_return_bundles:
-            self._publish(bundle.lab)
-            self._publish(bundle.hab)
-            self._publish(bundle.merged)
-
-    def _publish(self, workspace):
-        if workspace is not None:
-            name = workspace.name()
-            title = workspace.getTitle()
-            workspace_name = name if name else title
-            AnalysisDataService.addOrReplace(workspace_name, workspace)
-
-    def _add_property(self, workspace, prefix, current_count):
-        if workspace is not None:
-            total_number_of_workspaces = current_count + 1
-            out_name = "OutputWorkspace" + prefix + "_" + str(total_number_of_workspaces)
-            self.declareProperty(MatrixWorkspaceProperty(out_name, '',
-                                                         optional=PropertyMode.Optional,
-                                                         direction=Direction.Output),
-                                 doc='The {0}th output workspace for a {1}-type'
-                                     ' reduction mode.'.format(total_number_of_workspaces, prefix))
-            self.setProperty(out_name, workspace)
-        else:
-            total_number_of_workspaces = current_count
-        return total_number_of_workspaces
 
 
 # Register algorithm with Mantid

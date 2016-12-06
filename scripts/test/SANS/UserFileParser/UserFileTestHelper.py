@@ -73,6 +73,7 @@ sample_user_file = ("PRINT for changer\n"
                     "QRESOL/MODERATOR=moderator_rkh_file.txt\n"
                     "QRESOL/A1=13\n"
                     "QRESOL/A2=14\n"
+                    "TUBECALIBFILE=TUBE_SANS2D_BOTH_31681_25Sept15.nxs"
                     )
 
 

@@ -1,3 +1,4 @@
+add_subdirectory(CommandInterface)
 add_subdirectory(Common)
 add_subdirectory(ConvertToQ)
 add_subdirectory(Scale)

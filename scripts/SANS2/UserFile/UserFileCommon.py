@@ -1,5 +1,10 @@
 from collections import namedtuple
+from SANS2.Common.SANSType import sans_type
 
+
+# ----------------------------------------------------------------------------------------------------------------------
+#  Named tuples for passing around data in a structured way, a bit like a plain old c-struct.
+# ----------------------------------------------------------------------------------------------------------------------
 # General
 range_entry = namedtuple('range_entry', 'start, stop')
 range_entry_with_detector = namedtuple('range_entry_with_detector', 'start, stop, detector_type')
@@ -38,131 +43,83 @@ monitor_file = namedtuple('monitor_file', 'file_path, detector_type')
 # -----------------------------------------------------------------
 
 # --- DET
-user_file_det_reduction_mode = "det_reduction_mode"
-user_file_det_rescale = "det_rescale"
-user_file_det_shift = "det_shift"
+@sans_type("reduction_mode", "rescale", "shift", "rescale_fit", "shift_fit", "correction_x", "correction_y",
+           "correction_z", "correction_rotation", "correction_radius", "correction_translation", "correction_x_tilt",
+           "correction_y_tilt")
+class DetectorId(object):
+    pass
 
-user_file_det_rescale_fit = "det_rescale_fit"
-user_file_det_shift_fit = "det_shift_fit"
-
-user_file_det_correction_x = "det_correction_x"
-user_file_det_correction_y = "det_correction_y"
-user_file_det_correction_z = "det_correction_z"
-user_file_det_correction_rotation = "det_correction_rotation"
-user_file_det_correction_radius = "det_correction_radius"
-user_file_det_correction_translation = "det_correction_translation"
-user_file_det_correction_x_tilt = "det_correction_x_tilt"
-user_file_det_correction_y_tilt = "det_correction_y_tilt"
 
 # --- LIMITS
-user_file_limits_angle = "limits_angle"
-
-user_file_limits_events_binning = "limits_events_binning"
-user_file_limits_events_binning_range = "limits_events_binning_range "
-
-user_file_limits_radius_cut = "limits_radius_cut"
-user_file_limits_wavelength_cut = "limits_wavelength_cut"
-
-user_file_limits_radius = "limits_radius"
-
-user_file_limits_q = "limits_q"
-user_file_limits_qxy = "limits_qxy"
-user_file_limits_wavelength = "limits_wavelength"
+@sans_type("angle", "events_binning", "events_binning_range", "radius_cut", "wavelength_cut", "radius", "q",
+           "qxy", "wavelength")
+class LimitsId(object):
+    pass
 
 
 # --- MASK
-user_file_mask_line = "mask_line"
-
-user_file_mask_time = "mask_time"
-user_file_mask_time_detector = "mask_time_detector"
-
-user_file_mask_clear_detector_mask = "mask_clear_detector_mask"
-user_file_mask_clear_time_mask = "mask_clear_time_mask"
-
-user_file_mask_single_spectrum_mask = "mask_single_spectrum_mask"
-user_file_mask_spectrum_range_mask = "mask_spectrum_range_mask"
-
-user_file_mask_vertical_single_strip_mask = "mask_vertical_single_strip_mask"
-user_file_mask_vertical_range_strip_mask = "mask_vertical_range_strip_mask"
-
-user_file_mask_horizontal_single_strip_mask = "mask_horizontal_single_strip_mask"
-user_file_mask_horizontal_range_strip_mask = "mask_horizontal_range_strip_mask"
-
-user_file_mask_block = "mask_block"
-user_file_mask_block_cross = "block_cross"
+@sans_type("line", "time", "time_detector", "clear_detector_mask", "clear_time_mask", "single_spectrum_mask",
+           "spectrum_range_mask", "vertical_single_strip_mask", "vertical_range_strip_mask", "file",
+           "horizontal_single_strip_mask", "horizontal_range_strip_mask", "block", "block_cross")
+class MaskId(object):
+    pass
 
 
 # --- SAMPLE
-user_file_sample_path = "sample_path"
-user_file_sample_offset = "sample_offset"
+@sans_type("path", "offset")
+class SampleId(object):
+    pass
 
 
 # --- SET
-user_file_set_scales = "set_scales"
-user_file_set_centre = "set_centre"
+@sans_type("scales", "centre")
+class SetId(object):
+    pass
 
 
 # --- TRANS
-user_file_trans_spec = "trans_spec"
-user_file_trans_spec_shift = "trans_spec_shift"
-
-user_file_trans_radius = "trans_radius"
-user_file_trans_roi = "trans_roi"
-user_file_trans_mask = "trans_mask"
-
-user_file_trans_sample_workspace = "trans_sample_workspace"
-user_file_trans_can_workspace = "trans_can_workspace"
+@sans_type("spec", "spec_shift", "radius", "roi", "mask", "sample_workspace", "can_workspace")
+class TransId(object):
+    pass
 
 
 # --- TUBECALIBFILE
-user_file_tube_calibration_file = "tube_calibration_file"
+@sans_type("file")
+class TubeCalibrationFileId(object):
+    pass
 
 
 # -- QRESOLUTION
-user_file_q_resolution_on = "q_resolution_on"
-user_file_q_resolution_delta_r = "q_resolution_delta_r"
-user_file_q_resolution_collimation_length = "q_resolution_collimation_length"
-user_file_q_resolution_a1 = "q_resolution_a1"
-user_file_q_resolution_a2 = "q_resolution_a2"
-user_file_q_resolution_h1 = "q_resolution_h1"
-user_file_q_resolution_w1 = "q_resolution_w1"
-user_file_q_resolution_h2 = "q_resolution_h2"
-user_file_q_resolution_w2 = "q_resolution_w2"
-user_file_q_resolution_moderator = "q_resolution_moderator"
+@sans_type("on", "delta_r", "collimation_length", "a1", "a2", "h1", "w1", "h2", "w2", "moderator")
+class QResolutionId(object):
+    pass
 
 
 # --- FIT
-user_file_fit_clear = "fit_clear"
-user_file_fit_monitor_times = "fit_monitor_times"
-user_file_fit_general = "fit_general"
+@sans_type("clear", "monitor_times", "general")
+class FitId(object):
+    pass
+
 
 # --- GRAVITY
-user_file_gravity_on_off = "gravity_on_off"
-user_file_gravity_extra_length = "gravity_extra_length"
-
-
-# --- MASKFILE
-user_file_mask_file = "mask_file"
+@sans_type("on_off", "extra_length")
+class GravityId(object):
+    pass
 
 
 # --- MON
-user_file_mon_length = "mon_length"
-
-user_file_mon_direct = "mon_direct"
-user_file_mon_flat = "mon_flat"
-user_file_mon_hab = "mon_hab"
-
-user_file_mon_spectrum = "mon_spectrum"
-user_file_mon_spectrum_trans = "mon_spectrum_trans"
-user_file_mon_interpolate = "mon_interpolate"
+@sans_type("length", "direct", "flat", "hab", "spectrum", "spectrum_trans", "interpolate")
+class MonId(object):
+    pass
 
 
 # --- PRINT
-user_file_print = "user_file_print"
+@sans_type("print_line")
+class PrintId(object):
+    pass
 
 
 # -- BACK
-user_file_back_all_monitors = "back_all_monitors"
-user_file_back_single_monitors = "back_single_monitor"
-user_file_back_monitor_off = "back_monitor_off"
-user_file_back_trans = "back_trans"
+@sans_type("all_monitors", "single_monitors", "monitor_off", "trans")
+class BackId(object):
+    pass

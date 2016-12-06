@@ -3,10 +3,12 @@
 # pylint: disable=invalid-name
 
 from math import (acos, sqrt, degrees)
+import re
 from mantid.api import AlgorithmManager, AnalysisDataService
 from mantid.kernel import (DateAndTime)
 from SANS2.Common.SANSConstants import SANSConstants
 from SANS2.Common.SANSLogTagger import (get_tag, has_tag, set_tag)
+from SANS2.Common.SANSType import DetectorType
 
 
 # -------------------------------------------
@@ -179,3 +181,124 @@ def get_ads_workspace_references():
     """
     for workspace_name in AnalysisDataService.getObjectNames():
         yield AnalysisDataService.retrieve(workspace_name)
+
+
+def convert_bank_name_to_detector_type_isis(detector_name):
+    """
+    Converts a detector name of an isis detector to a detector type.
+
+    The current translation is
+    SANS2D: rear-detector -> LAB
+            front-detector -> HAB
+            but also allowed rear, front
+    LOQ:    main-detector-bank -> LAB
+            HAB                -> HAB
+            but also allowed main
+    LARMOR: DetectorBench      -> LAB
+
+    @param detector_name: a string with a valid detector name
+    @return: a detector type depending on the input string, or a runtime exception.
+    """
+    detector_name = detector_name.upper()
+    detector_name = detector_name.strip()
+    if detector_name == "REAR-DETECTOR" or detector_name == "MAIN-DETECTOR-BANK" or detector_name == "DETECTORBENCH" \
+            or detector_name == "REAR" or detector_name == "MAIN":
+        detector_type = DetectorType.Lab
+    elif detector_name == "FRONT-DETECTOR" or detector_name == "HAB" or detector_name == "FRONT":
+        detector_type = DetectorType.Hab
+    else:
+        raise RuntimeError("There is not detector type conversion for a detector with the "
+                           "name {0}".format(detector_name))
+    return detector_type
+
+
+def parse_event_slice_setting(string_to_parse):
+    """
+    Create a list of boundaries from a string defining the slices.
+    Valid syntax is:
+      * From 8 to 9 > '8-9' --> return [[8,9]]
+      * From 8 to 9 and from 10 to 12 > '8-9, 10-12' --> return [[8,9],[10,12]]
+      * From 5 to 10 in steps of 1 > '5:1:10' --> return [[5,6],[6,7],[7,8],[8,9],[9,10]]
+      * From 5 > '>5' --> return [[5,-1]]
+      * Till 5 > '<5' --> return [[-1,5]]
+
+    Any combination of these syntax separated by comma is valid.
+    A special mark is used to signalize no limit: -1,
+    As, so, for an empty string, it will return: [[-1, -1]].
+
+    It does not accept negative values.
+    """
+
+    def _does_match(compiled_regex, line):
+        return compiled_regex.match(line) is not None
+
+    def _extract_simple_slice(line):
+        start, stop = line.split("-")
+        start = float(start)
+        stop = float(stop)
+        if start > stop:
+            raise ValueError("Parsing event slices. It appears that the start value {0} is larger than the stop "
+                             "value {1}. Make sure that this is not the case.")
+        return [start, stop]
+
+    def float_range(start, stop, step):
+        while start < stop:
+            yield start
+            start += step
+
+    def _extract_slice_range(line):
+        split_line = line.split(":")
+        start = float(split_line[0])
+        step = float(split_line[1])
+        stop = float(split_line[2])
+        if start > stop:
+            raise ValueError("Parsing event slices. It appears that the start value {0} is larger than the stop "
+                             "value {1}. Make sure that this is not the case.")
+
+        elements = list(float_range(start, stop, step))
+        # We are missing the last element
+        elements.append(stop)
+
+        # We generate ranges with [[element[0], element[1]], [element[1], element[2]], ...]
+        ranges = zip(elements[:-1], elements[1:])
+        return [[e1, e2] for e1, e2 in ranges]
+
+    def _extract_full_range(line, range_marker_pattern):
+        is_lower_bound = ">" in line
+        line = re.sub(range_marker_pattern, "", line)
+        value = float(line)
+        if is_lower_bound:
+            return [value, None]
+        else:
+            return [None, value]
+
+    # Check if the input actually exists.
+    if not string_to_parse:
+        return None
+
+    number = r'(\d+(?:\.\d+)?(?:[eE][+-]\d+)?)'  # float without sign
+    simple_slice_pattern = re.compile("\\s*" + number + "\\s*" r'-' + "\\s*" + number + "\\s*")
+    slice_range_pattern = re.compile("\\s*" + number + "\\s*" + r':' + "\\s*" + number + "\\s*"
+                                     + r':' + "\\s*" + number)
+    full_range_pattern = re.compile("\\s*" + "(<|>)" + "\\s*" + number + "\\s*")
+
+    range_marker = re.compile("[><]")
+
+    slice_settings = string_to_parse.split(',')
+    all_ranges = []
+    for slice_setting in slice_settings:
+        slice_setting = slice_setting.replace(' ', '')
+        # We can have three scenarios
+        # 1. Simple Slice:     X-Y
+        # 2. Slice range :     X:Y:Z
+        # 3. Slice full range: >X or <X
+        if _does_match(simple_slice_pattern, slice_setting):
+            all_ranges.append(_extract_simple_slice(slice_setting))
+        elif _does_match(slice_range_pattern, slice_setting):
+            all_ranges.extend(_extract_slice_range(slice_setting))
+        elif _does_match(full_range_pattern, slice_setting):
+            all_ranges.append(_extract_full_range(slice_setting, range_marker))
+        else:
+            raise ValueError("The provided event slice configuration {0} cannot be parsed because "
+                             "of {1}".format(slice_settings, slice_setting))
+    return all_ranges

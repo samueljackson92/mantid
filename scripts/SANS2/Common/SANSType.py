@@ -401,7 +401,7 @@ def convert_output_mode_to_string(output_mode):
     return as_string
 
 
-def convert_string_to_batch_mode(output_mode_as_string):
+def convert_string_to_output_mode(output_mode_as_string):
     if output_mode_as_string == "PublishToADS":
         output_mode = OutputMode.PublishToADS
     elif output_mode_as_string == "SaveToFile":

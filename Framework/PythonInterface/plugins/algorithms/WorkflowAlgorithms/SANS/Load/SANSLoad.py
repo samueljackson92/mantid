@@ -4,12 +4,14 @@
 
 from mantid.kernel import (Direction, PropertyManagerProperty, FloatArrayProperty,
                            EnabledWhenProperty, PropertyCriterion)
-from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, AlgorithmFactory, PropertyMode, Progress)
+from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, AlgorithmFactory, PropertyMode, Progress,
+                        WorkspaceProperty)
 
 from SANS2.State.SANSStateBase import create_deserialized_sans_state_from_property_manager
 from SANS2.Common.SANSType import SANSDataType
 from SANS2.Common.SANSFunctions import create_unmanaged_algorithm
 from SANS.Load.SANSLoadData import SANSLoadDataFactory
+from SANS2.Common.SANSConstants import SANSConstants
 
 
 class SANSLoad(DataProcessorAlgorithm):
@@ -57,10 +59,10 @@ class SANSLoad(DataProcessorAlgorithm):
         default_number_of_workspaces = 0
 
         # Sample Scatter Workspaces
-        self.declareProperty(MatrixWorkspaceProperty('SampleScatterWorkspace', '',
+        self.declareProperty(WorkspaceProperty('SampleScatterWorkspace', '',
                                                      optional=PropertyMode.Optional, direction=Direction.Output),
                              doc='The sample scatter workspace. This workspace does not contain monitors.')
-        self.declareProperty(MatrixWorkspaceProperty('SampleScatterMonitorWorkspace', '',
+        self.declareProperty(WorkspaceProperty('SampleScatterMonitorWorkspace', '',
                                                      optional=PropertyMode.Optional, direction=Direction.Output),
                              doc='The sample scatter monitor workspace. This workspace only contains monitors.')
         self.declareProperty(MatrixWorkspaceProperty('SampleTransmissionWorkspace', '',
@@ -130,6 +132,7 @@ class SANSLoad(DataProcessorAlgorithm):
         # Get the correct SANSLoader from the SANSLoaderFactory
         load_factory = SANSLoadDataFactory()
         loader = load_factory.create_loader(state)
+
         workspaces, workspace_monitors = loader.execute(data_info=data, use_cached=use_cached,
                                                         publish_to_ads=publish_to_ads, progress=progress)
         progress.report("Loaded the data.")
@@ -264,25 +267,25 @@ class SANSLoad(DataProcessorAlgorithm):
         return errors
 
     def set_output_for_workspaces(self, workspace_type, workspaces):
-        if workspace_type == SANSDataType.SampleScatter:
+        if workspace_type is SANSDataType.SampleScatter:
             self.set_property_with_number_of_workspaces("SampleScatterWorkspace", workspaces)
-        elif workspace_type == SANSDataType.SampleTransmission:
+        elif workspace_type is SANSDataType.SampleTransmission:
             self.set_property_with_number_of_workspaces("SampleTransmissionWorkspace", workspaces)
-        elif workspace_type == SANSDataType.SampleDirect:
+        elif workspace_type is SANSDataType.SampleDirect:
             self.set_property_with_number_of_workspaces("SampleDirectWorkspace", workspaces)
-        elif workspace_type == SANSDataType.CanScatter:
+        elif workspace_type is SANSDataType.CanScatter:
             self.set_property_with_number_of_workspaces("CanScatterWorkspace", workspaces)
-        elif workspace_type == SANSDataType.CanTransmission:
+        elif workspace_type is SANSDataType.CanTransmission:
             self.set_property_with_number_of_workspaces("CanTransmissionWorkspace", workspaces)
-        elif workspace_type == SANSDataType.CanDirect:
+        elif workspace_type is SANSDataType.CanDirect:
             self.set_property_with_number_of_workspaces("CanDirectWorkspace", workspaces)
         else:
             raise RuntimeError("SANSLoad: Unknown data output workspace format: {0}".format(str(workspace_type)))
 
     def set_output_for_monitor_workspaces(self, workspace_type, workspaces):
-        if workspace_type == SANSDataType.SampleScatter:
+        if workspace_type is SANSDataType.SampleScatter:
             self.set_property("SampleScatterMonitorWorkspace", workspaces)
-        elif workspace_type == SANSDataType.CanScatter:
+        elif workspace_type is SANSDataType.CanScatter:
             self.set_property("CanScatterMonitorWorkspace", workspaces)
         else:
             raise RuntimeError("SANSLoad: Unknown data output workspace format: {0}".format(str(workspace_type)))
@@ -297,8 +300,6 @@ class SANSLoad(DataProcessorAlgorithm):
                                     there will be only one element in this list. Only when dealing with multiperiod
                                     data can we expected to see more workspaces in the list.
         """
-        self.setProperty(name, workspace_collection[0])
-        number_of_workspaces = 1
         if len(workspace_collection) > 1:
             counter = 1
             for workspace in workspace_collection:
@@ -307,10 +308,16 @@ class SANSLoad(DataProcessorAlgorithm):
                                                              optional=PropertyMode.Optional,
                                                              direction=Direction.Output),
                                      doc='A child workspace of a multi-period file.')
+                # We need to set a name on here if one was set
+                user_specified_name = self.getProperty(name).valueAsStr
+                if user_specified_name:
+                    user_specified_name += "_" + str(counter)
+                    self.setProperty(output_name, user_specified_name)
                 self.setProperty(output_name, workspace)
                 counter += 1
-            number_of_workspaces = counter - 1
-        return number_of_workspaces
+        else:
+            self.setProperty(name, workspace_collection[0])
+        return len(workspace_collection)
 
     def set_property_with_number_of_workspaces(self, name, workspace_collection):
         counter = self.set_property(name, workspace_collection)

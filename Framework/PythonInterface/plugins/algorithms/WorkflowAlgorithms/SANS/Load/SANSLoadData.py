@@ -427,7 +427,7 @@ class SANSLoadData(object):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def do_execute(self, data_info, use_cached, publish_to_ads):
+    def do_execute(self, data_info, use_cached, publish_to_ads, progress):
         pass
 
     def execute(self, data_info, use_cached, publish_to_ads, progress):
@@ -450,8 +450,8 @@ class SANSLoadDataISIS(SANSLoadData):
         # Scatter files and Transmission/Direct files have to be loaded slightly differently,
         # hence we separate the loading process.
         # TODO: make parallel with multiprocessing (check how ws_handle is being passed)
-        workspaces = dict()
-        workspace_monitors = dict()
+        workspaces = {}
+        workspace_monitors = {}
 
         if data_info.calibration is not None:
             calibration_file = data_info.calibration
@@ -478,11 +478,6 @@ class SANSLoadDataISIS(SANSLoadData):
             apply_calibration(calibration_file, workspaces, workspace_monitors, use_cached, publish_to_ads)
 
         return workspaces, workspace_monitors
-
-
-class NullLoadData(SANSLoadData):
-    def do_execute(self, data_info, use_cached, publish_to_ads):
-        return {}, {}
 
 
 class SANSLoadDataFactory(object):
@@ -512,6 +507,5 @@ class SANSLoadDataFactory(object):
            instrument_type is SANSInstrument.SANS2D:
             loader = SANSLoadDataISIS()
         else:
-            loader = NullLoadData()
-            RuntimeError("SANSLoaderFactory: Other instruments are not implemented yet.")
+            raise RuntimeError("SANSLoaderFactory: Other instruments are not implemented yet.")
         return loader
