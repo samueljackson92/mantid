@@ -4,7 +4,7 @@ from SANS2.CommandInterface.CommandInterfaceStateDirector import (NParameterComm
                                                                   CommandInterfaceStateDirector, DataCommand,
                                                                   DataCommandId, FitData)
 from SANS2.Common.SANSType import (SANSFacility, RebinType, DetectorType, ReductionDimensionality,
-                                   FitType, RangeStepType)
+                                   FitType, RangeStepType, ISISReductionMode)
 from SANS2.Common.SANSConstants import SANSConstants
 
 
@@ -25,24 +25,26 @@ class CommandInterfaceStateDirectorTest(unittest.TestCase):
 
         # Mask
         command = NParameterCommand(command_id=NParameterCommandId.mask,
-                                    values=["MASK/ FRONT H190>H191"])
+                                    values=["MASK/ FRONT H197>H199"])
         self._assert_raises_nothing(command_interface.add_command, command)
 
         # Monitor spectrum (incident monitor for monitor normalization)
-        command = NParameterCommand(command_id=NParameterCommandId.monitor_spectrum,
-                                    values=[2, RebinType.InterpolatingRebin])
+        command = NParameterCommand(command_id=NParameterCommandId.incident_spectrum,
+                                    values=[1, True, False])
         self._assert_raises_nothing(command_interface.add_command, command)
 
         # Transmission spectrum (incident monitor for transmission calculation)
-        command = NParameterCommand(command_id=NParameterCommandId.transmission_spectrum, values=[3, RebinType.Rebin])
+        command = NParameterCommand(command_id=NParameterCommandId.incident_spectrum, values=[7, False, True])
         self._assert_raises_nothing(command_interface.add_command, command)
 
         # Reduction Dimensionality One Dim
-        command = NParameterCommand(command_id=NParameterCommandId.one_dim, values=[])
+        command = NParameterCommand(command_id=NParameterCommandId.reduction_dimensionality,
+                                    values=[ReductionDimensionality.OneDim])
         self._assert_raises_nothing(command_interface.add_command, command)
 
         # Reduction Dimensionality Two Dim
-        command = NParameterCommand(command_id=NParameterCommandId.two_dim, values=[])
+        command = NParameterCommand(command_id=NParameterCommandId.reduction_dimensionality,
+                                    values=[ReductionDimensionality.TwoDim])
         self._assert_raises_nothing(command_interface.add_command, command)
 
         # Sample offset
@@ -65,18 +67,17 @@ class CommandInterfaceStateDirectorTest(unittest.TestCase):
         command = NParameterCommand(command_id=NParameterCommandId.centre, values=[12.4, 23.54, DetectorType.Hab])
         self._assert_raises_nothing(command_interface.add_command, command)
 
-        # Trans fit
+        # # Trans fit
         command = NParameterCommand(command_id=NParameterCommandId.trans_fit, values=[FitData.Can, 10.4, 12.54,
-                                                                                      FitType.Linear, None])
+                                                                                      FitType.Log, 0])
         self._assert_raises_nothing(command_interface.add_command, command)
 
         # Front detector rescale
-        command = NParameterCommand(command_id=NParameterCommandId.trans_fit, values=[FitData.Can, 10.4, 12.54,
-                                                                                      FitType.Linear, None])
+        command = NParameterCommand(command_id=NParameterCommandId.detector, values=[ISISReductionMode.Hab])
         self._assert_raises_nothing(command_interface.add_command, command)
 
         # Event slices
-        command = NParameterCommand(command_id=NParameterCommandId.event_slices, values=["1-23,55:3:67"])
+        command = NParameterCommand(command_id=NParameterCommandId.event_slices, values="1-23,55:3:65")
         self._assert_raises_nothing(command_interface.add_command, command)
 
         # Flood file
@@ -89,7 +90,7 @@ class CommandInterfaceStateDirectorTest(unittest.TestCase):
 
         # Wavelength correction file
         command = NParameterCommand(command_id=NParameterCommandId.wavelength_correction_file,
-                                    values=[DetectorType.Hab, "test"])
+                                    values=["test", DetectorType.Hab])
         self._assert_raises_nothing(command_interface.add_command, command)
 
         # Radius mask
@@ -113,29 +114,38 @@ class CommandInterfaceStateDirectorTest(unittest.TestCase):
         # Assert
         # We check here that the elements we set up above (except for from the user file) are being applied
         self.assertTrue(state is not None)
-        self.assertTrue(state.mask.)
-
-        self.assertTrue(state.adjustment.normalize_to_monitor.incident_monitor == 2)
+        self.assertTrue(state.mask.detectors[SANSConstants.high_angle_bank].range_horizontal_strip_start[-1] == 197)
+        self.assertTrue(state.mask.detectors[SANSConstants.high_angle_bank].range_horizontal_strip_stop[-1] == 199)
+        self.assertTrue(state.adjustment.normalize_to_monitor.incident_monitor == 1)
         self.assertTrue(state.adjustment.normalize_to_monitor.rebin_type is RebinType.InterpolatingRebin)
-        self.assertTrue(state.adjustment.calculate_transmission.incident_monitor == 3)
+        self.assertTrue(state.adjustment.calculate_transmission.incident_monitor == 7)
         self.assertTrue(state.adjustment.calculate_transmission.rebin_type is RebinType.Rebin)
         self.assertTrue(state.reduction.reduction_dimensionality is ReductionDimensionality.TwoDim)
         self.assertTrue(state.convert_to_q.reduction_dimensionality is ReductionDimensionality.TwoDim)
-        self.assertTrue(state.move.sample_offset == 23.6)
+        self.assertTrue(state.move.sample_offset == 23.6/1000.)
         self.assertTrue(state.data.sample_scatter == "SANS2D00022024")
         self.assertTrue(state.data.sample_scatter_period == 3)
-        self.assertTrue(state.data.sample_scatter_period == 3)
-        # TODO test detector
+        self.assertTrue(state.reduction.reduction_mode is ISISReductionMode.Hab)
         self.assertTrue(state.convert_to_q.use_gravity)
         self.assertTrue(state.convert_to_q.gravity_extra_length == 12.4)
         self.assertTrue(state.move.detectors[SANSConstants.high_angle_bank].sample_centre_pos1 == 12.4/1000.)
         self.assertTrue(state.move.detectors[SANSConstants.high_angle_bank].sample_centre_pos2 == 23.54/1000.)
-        self.assertTrue(state.adjustment.calculate_transmission.fit[SANSConstants.can].fit_type is FitType.Linear)
+        self.assertTrue(state.adjustment.calculate_transmission.fit[SANSConstants.can].fit_type is FitType.Log)
         self.assertTrue(state.adjustment.calculate_transmission.fit[SANSConstants.can].polynomial_order == 0)
+
         self.assertTrue(state.adjustment.calculate_transmission.fit[SANSConstants.can].wavelength_low == 10.4)
         self.assertTrue(state.adjustment.calculate_transmission.fit[SANSConstants.can].wavelength_high == 12.54)
-        # TODO front detector rescale
-        # TODO test event slices
+        # # TODO front detector rescale
+
+        # Event slices
+        start_values = state.slice.start_time
+        end_values = state.slice.end_time
+        expected_start_values = [1., 55., 58., 61., 64.]
+        expected_end_values = [23., 58., 61., 64., 65.]
+        for s1, e1, s2, e2 in zip(start_values, end_values, expected_start_values, expected_end_values):
+            self.assertTrue(s1 == s2)
+            self.assertTrue(e1 == e2)
+
         self.assertTrue(state.adjustment.wavelength_and_pixel_adjustment.adjustment_files[
                             SANSConstants.low_angle_bank].pixel_adjustment_file == "test")
         self.assertTrue(state.mask.phi_min == 12.5)
@@ -143,8 +153,8 @@ class CommandInterfaceStateDirectorTest(unittest.TestCase):
         self.assertFalse(state.mask.use_mask_phi_mirror)
         self.assertTrue(state.adjustment.wavelength_and_pixel_adjustment.adjustment_files[
                             SANSConstants.high_angle_bank].wavelength_adjustment_file == "test")
-        self.assertTrue(state.mask.radius_min == 23.5)
-        self.assertTrue(state.mask.radius_max == 234.7)
+        self.assertTrue(state.mask.radius_min == 23.5 / 1000.)
+        self.assertTrue(state.mask.radius_max == 234.7 / 1000.)
         self.assertTrue(state.wavelength.wavelength_low == 1.23)
         self.assertTrue(state.adjustment.normalize_to_monitor.wavelength_high == 23.)
         self.assertTrue(state.adjustment.wavelength_and_pixel_adjustment.wavelength_step == 1.1)

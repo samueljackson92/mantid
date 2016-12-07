@@ -8,8 +8,9 @@ from SANS2.CommandInterface.CommandInterfaceStateDirector import (CommandInterfa
                                                                   FitData)
 from SANS2.Common.SANSConstants import SANSConstants
 from SANS2.Common.SANSFileInformation import (find_sans_file, find_full_file_path)
-from SANS2.Common.SANSType import (RebinType, DetectorType, FitType, RangeStepType)
-from SANS2.Common.SANSFunctions import (convert_bank_name_to_detector_type_isis, parse_event_slice_setting)
+from SANS2.Common.SANSType import (RebinType, DetectorType, FitType, RangeStepType, ReductionDimensionality,
+                                   ISISReductionMode)
+from SANS2.Common.SANSFunctions import (convert_bank_name_to_detector_type_isis)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -244,7 +245,7 @@ def Clean():
     """
     Removes all previous settings.
     """
-    user_file_command = NParameterCommand(command_id=NParameterCommandId.clear, values=[])
+    user_file_command = NParameterCommand(command_id=NParameterCommandId.clean, values=[])
     director.add_command(user_file_command)
 
 
@@ -253,7 +254,8 @@ def Set1D():
     Sets the reduction dimensionality to 1D
     """
     print_message('Set1D()')
-    set_1d_command = NParameterCommand(command_id=NParameterCommandId.one_dim, values=[])
+    set_1d_command = NParameterCommand(command_id=NParameterCommandId.reduction_dimensionality,
+                                       values=[ReductionDimensionality.OneDim])
     director.add_command(set_1d_command)
 
 
@@ -262,7 +264,8 @@ def Set2D():
     Sets the reduction dimensionality to 2D
     """
     print_message('Set2D()')
-    set_2d_command = NParameterCommand(command_id=NParameterCommandId.two_dim, values=[])
+    set_2d_command = NParameterCommand(command_id=NParameterCommandId.reduction_dimensionality,
+                                       values=[ReductionDimensionality.TwoDim])
     director.add_command(set_2d_command)
 
 
@@ -300,7 +303,6 @@ def SetSampleOffset(value):
 
     @param value: the offset in mm
     """
-    value /= 1000.
     sample_offset_command = NParameterCommand(command_id=NParameterCommandId.sample_offset, values=[value])
     director.add_command(sample_offset_command)
 
@@ -314,7 +316,9 @@ def Detector(det_name):
     @param det_name: the detector's name
     """
     print_message('Detector("' + det_name + '")')
-    detector_command = NParameterCommand(command_id=NParameterCommandId.detector, values=[det_name])
+    detector_type = convert_bank_name_to_detector_type_isis(det_name)
+    reduction_mode = ISISReductionMode.Hab if detector_type is DetectorType.hab else ISISReductionMode.Lab
+    detector_command = NParameterCommand(command_id=NParameterCommandId.detector, values=[reduction_mode])
     director.add_command(detector_command)
 
 
@@ -322,13 +326,8 @@ def SetEventSlices(input_str):
     """
     Sets the events slices
     """
-    event_slices = parse_event_slice_setting(input_str)
-    event_slices_command = NParameterCommand(command_id=NParameterCommandId.event_slices, values=[event_slices])
+    event_slices_command = NParameterCommand(command_id=NParameterCommandId.event_slices, values=input_str)
     director.add_command(event_slices_command)
-
-
-
-
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Double valued commands
@@ -340,9 +339,8 @@ def SetMonitorSpectrum(specNum, interp=False):
     @param interp: when rebinning the wavelength bins to match the main workspace, if use interpolation
                    default no interpolation
     """
-    rebin_type = RebinType.InterpolatingRebin if interp else RebinType.Rebin
     monitor_spectrum_command = NParameterCommand(command_id=NParameterCommandId.monitor_spectrum, values=[specNum,
-                                                                                                          rebin_type])
+                                                                                                          interp])
     director.add_command(monitor_spectrum_command)
 
 
@@ -354,9 +352,8 @@ def SetTransSpectrum(specNum, interp=False):
     @param interp: when rebinning the wavelength bins to match the main workspace, if use interpolation
                    default no interpolation
     """
-    rebin_type = RebinType.InterpolatingRebin if interp else RebinType.Rebin
     transmission_spectrum_command = NParameterCommand(command_id=NParameterCommandId.transmission_spectrum,
-                                                      values=[specNum, rebin_type])
+                                                      values=[specNum, interp])
     director.add_command(transmission_spectrum_command)
 
 
@@ -400,8 +397,9 @@ def SetCorrectionFile(bank, filename):
     detector_type = convert_bank_name_to_detector_type_isis(bank)
     file_name = find_full_file_path(filename)
     flood_command = NParameterCommand(command_id=NParameterCommandId.wavelength_correction_file,
-                                      values=[detector_type, file_name])
+                                      values=[file_name, detector_type])
     director.add_command(flood_command)
+
 
 # --------------------------
 # Three parameter commands
@@ -499,6 +497,7 @@ def TransFit(mode, lambdamin=None, lambdamax=None, selector='BOTH'):
     print_message("TransFit(\"" + message + "\")")
 
     # Configure fit settings
+    polynomial_order = polynomial_order if polynomial_order is not None else 0
     fit_command = NParameterCommand(command_id=NParameterCommandId.centre, values=[fit_data, lambdamin, lambdamax,
                                                                                    fit_type, polynomial_order])
     director.add_command(fit_command)
@@ -652,25 +651,24 @@ def PlotResult(workspace, canvas=None):
         print_message('Plot functions are not available, is this being run from outside Mantidplot?')
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# def BatchReduce(filename, format, plotresults=False, saveAlgs={'SaveRKH': 'txt'}, verbose=False,  # noqa
+#                 centreit=False, reducer=None, combineDet=None, save_as_zero_error_free=False):  # noqa
+#     """
+#         @param filename: the CSV file with the list of runs to analyse
+#         @param format: type of file to load, nxs for Nexus, etc.
+#         @param plotresults: if true and this function is run from Mantidplot a graph will be created for the results of each reduction
+#         @param saveAlgs: this named algorithm will be passed the name of the results workspace and filename (default = 'SaveRKH').
+#             Pass a tuple of strings to save to multiple file formats
+#         @param verbose: set to true to write more information to the log (default=False)
+#         @param centreit: do centre finding (default=False)
+#         @param reducer: if to use the command line (default) or GUI reducer object
+#         @param combineDet: that will be forward to WavRangeReduction (rear, front, both, merged, None)
+#         @param save_as_zero_error_free: Should the reduced workspaces contain zero errors or not
+#         @return final_setings: A dictionary with some values of the Reduction - Right Now:(scale, shift)
+#     """
+#
+#
+#
 # def CompWavRanges(wavelens, plot=True, combineDet=None, resetSetup=True):
 #     """
 #         Compares the momentum transfer results calculated from different wavelength ranges. Given

@@ -1,12 +1,17 @@
-from SANS2.Common.SANSType import (sans_type, ReductionDimensionality, DetectorType)
+from SANS2.Common.SANSType import (sans_type, ReductionDimensionality, DetectorType, DataType)
 from SANS2.UserFile.UserFileStateDirector import UserFileStateDirectorISIS
 from SANS2.State.StateBuilder.SANSStateDataBuilder import get_data_builder
-from SANS2.UserFile.UserFileParser import (UserFileParser, set_mask_entries)
+from SANS2.UserFile.UserFileParser import (UserFileParser)
 from SANS2.UserFile.UserFileReader import (UserFileReader)
+from SANS2.UserFile.UserFileCommon import (MonId, monitor_spectrum, OtherId, SampleId, GravityId, SetId, position_entry,
+                                           fit_general, FitId, monitor_file, mask_angle_entry, LimitsId, range_entry,
+                                           simple_range, DetectorId, event_binning_string_values)
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Commands
 # ----------------------------------------------------------------------------------------------------------------------
+
 
 # ------------------
 # IDs for commands. We use here sans_type since enum is not available in the current Python configuration.
@@ -16,12 +21,12 @@ class DataCommandId(object):
     pass
 
 
-@sans_type("clear", "one_dim", "two_dim",  # Null Parameter commands
+@sans_type("clean", "reduction_dimensionality",  # Null Parameter commands
            "user_file", "mask", "sample_offset", "detector", "event_slices",  # Single parameter commands
            "flood_file", "wavelength_correction_file",  # Single parameter commands
-           "monitor_spectrum", "transmission_spectrum", "gravity",  # Double parameter commands
+           "incident_spectrum", "gravity",  # Double parameter commands
            "centre",   # Three parameter commands
-           "trans_fit", "phi_limit", "mask_radius", "wavelength_limit", "qxy_limit", # Four parameter commands
+           "trans_fit", "phi_limit", "mask_radius", "wavelength_limit", "qxy_limit",  # Four parameter commands
            "front_detector_rescale"  # Six parameter commands
            )
 class NParameterCommandId(object):
@@ -87,7 +92,9 @@ class CommandInterfaceStateDirector(object):
         super(CommandInterfaceStateDirector, self).__init__()
         self._commands = []
         self._user_file_state_director = None
-        self._parsed_data = {}
+
+        self._processed_state_settings = {}
+
         self._facility = facility
         self._method_map = None
         self._set_up_method_map()
@@ -118,7 +125,6 @@ class CommandInterfaceStateDirector(object):
         # 3. Clear commands
         self._commands = []
         self._user_file_state_director = None
-        self._parsed_data = {}
 
         # 4. Provide the state
         return state
@@ -203,10 +209,14 @@ class CommandInterfaceStateDirector(object):
         """
         self._user_file_state_director = UserFileStateDirectorISIS(data_state)
 
+        # Evaluate all commands which adds them to the _processed_state_settings dictionary.
         for command in self._commands:
             command_id = command.command_id
             process_function = self._method_map[command_id]
-            process_function(command, self._user_file_state_director)
+            process_function(command)
+
+        # The user file state director
+        self._user_file_state_director.add_state_settings(self._processed_state_settings)
         return self._user_file_state_director.construct()
 
     def _set_up_method_map(self):
@@ -215,10 +225,9 @@ class CommandInterfaceStateDirector(object):
         """
         self._method_map = {NParameterCommandId.user_file: self._process_user_file,
                             NParameterCommandId.mask: self._process_mask,
-                            NParameterCommandId.monitor_spectrum: self._process_monitor_spectrum,
-                            NParameterCommandId.transmission_spectrum: self._process_transmission_spectrum,
-                            NParameterCommandId.one_dim: self._process_one_dim,
-                            NParameterCommandId.two_dim: self._process_two_dim,
+                            NParameterCommandId.incident_spectrum: self._process_incident_spectrum,
+                            NParameterCommandId.clean: self._process_clean,
+                            NParameterCommandId.reduction_dimensionality: self._process_reduction_dimensionality,
                             NParameterCommandId.sample_offset: self._process_sample_offset,
                             NParameterCommandId.detector: self._process_detector,
                             NParameterCommandId.gravity: self._process_gravity,
@@ -231,211 +240,181 @@ class CommandInterfaceStateDirector(object):
                             NParameterCommandId.wavelength_correction_file: self._process_wavelength_correction_file,
                             NParameterCommandId.mask_radius: self._process_mask_radius,
                             NParameterCommandId.wavelength_limit: self._process_wavelength_limit,
-                            NParameterCommandId.qxy_limit: self._process_qxy_limit}
+                            NParameterCommandId.qxy_limit: self._process_qxy_limit
+                            }
 
-    @staticmethod
-    def _process_user_file(command, user_file_state_director):
+    def add_to_processed_state_settings(self, new_state_settings):
         """
-        Processes a user file and retains the
+        Adds the new entries to the already processed state settings
+
+        @param new_state_settings: a dictionary with new entries for the processed state settings
+        """
+        for key, value in new_state_settings.items():
+            # Add the new entry
+            # 1. A similar entry can already exist, then append it
+            # 2. The entry does not exist, but it is in form of a list (you would get that for example when
+            #    dealing with input from the UserFileReader
+            # 3. The entry does not exist and is not in a list. In this case we need to add it to a list.
+            if key in self._processed_state_settings:
+                old_values = self._processed_state_settings[key]
+                old_values.append(value)
+            elif isinstance(value, list):
+                self._processed_state_settings.update({key: value})
+            else:
+                self._processed_state_settings.update({key: [value]})
+
+    def _process_user_file(self, command):
+        """
+        Processes a user file and retain the parased tags
 
         @param command: the command with the user file path
-        @param user_file_state_director: the user file state director
-        @return:
         """
         file_name = command.values[0]
-        user_file_state_director.set_user_file(file_name)
+        user_file_reader = UserFileReader(file_name)
+        new_state_entries = user_file_reader.read_user_file()
+        self.add_to_processed_state_settings(new_state_entries)
 
-    @staticmethod
-    def _process_mask(command, user_file_state_director):
+    def _process_mask(self, command):
         """
         We need to process a mask line as specified in the user file.
         """
         mask_command = command.values[0]
-        # Strip the MASK/ bit from the command
+        # Use the user file parser to extract the values from the user file setting.
         user_file_parser = UserFileParser()
         parsed_output = user_file_parser.parse_line(mask_command)
-        # Note that we need to provide the parsed output as a list
-        if not isinstance(parsed_output, list):
-            parsed_output = [parsed_output]
-        set_mask_entries(director=user_file_state_director, user_file_items=parsed_output)
+        self.add_to_processed_state_settings(parsed_output)
 
-    @staticmethod
-    def _process_monitor_spectrum(command, user_file_state_director):
+    def _process_incident_spectrum(self, command):
         incident_monitor = command.values[0]
-        rebin_type = command.values[1]
-        user_file_state_director.set_normalize_to_monitor_builder_incident_monitor(incident_monitor)
-        user_file_state_director.set_normalize_to_monitor_builder_rebin_type(rebin_type)
+        interpolate = command.values[1]
+        is_trans = command.values[2]
+        new_state_entries = {MonId.spectrum: monitor_spectrum(spectrum=incident_monitor,
+                                                              is_trans=is_trans,
+                                                              interpolate=interpolate)}
+        self.add_to_processed_state_settings(new_state_entries)
 
-    @staticmethod
-    def _process_transmission_spectrum(command, user_file_state_director):
-        incident_monitor = command.values[0]
-        rebin_type = command.values[1]
-        user_file_state_director.set_calculate_transmission_builder_incident_monitor(incident_monitor)
-        user_file_state_director.set_calculate_transmission_builder_rebin_type(rebin_type)
-
-    @staticmethod
-    def _process_one_dim(command, user_file_state_director):
+    def _process_clean(self, command):
         _ = command
-        user_file_state_director.set_reduction_builder_reduction_dimensionality(ReductionDimensionality.OneDim)
-        user_file_state_director.set_convert_to_q_builder_reduction_dimensionality(ReductionDimensionality.OneDim)
 
-    @staticmethod
-    def _process_two_dim(command, user_file_state_director):
+    def _process_reduction_dimensionality(self, command):
         _ = command
-        user_file_state_director.set_reduction_builder_reduction_dimensionality(ReductionDimensionality.TwoDim)
-        user_file_state_director.set_convert_to_q_builder_reduction_dimensionality(ReductionDimensionality.TwoDim)
+        reduction_dimensionality = command.values[0]
+        new_state_entries = {OtherId.reduction_dimensionality: reduction_dimensionality}
+        self.add_to_processed_state_settings(new_state_entries)
 
-    @staticmethod
-    def _process_sample_offset(command, user_file_state_director):
+    def _process_sample_offset(self, command):
         sample_offset = command.values[0]
-        user_file_state_director.set_move_builder_sample_offset(sample_offset)
+        new_state_entries = {SampleId.offset: sample_offset}
+        self.add_to_processed_state_settings(new_state_entries)
 
-    @staticmethod
-    def _process_detector(command, user_file_state_director):
-        pass
+    def _process_detector(self, command):
+        reduction_mode = command.values[0]
+        new_state_entries = {DetectorId.reduction_mode: reduction_mode}
+        self.add_to_processed_state_settings(new_state_entries)
 
-    @staticmethod
-    def _process_gravity(command, user_file_state_director):
+    def _process_gravity(self, command):
         use_gravity = command.values[0]
         extra_length = command.values[1]
-        user_file_state_director.set_convert_to_q_builder_use_gravity(use_gravity)
-        user_file_state_director.set_convert_to_q_builder_gravity_extra_length(extra_length)
+        new_state_entries = {GravityId.on_off: use_gravity,
+                             GravityId.extra_length: extra_length}
+        self.add_to_processed_state_settings(new_state_entries)
 
-    @staticmethod
-    def _process_centre(command, user_file_state_director):
+    def _process_centre(self, command):
         pos1 = command.values[0]
         pos2 = command.values[1]
         detector_type = command.values[2]
+        new_state_entries = {SetId.centre: position_entry(pos1=pos1, pos2=pos2, detector_type=detector_type)}
+        self.add_to_processed_state_settings(new_state_entries)
 
-        # We need to convert the positions correctly, this is driven by the data. What is defined as the
-        # x coordinate can be for example an angle for LARMOR, hence we need to ensure that the input is handled
-        # correctly
-        pos1 = user_file_state_director.convert_pos1(pos1)
-        pos2 = user_file_state_director.convert_pos1(pos2)
+    def _process_trans_fit(self, command):
+        def fit_type_to_data_type(fit_type_to_convert):
+            return DataType.Can if fit_type_to_convert is FitData.Can else DataType.Sample
 
-        if detector_type is DetectorType.Lab:
-            user_file_state_director.set_move_builder_LAB_sample_centre_pos1(pos1)
-            user_file_state_director.set_move_builder_LAB_sample_centre_pos2(pos2)
-        elif detector_type is DetectorType.Hab:
-            user_file_state_director.set_move_builder_HAB_sample_centre_pos1(pos1)
-            user_file_state_director.set_move_builder_HAB_sample_centre_pos2(pos2)
-
-    @staticmethod
-    def _process_trans_fit(command, user_file_state_director):
         fit_data = command.values[0]
         wavelength_low = command.values[1]
         wavelength_high = command.values[2]
         fit_type = command.values[3]
         polynomial_order = command.values[4]
-
         if fit_data is FitData.Both:
             data_to_fit = [FitData.Sample, FitData.Can]
         else:
             data_to_fit = [fit_data]
 
-        # Set the fit configuration on the Sample
-        if FitData.Sample in data_to_fit:
-            user_file_state_director.set_calculate_transmission_builder_Sample_fit_type(fit_type)
-            if polynomial_order is not None:
-                user_file_state_director.set_calculate_transmission_builder_Sample_polynomial_order(polynomial_order)
-            user_file_state_director.set_calculate_transmission_builder_Sample_wavelength_low(wavelength_low)
-            user_file_state_director.set_calculate_transmission_builder_Sample_wavelength_high(wavelength_high)
+        new_state_entries = {}
+        for element in data_to_fit:
+            data_type = fit_type_to_data_type(element)
+            new_state_entries.update({FitId.general: fit_general(start=wavelength_low, stop=wavelength_high,
+                                                                 fit_type=fit_type, data_type=data_type,
+                                                                 polynomial_order=polynomial_order)})
+        self.add_to_processed_state_settings(new_state_entries)
 
-        # Set the fit configuration on the Can
-        if FitData.Can in data_to_fit:
-            user_file_state_director.set_calculate_transmission_builder_Can_fit_type(fit_type)
-            if polynomial_order is not None:
-                user_file_state_director.set_calculate_transmission_builder_Can_polynomial_order(polynomial_order)
-            user_file_state_director.set_calculate_transmission_builder_Can_wavelength_low(wavelength_low)
-            user_file_state_director.set_calculate_transmission_builder_Can_wavelength_high(wavelength_high)
+    def _process_front_detector_rescale(self, command):
+        scale = command.values[0]
+        shift = command.values[1]
+        fit_scale = command.values[2]
+        fit_shift = command.values[3]
+        q_min = command.values[4]
+        q_max = command.values[5]
 
-    @staticmethod
-    def _process_front_detector_rescale(command, user_file_state_director):
-        # scale, shift,
-        # fitScale, fitShift,
-        # qMin, qMax])
-        # TODO implement this
-        pass
+        # Set the scale and the shift
+        new_state_entries = {DetectorId.rescale: scale, DetectorId.shift: shift}
 
-    @staticmethod
-    def _process_event_slices(command, user_file_state_director):
-        event_slices = command.values
-        # TODO implement this
+        # Set the fit for the scaling if required
+        if fit_scale:
+            if q_min and q_max:
+                pass
+            else:
 
-    @staticmethod
-    def _process_flood_file(command, user_file_state_director):
-        file_name = command.values[0]
+
+        # Set the fitting of the scale
+        range_entry(start=q_min, stop=q_min)
+
+        new_state_entries = {LimitsId.events_binning: ""}
+        self.add_to_processed_state_settings(new_state_entries)
+
+    def _process_event_slices(self, command):
+        event_slice_value = command.values
+        new_state_entries = {LimitsId.events_binning: event_binning_string_values(value=event_slice_value)}
+        self.add_to_processed_state_settings(new_state_entries)
+
+    def _process_flood_file(self, command):
+        file_path = command.values[0]
         detector_type = command.values[1]
-        if detector_type is DetectorType.Lab:
-            user_file_state_director.set_wavelength_and_pixel_adjustment_builder_LAB_pixel_adjustment_file(file_name)
-        elif detector_type is DetectorType.Hab:
-            user_file_state_director.set_wavelength_and_pixel_adjustment_builder_HAB_pixel_adjustment_file(file_name)
+        new_state_entries = {MonId.flat: monitor_file(file_path=file_path, detector_type=detector_type)}
+        self.add_to_processed_state_settings(new_state_entries)
 
-    @staticmethod
-    def _process_phi_limit(command, user_file_state_director):
+    def _process_phi_limit(self, command):
         phi_min = command.values[0]
         phi_max = command.values[1]
         use_phi_mirror = command.values[2]
-        user_file_state_director.set_mask_builder_phi_min(phi_min)
-        user_file_state_director.set_mask_builder_phi_max(phi_max)
-        user_file_state_director.set_mask_builder_use_mask_phi_mirror(use_phi_mirror)
+        new_state_entries = {LimitsId.angle: mask_angle_entry(min=phi_min, max=phi_max, use_mirror=use_phi_mirror)}
+        self.add_to_processed_state_settings(new_state_entries)
 
-    @staticmethod
-    def _process_wavelength_correction_file(command, user_file_state_director):
-        detector_type = command.values[0]
-        file_name = command.values[1]
-        if detector_type is DetectorType.Lab:
-            user_file_state_director.set_wavelength_and_pixel_adjustment_builder_LAB_wavelength_adjustment_file(
-                file_name)
-        elif detector_type is DetectorType.Hab:
-            user_file_state_director.set_wavelength_and_pixel_adjustment_builder_HAB_wavelength_adjustment_file(
-                file_name)
+    def _process_wavelength_correction_file(self, command):
+        file_path = command.values[0]
+        detector_type = command.values[1]
+        new_state_entries = {MonId.direct: monitor_file(file_path=file_path, detector_type=detector_type)}
+        self.add_to_processed_state_settings(new_state_entries)
 
-    @staticmethod
-    def _process_mask_radius(command, user_file_state_director):
+    def _process_mask_radius(self, command):
         radius_min = command.values[0]
         radius_max = command.values[1]
-        user_file_state_director.set_mask_builder_radius_min(radius_min)
-        user_file_state_director.set_mask_builder_radius_max(radius_max)
+        new_state_entries = {LimitsId.radius: range_entry(start=radius_min, stop=radius_max)}
+        self.add_to_processed_state_settings(new_state_entries)
 
-    @staticmethod
-    def _process_wavelength_limit(command, user_file_state_director):
+    def _process_wavelength_limit(self, command):
         wavelength_low = command.values[0]
         wavelength_high = command.values[1]
         wavelength_step = command.values[2]
         wavelength_step_type = command.values[3]
+        new_state_entries = {LimitsId.wavelength: simple_range(start=wavelength_low, stop=wavelength_high,
+                                                               step=wavelength_step, step_type=wavelength_step_type)}
+        self.add_to_processed_state_settings(new_state_entries)
 
-        # We need to set this in several locations. In:
-        # 1. SANSStateWavelength
-        # 2. SANSStateNormalizeToMonitor
-        # 3. SANSStateCalculateTransmission
-        # 4. SANStateWavelengthAndPixel
-        user_file_state_director.set_wavelength_builder_wavelength_low(wavelength_low)
-        user_file_state_director.set_wavelength_builder_wavelength_high(wavelength_high)
-        user_file_state_director.set_wavelength_builder_wavelength_step(wavelength_step)
-        user_file_state_director.set_wavelength_builder_wavelength_step_type(wavelength_step_type)
-
-        user_file_state_director.set_normalize_to_monitor_builder_wavelength_low(wavelength_low)
-        user_file_state_director.set_normalize_to_monitor_builder_wavelength_high(wavelength_high)
-        user_file_state_director.set_normalize_to_monitor_builder_wavelength_step(wavelength_step)
-        user_file_state_director.set_normalize_to_monitor_builder_wavelength_step_type(wavelength_step_type)
-
-        user_file_state_director.set_calculate_transmission_builder_wavelength_low(wavelength_low)
-        user_file_state_director.set_calculate_transmission_builder_wavelength_high(wavelength_high)
-        user_file_state_director.set_calculate_transmission_builder_wavelength_step(wavelength_step)
-        user_file_state_director.set_calculate_transmission_builder_wavelength_step_type(wavelength_step_type)
-
-        user_file_state_director.set_wavelength_and_pixel_adjustment_builder_wavelength_low(wavelength_low)
-        user_file_state_director.set_wavelength_and_pixel_adjustment_builder_wavelength_high(wavelength_high)
-        user_file_state_director.set_wavelength_and_pixel_adjustment_builder_wavelength_step(wavelength_step)
-        user_file_state_director.set_wavelength_and_pixel_adjustment_builder_wavelength_step_type(wavelength_step_type)
-
-    @staticmethod
-    def _process_qxy_limit(command, user_file_state_director):
-        _ = command.values[0]
-        qmax = command.values[1]
-        step = command.values[2]
-        step_type = command.values[3]
-        user_file_state_director.set_convert_to_q_builder_q_xy_max(qmax)
-        user_file_state_director.set_convert_to_q_builder_q_xy_step(step)
-        user_file_state_director.set_convert_to_q_builder_q_xy_step_type(step_type)
+    def _process_qxy_limit(self, command):
+        q_min = command.values[0]
+        q_max = command.values[1]
+        q_step = command.values[2]
+        q_step_type = command.values[3]
+        new_state_entries = {LimitsId.qxy: simple_range(start=q_min, stop=q_max, step=q_step, step_type=q_step_type)}
+        self.add_to_processed_state_settings(new_state_entries)

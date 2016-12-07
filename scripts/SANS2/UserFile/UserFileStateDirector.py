@@ -4,6 +4,8 @@ from SANS2.Common.SANSConstants import SANSConstants
 from SANS2.Common.SANSType import (DetectorType, FitModeForMerge, RebinType, DataType,
                                            convert_reduction_data_type_to_string, convert_detector_type_to_string)
 from SANS2.Common.SANSFileInformation import find_full_file_path
+from SANS2.Common.SANSFunctions import (get_ranges_for_rebin_setting, get_ranges_for_rebin_array,
+                                        get_ranges_from_event_slice_setting)
 from SANS2.UserFile.UserFileReader import UserFileReader
 from SANS2.UserFile.UserFileCommon import (DetectorId, BackId, range_entry, back_single_monitor_entry,
                                            single_entry_with_detector, mask_angle_entry, LimitsId, rebin_string_values,
@@ -11,7 +13,7 @@ from SANS2.UserFile.UserFileCommon import (DetectorId, BackId, range_entry, back
                                            mask_line, range_entry_with_detector, SampleId, SetId, set_scales_entry,
                                            position_entry, TransId, TubeCalibrationFileId, QResolutionId, FitId,
                                            fit_general, MonId, monitor_length, monitor_file, GravityId,
-                                           monitor_spectrum, PrintId)
+                                           monitor_spectrum, PrintId, OtherId, rebin_string_values)
 
 from SANS2.State.StateBuilder.AutomaticSetters import set_up_setter_forwarding_from_director_to_builder
 from SANS2.State.StateBuilder.SANSStateBuilder import get_state_builder
@@ -161,338 +163,6 @@ def set_single_entry(builder, method_name, tag, all_entries, apply_to_value=None
         method(entry)
 
 
-def set_mask_entries(director, user_file_items):
-    """
-    Setting the mask files is done in an free function since this is something we reuse in other places.
-
-    @param director: a UserFileStateDirector object.
-    @param user_file_items: a list of user file commands
-    """
-    # Check for the various possible masks that can be present in the user file
-    # This can be:
-    # 1. A line mask
-    # 2. A time mask
-    # 3. A detector-bound time mask
-    # 4. A clean command
-    # 5. A time clear command
-    # 6. A single spectrum mask
-    # 7. A spectrum range mask
-    # 8. A vertical single strip mask
-    # 9. A vertical range strip mask
-    # 10. A horizontal single strip mask
-    # 11. A horizontal range strip mask
-    # 12. A block mask
-    # 13. A cross-type block mask
-    # 14. Angle masking
-    # 15. Mask files
-
-    # ---------------------------------
-    # 1. Line Mask
-    # ---------------------------------
-    if MaskId.line in user_file_items:
-        mask_lines = user_file_items[MaskId.line]
-        # If there were several arms specified then we take only the last
-        check_if_contains_only_one_element(mask_lines, MaskId.line)
-        mask_line = mask_lines[-1]
-        # We need the width and the angle
-        angle = mask_line.angle
-        width = convert_mm_to_m(mask_line.width)
-        # The position is already specified in meters in the user file
-        pos1 = mask_line.x
-        pos2 = mask_line.y
-        if angle is None or width is None:
-            raise RuntimeError("UserFileStateDirector: You specified a line mask without an angle or a width."
-                               "The parameters were: width {0}; angle {1}; x {2}; y {3}".format(width, angle,
-                                                                                                pos1, pos2))
-        pos1 = 0.0 if pos1 is None else pos1
-        pos2 = 0.0 if pos2 is None else pos2
-
-        director.set_mask_builder_beam_stop_arm_width(width)
-        director.set_mask_builder_beam_stop_arm_angle(angle)
-        director.set_mask_builder_beam_stop_arm_pos1(pos1)
-        director.set_mask_builder_beam_stop_arm_pos2(pos2)
-
-    # ---------------------------------
-    # 2. General time mask
-    # ---------------------------------
-    if MaskId.time in user_file_items:
-        mask_time_general = user_file_items[MaskId.time]
-        start_time = []
-        stop_time = []
-        for times in mask_time_general:
-            if times.start > times.start:
-                raise RuntimeError("UserFileStateDirector: You specified a general time mask with a start time {0}"
-                                   " which is larger than the stop time {1} of the mask. This is not"
-                                   " valid.".format(times.start, times.stop))
-            start_time.append(times.start)
-            stop_time.append(times.stop)
-        director.set_mask_builder_bin_mask_general_start(start_time)
-        director.set_mask_builder_bin_mask_general_stop(stop_time)
-
-    # ---------------------------------
-    # 3. Detector-bound time mask
-    # ---------------------------------
-    if MaskId.time_detector in user_file_items:
-        mask_times = user_file_items[MaskId.time_detector]
-        start_times_hab = []
-        stop_times_hab = []
-        start_times_lab = []
-        stop_times_lab = []
-        for times in mask_times:
-            if times.start > times.start:
-                raise RuntimeError("UserFileStateDirector: You specified a general time mask with a start time {0}"
-                                   " which is larger than the stop time {1} of the mask. This is not"
-                                   " valid.".format(times.start, times.stop))
-            if times.detector_type is DetectorType.Hab:
-                start_times_hab.append(times.start)
-                stop_times_hab.append(times.stop)
-            elif times.detector_type is DetectorType.Lab:
-                start_times_hab.append(times.start)
-                stop_times_hab.append(times.stop)
-            else:
-                RuntimeError("UserFileStateDirector: The specified detector {0} is not "
-                             "known".format(times.detector_type))
-        director.set_mask_builder_HAB_bin_mask_start(start_times_hab)
-        director.set_mask_builder_HAB_bin_mask_stop(stop_times_hab)
-        director.set_mask_builder_LAB_bin_mask_start(start_times_lab)
-        director.set_mask_builder_LAB_bin_mask_stop(stop_times_lab)
-
-    # ---------------------------------
-    # 4. Clear detector
-    # ---------------------------------
-    if MaskId.clear_detector_mask in user_file_items:
-        clear_detector_mask = user_file_items[MaskId.clear_detector_mask]
-        check_if_contains_only_one_element(clear_detector_mask, MaskId.clear_detector_mask)
-        # We select the entry which was added last.
-        clear_detector_mask = clear_detector_mask[-1]
-        director.set_mask_builder_clear(clear_detector_mask)
-
-    # ---------------------------------
-    # 5. Clear time
-    # ---------------------------------
-    if MaskId.clear_time_mask in user_file_items:
-        clear_time_mask = user_file_items[MaskId.clear_time_mask]
-        check_if_contains_only_one_element(clear_time_mask, MaskId.clear_time_mask)
-        # We select the entry which was added last.
-        clear_time_mask = clear_time_mask[-1]
-        director.set_mask_builder_clear_time(clear_time_mask)
-
-    # ---------------------------------
-    # 6. Single Spectrum
-    # ---------------------------------
-    if MaskId.single_spectrum_mask in user_file_items:
-        single_spectra = user_file_items[MaskId.single_spectrum_mask]
-        director.set_mask_builder_single_spectra(single_spectra)
-
-    # ---------------------------------
-    # 7. Spectrum Range
-    # ---------------------------------
-    if MaskId.spectrum_range_mask in user_file_items:
-        spectrum_ranges = user_file_items[MaskId.spectrum_range_mask]
-        start_range = []
-        stop_range = []
-        for spectrum_range in spectrum_ranges:
-            if spectrum_range.start > spectrum_range.start:
-                raise RuntimeError("UserFileStateDirector: You specified a spectrum range with a start value {0}"
-                                   " which is larger than the stop value {1}. This is not"
-                                   " valid.".format(spectrum_range.start, spectrum_range.stop))
-            start_range.append(spectrum_range.start)
-            stop_range.append(spectrum_range.stop)
-        director.set_mask_builder_spectrum_range_start(start_range)
-        director.set_mask_builder_spectrum_range_stop(stop_range)
-
-    # ---------------------------------
-    # 8. Vertical single strip
-    # ---------------------------------
-    if MaskId.vertical_single_strip_mask in user_file_items:
-        single_vertical_strip_masks = user_file_items[MaskId.vertical_single_strip_mask]
-        entry_hab = []
-        entry_lab = []
-        for single_vertical_strip_mask in single_vertical_strip_masks:
-            if single_vertical_strip_mask.detector_type is DetectorType.Hab:
-                entry_hab.append(single_vertical_strip_mask.entry)
-            elif single_vertical_strip_mask.detector_type is DetectorType.Lab:
-                entry_lab.append(single_vertical_strip_mask.entry)
-            else:
-                raise RuntimeError("UserFileStateDirector: The vertical single strip mask {0} has an unknown "
-                                   "detector {1} associated"
-                                   " with it.".format(single_vertical_strip_mask.entry,
-                                                      single_vertical_strip_mask.detector_type))
-        director.set_mask_builder_HAB_single_vertical_strip_mask(entry_hab)
-        director.set_mask_builder_LAB_single_vertical_strip_mask(entry_lab)
-
-    # ---------------------------------
-    # 9. Vertical range strip
-    # ---------------------------------
-    if MaskId.vertical_range_strip_mask in user_file_items:
-        range_vertical_strip_masks = user_file_items[MaskId.vertical_range_strip_mask]
-        start_hab = []
-        stop_hab = []
-        start_lab = []
-        stop_lab = []
-        for range_vertical_strip_mask in range_vertical_strip_masks:
-            if range_vertical_strip_mask.detector_type is DetectorType.Hab:
-                start_hab.append(range_vertical_strip_mask.start)
-                stop_hab.append(range_vertical_strip_mask.stop)
-            elif range_vertical_strip_mask.detector_type is DetectorType.Lab:
-                start_lab.append(range_vertical_strip_mask.start)
-                stop_lab.append(range_vertical_strip_mask.stop)
-            else:
-                raise RuntimeError("UserFileStateDirector: The vertical range strip mask {0} has an unknown "
-                                   "detector {1} associated "
-                                   "with it.".format(range_vertical_strip_mask.entry,
-                                                     range_vertical_strip_mask.detector_type))
-        director.set_mask_builder_HAB_range_vertical_strip_start(start_hab)
-        director.set_mask_builder_HAB_range_vertical_strip_stop(stop_hab)
-        director.set_mask_builder_LAB_range_vertical_strip_start(start_lab)
-        director.set_mask_builder_LAB_range_vertical_strip_stop(stop_lab)
-
-    # ---------------------------------
-    # 10. Horizontal single strip
-    # ---------------------------------
-    if MaskId.horizontal_single_strip_mask in user_file_items:
-        single_horizontal_strip_masks = user_file_items[MaskId.horizontal_single_strip_mask]
-        entry_hab = []
-        entry_lab = []
-        for single_horizontal_strip_mask in single_horizontal_strip_masks:
-            if single_horizontal_strip_mask.detector_type is DetectorType.Hab:
-                entry_hab.append(single_horizontal_strip_mask.entry)
-            elif single_horizontal_strip_mask.detector_type is DetectorType.Lab:
-                entry_lab.append(single_horizontal_strip_mask.entry)
-            else:
-                raise RuntimeError("UserFileStateDirector: The horizontal single strip mask {0} has an unknown "
-                                   "detector {1} associated"
-                                   " with it.".format(single_horizontal_strip_mask.entry,
-                                                      single_horizontal_strip_mask.detector_type))
-        director.set_mask_builder_HAB_single_horizontal_strip_mask(entry_hab)
-        director.set_mask_builder_LAB_single_horizontal_strip_mask(entry_lab)
-
-    # ---------------------------------
-    # 11. Horizontal range strip
-    # ---------------------------------
-    if MaskId.horizontal_range_strip_mask in user_file_items:
-        range_horizontal_strip_masks = user_file_items[MaskId.horizontal_range_strip_mask]
-        start_hab = []
-        stop_hab = []
-        start_lab = []
-        stop_lab = []
-        for range_horizontal_strip_mask in range_horizontal_strip_masks:
-            if range_horizontal_strip_mask.detector_type is DetectorType.Hab:
-                start_hab.append(range_horizontal_strip_mask.start)
-                stop_hab.append(range_horizontal_strip_mask.stop)
-            elif range_horizontal_strip_mask.detector_type is DetectorType.Lab:
-                start_lab.append(range_horizontal_strip_mask.start)
-                stop_lab.append(range_horizontal_strip_mask.stop)
-            else:
-                raise RuntimeError("UserFileStateDirector: The vertical range strip mask {0} has an unknown "
-                                   "detector {1} associated "
-                                   "with it.".format(range_horizontal_strip_mask.entry,
-                                                     range_horizontal_strip_mask.detector_type))
-        director.set_mask_builder_HAB_range_horizontal_strip_start(start_hab)
-        director.set_mask_builder_HAB_range_horizontal_strip_stop(stop_hab)
-        director.set_mask_builder_LAB_range_horizontal_strip_start(start_lab)
-        director.set_mask_builder_LAB_range_horizontal_strip_stop(stop_lab)
-
-    # ---------------------------------
-    # 12. Block
-    # ---------------------------------
-    if MaskId.block in user_file_items:
-        blocks = user_file_items[MaskId.block]
-        horizontal_start_hab = []
-        horizontal_stop_hab = []
-        vertical_start_hab = []
-        vertical_stop_hab = []
-        horizontal_start_lab = []
-        horizontal_stop_lab = []
-        vertical_start_lab = []
-        vertical_stop_lab = []
-
-        for block in blocks:
-            if block.horizontal1 > block.horizontal2 or block.vertical1 > block.vertical2:
-                raise RuntimeError("UserFileStateDirector: The block mask seems to have inconsistent entries. "
-                                   "The values are horizontal_start {0}; horizontal_stop {1}; vertical_start {2};"
-                                   " vertical_stop {3}".format(block.horizontal1, block.horizontal2,
-                                                               block.vertical1, block.vertical2))
-            if block.detector_type is DetectorType.Hab:
-                horizontal_start_hab.append(block.horizontal1)
-                horizontal_stop_hab.append(block.horizontal2)
-                vertical_start_hab.append(block.vertical1)
-                vertical_stop_hab.append(block.vertical2)
-            elif block.detector_type is DetectorType.Lab:
-                horizontal_start_lab.append(block.horizontal1)
-                horizontal_stop_lab.append(block.horizontal2)
-                vertical_start_lab.append(block.vertical1)
-                vertical_stop_lab.append(block.vertical2)
-            else:
-                raise RuntimeError("UserFileStateDirector: The block mask has an unknown "
-                                   "detector {0} associated "
-                                   "with it.".format(block.detector_type))
-        director.set_mask_builder_HAB_block_horizontal_start(horizontal_start_hab)
-        director.set_mask_builder_HAB_block_horizontal_stop(horizontal_start_hab)
-        director.set_mask_builder_LAB_block_vertical_start(vertical_start_lab)
-        director.set_mask_builder_LAB_block_vertical_stop(vertical_start_lab)
-
-    # ---------------------------------
-    # 13. Block cross
-    # ---------------------------------
-    if MaskId.block_cross in user_file_items:
-        block_crosses = user_file_items[MaskId.block_cross]
-        horizontal_hab = []
-        vertical_hab = []
-        horizontal_lab = []
-        vertical_lab = []
-        for block_cross in block_crosses:
-            if block_cross.detector_type is DetectorType.Hab:
-                horizontal_hab.append(block_cross.horizontal)
-                vertical_hab.append(block_cross.vertical)
-            elif block_cross.detector_type is DetectorType.Lab:
-                horizontal_lab.append(block_cross.horizontal)
-                vertical_lab.append(block_cross.vertical)
-            else:
-                raise RuntimeError("UserFileStateDirector: The block cross mask has an unknown "
-                                   "detector {0} associated "
-                                   "with it.".format(block_cross.detector_type))
-        director.set_mask_builder_HAB_block_cross_horizontal(horizontal_hab)
-        director.set_mask_builder_HAB_block_cross_vertical(vertical_hab)
-        director.set_mask_builder_LAB_block_cross_horizontal(horizontal_lab)
-        director.set_mask_builder_LAB_block_cross_vertical(vertical_lab)
-
-    # ------------------------------------------------------------
-    # 14. Angles --> they are specified in L/Phi
-    # -----------------------------------------------------------
-    if LimitsId.angle in user_file_items:
-        angles = user_file_items[LimitsId.angle]
-        # Should the user have chosen several values, then the last element is selected
-        check_if_contains_only_one_element(angles, LimitsId.angle)
-        angle = angles[-1]
-        director.set_mask_builder_phi_min(angle.min)
-        director.set_mask_builder_phi_max(angle.max)
-        director.set_mask_builder_use_mask_phi_mirror(not angle.is_no_mirror)
-
-    # ------------------------------------------------------------
-    # 15. Maskfiles
-    # -----------------------------------------------------------
-    if MaskId.file in user_file_items:
-        mask_files = user_file_items[MaskId.file]
-        director.set_mask_builder_mask_files(mask_files)
-
-    # ------------------------------------------------------------
-    # 16. Radius masks
-    # -----------------------------------------------------------
-    if LimitsId.radius in user_file_items:
-        radii = user_file_items[LimitsId.radius]
-        # Should the user have chosen several values, then the last element is selected
-        check_if_contains_only_one_element(radii, LimitsId.radius)
-        radius = radii[-1]
-        if radius.start > radius.stop > 0:
-            raise RuntimeError("UserFileStateDirector: The inner radius {0} appears to be larger that the outer"
-                               " radius {1} of the mask.".format(radius.start, radius.stop))
-        min_value = None if radius.start is None else convert_mm_to_m(radius.start)
-        max_value = None if radius.stop is None else convert_mm_to_m(radius.stop)
-        director.set_mask_builder_radius_min(min_value)
-        director.set_mask_builder_radius_max(max_value)
-
-
 class UserFileStateDirectorISIS(object):
     def __init__(self, data_info):
         super(UserFileStateDirectorISIS, self).__init__()
@@ -547,9 +217,9 @@ class UserFileStateDirectorISIS(object):
         self._user_file = file_path
         reader = UserFileReader(self._user_file)
         user_file_items = reader.read_user_file()
-        self.add_user_file_items(user_file_items)
+        self.add_state_settings(user_file_items)
 
-    def add_user_file_items(self, user_file_items):
+    def add_state_settings(self, user_file_items):
         """
         This allows for a usage of the UserFileStateDirector with externally provided user_file_items or internally
         via the set_user_file method.
@@ -575,6 +245,7 @@ class UserFileStateDirectorISIS(object):
         self._set_up_wavelength_state(user_file_items)
 
         # Slice event state
+        self._set_up_slice_event_state(user_file_items)
         # There does not seem to be a command for this currently -- this should be added in the future
 
         # Scale state
@@ -872,6 +543,12 @@ class UserFileStateDirectorISIS(object):
             self._reduction_builder.set_merge_range_min(None)
             self._reduction_builder.set_merge_range_max(None)
 
+        # ------------------------
+        # Reduction Dimensionality
+        # ------------------------
+        set_single_entry(self._reduction_builder, "set_reduction_dimensionality", OtherId.reduction_dimensionality,
+                         user_file_items)
+
     def _set_up_mask_state(self, user_file_items):  # noqa
         # Check for the various possible masks that can be present in the user file
         # This can be:
@@ -957,10 +634,14 @@ class UserFileStateDirectorISIS(object):
                 else:
                     RuntimeError("UserFileStateDirector: The specified detector {0} is not "
                                  "known".format(times.detector_type))
-            self._mask_builder.set_HAB_bin_mask_start(start_times_hab)
-            self._mask_builder.set_HAB_bin_mask_stop(stop_times_hab)
-            self._mask_builder.set_LAB_bin_mask_start(start_times_lab)
-            self._mask_builder.set_LAB_bin_mask_stop(stop_times_lab)
+            if start_times_hab:
+                self._mask_builder.set_HAB_bin_mask_start(start_times_hab)
+            if stop_times_hab:
+                self._mask_builder.set_HAB_bin_mask_stop(stop_times_hab)
+            if start_times_lab:
+                self._mask_builder.set_LAB_bin_mask_start(start_times_lab)
+            if stop_times_lab:
+                self._mask_builder.set_LAB_bin_mask_stop(stop_times_lab)
 
         # ---------------------------------
         # 4. Clear detector
@@ -1023,8 +704,10 @@ class UserFileStateDirectorISIS(object):
                                        "detector {1} associated"
                                        " with it.".format(single_vertical_strip_mask.entry,
                                                           single_vertical_strip_mask.detector_type))
-            self._mask_builder.set_HAB_single_vertical_strip_mask(entry_hab)
-            self._mask_builder.set_LAB_single_vertical_strip_mask(entry_lab)
+            if entry_hab:
+                self._mask_builder.set_HAB_single_vertical_strip_mask(entry_hab)
+            if entry_lab:
+                self._mask_builder.set_LAB_single_vertical_strip_mask(entry_lab)
 
         # ---------------------------------
         # 9. Vertical range strip
@@ -1047,10 +730,14 @@ class UserFileStateDirectorISIS(object):
                                        "detector {1} associated "
                                        "with it.".format(range_vertical_strip_mask.entry,
                                                          range_vertical_strip_mask.detector_type))
-            self._mask_builder.set_HAB_range_vertical_strip_start(start_hab)
-            self._mask_builder.set_HAB_range_vertical_strip_stop(stop_hab)
-            self._mask_builder.set_LAB_range_vertical_strip_start(start_lab)
-            self._mask_builder.set_LAB_range_vertical_strip_stop(stop_lab)
+            if start_hab:
+                self._mask_builder.set_HAB_range_vertical_strip_start(start_hab)
+            if stop_hab:
+                self._mask_builder.set_HAB_range_vertical_strip_stop(stop_hab)
+            if start_lab:
+                self._mask_builder.set_LAB_range_vertical_strip_start(start_lab)
+            if stop_lab:
+                self._mask_builder.set_LAB_range_vertical_strip_stop(stop_lab)
 
         # ---------------------------------
         # 10. Horizontal single strip
@@ -1069,8 +756,10 @@ class UserFileStateDirectorISIS(object):
                                        "detector {1} associated"
                                        " with it.".format(single_horizontal_strip_mask.entry,
                                                           single_horizontal_strip_mask.detector_type))
-            self._mask_builder.set_HAB_single_horizontal_strip_mask(entry_hab)
-            self._mask_builder.set_LAB_single_horizontal_strip_mask(entry_lab)
+            if entry_hab:
+                self._mask_builder.set_HAB_single_horizontal_strip_mask(entry_hab)
+            if entry_lab:
+                self._mask_builder.set_LAB_single_horizontal_strip_mask(entry_lab)
 
         # ---------------------------------
         # 11. Horizontal range strip
@@ -1093,10 +782,14 @@ class UserFileStateDirectorISIS(object):
                                        "detector {1} associated "
                                        "with it.".format(range_horizontal_strip_mask.entry,
                                                          range_horizontal_strip_mask.detector_type))
-            self._mask_builder.set_HAB_range_horizontal_strip_start(start_hab)
-            self._mask_builder.set_HAB_range_horizontal_strip_stop(stop_hab)
-            self._mask_builder.set_LAB_range_horizontal_strip_start(start_lab)
-            self._mask_builder.set_LAB_range_horizontal_strip_stop(stop_lab)
+            if start_hab:
+                self._mask_builder.set_HAB_range_horizontal_strip_start(start_hab)
+            if stop_hab:
+                self._mask_builder.set_HAB_range_horizontal_strip_stop(stop_hab)
+            if start_lab:
+                self._mask_builder.set_LAB_range_horizontal_strip_start(start_lab)
+            if stop_lab:
+                self._mask_builder.set_LAB_range_horizontal_strip_stop(stop_lab)
 
         # ---------------------------------
         # 12. Block
@@ -1132,10 +825,14 @@ class UserFileStateDirectorISIS(object):
                     raise RuntimeError("UserFileStateDirector: The block mask has an unknown "
                                        "detector {0} associated "
                                        "with it.".format(block.detector_type))
-            self._mask_builder.set_HAB_block_horizontal_start(horizontal_start_hab)
-            self._mask_builder.set_HAB_block_horizontal_stop(horizontal_start_hab)
-            self._mask_builder.set_LAB_block_vertical_start(vertical_start_lab)
-            self._mask_builder.set_LAB_block_vertical_stop(vertical_start_lab)
+            if horizontal_start_hab:
+                self._mask_builder.set_HAB_block_horizontal_start(horizontal_start_hab)
+            if horizontal_stop_hab:
+                self._mask_builder.set_HAB_block_horizontal_stop(horizontal_stop_hab)
+            if vertical_start_lab:
+                self._mask_builder.set_LAB_block_vertical_start(vertical_start_lab)
+            if vertical_stop_lab:
+                self._mask_builder.set_LAB_block_vertical_stop(vertical_stop_lab)
 
         # ---------------------------------
         # 13. Block cross
@@ -1157,10 +854,14 @@ class UserFileStateDirectorISIS(object):
                     raise RuntimeError("UserFileStateDirector: The block cross mask has an unknown "
                                        "detector {0} associated "
                                        "with it.".format(block_cross.detector_type))
-            self._mask_builder.set_HAB_block_cross_horizontal(horizontal_hab)
-            self._mask_builder.set_HAB_block_cross_vertical(vertical_hab)
-            self._mask_builder.set_LAB_block_cross_horizontal(horizontal_lab)
-            self._mask_builder.set_LAB_block_cross_vertical(vertical_lab)
+            if horizontal_hab:
+                self._mask_builder.set_HAB_block_cross_horizontal(horizontal_hab)
+            if vertical_hab:
+                self._mask_builder.set_HAB_block_cross_vertical(vertical_hab)
+            if horizontal_lab:
+                self._mask_builder.set_LAB_block_cross_horizontal(horizontal_lab)
+            if vertical_lab:
+                self._mask_builder.set_LAB_block_cross_vertical(vertical_lab)
 
         # ------------------------------------------------------------
         # 14. Angles --> they are specified in L/Phi
@@ -1172,7 +873,7 @@ class UserFileStateDirectorISIS(object):
             angle = angles[-1]
             self._mask_builder.set_phi_min(angle.min)
             self._mask_builder.set_phi_max(angle.max)
-            self._mask_builder.set_use_mask_phi_mirror(not angle.is_no_mirror)
+            self._mask_builder.set_use_mask_phi_mirror(angle.use_mirror)
 
         # ------------------------------------------------------------
         # 15. Maskfiles
@@ -1206,6 +907,25 @@ class UserFileStateDirectorISIS(object):
             self._wavelength_builder.set_wavelength_high(wavelength_limits.stop)
             self._wavelength_builder.set_wavelength_step(wavelength_limits.step)
             self._wavelength_builder.set_wavelength_step_type(wavelength_limits.step_type)
+
+    def _set_up_slice_event_state(self, user_file_items):
+        if LimitsId.events_binning in user_file_items:
+            events_binning = user_file_items[LimitsId.events_binning]
+            check_if_contains_only_one_element(events_binning, LimitsId.events_binning)
+            events_binning = events_binning[-1]
+            # The events binning can come in three forms.
+            # 1. As a simple range object
+            # 2. As an already parsed rebin array, ie min, step, max
+            # 3. As a string. Note that this includes custom commands.
+            if isinstance(events_binning, simple_range):
+                start, stop = get_ranges_for_rebin_setting(events_binning.start, events_binning.stop,
+                                                           events_binning.step, events_binning.step_type)
+            elif isinstance(events_binning, rebin_string_values):
+                start, stop = get_ranges_for_rebin_array(events_binning.value)
+            else:
+                start, stop = get_ranges_from_event_slice_setting(events_binning.value)
+            self._slice_event_builder.set_start_time(start)
+            self._slice_event_builder.set_end_time(stop)
 
     def _set_up_scale_state(self, user_file_items):
         # We only extract the first entry here, ie the s entry. Although there are other entries which a user can
@@ -1286,6 +1006,12 @@ class UserFileStateDirectorISIS(object):
         set_single_entry(self._convert_to_q_builder, "set_q_resolution_w2", QResolutionId.w2, user_file_items,
                          apply_to_value=convert_mm_to_m)
 
+        # ------------------------
+        # Reduction Dimensionality
+        # ------------------------
+        set_single_entry(self._convert_to_q_builder, "set_reduction_dimensionality", OtherId.reduction_dimensionality,
+                         user_file_items)
+
     def _set_up_adjustment_state(self, user_file_items):
         # Get the wide angle correction setting
         set_single_entry(self._adjustment_builder, "set_wide_angle_correction", SampleId.path, user_file_items)
@@ -1294,11 +1020,11 @@ class UserFileStateDirectorISIS(object):
         # Extract the incident monitor and which type of rebinning to use (interpolating or normal)
         if MonId.spectrum in user_file_items:
             mon_spectrum = user_file_items[MonId.spectrum]
-            for monitor in mon_spectrum:
-                if not monitor.is_trans:
-                    self._normalize_to_monitor_builder.set_incident_monitor(monitor.spectrum)
-                    rebin_type = RebinType.InterpolatingRebin if monitor.interpolate else RebinType.Rebin
-                    self._normalize_to_monitor_builder.set_rebin_type(rebin_type)
+            mon_spec = [spec for spec in mon_spectrum if not spec.is_trans]
+            mon_spec = mon_spec[-1]
+            rebin_type = RebinType.InterpolatingRebin if mon_spec.interpolate else RebinType.Rebin
+            self._normalize_to_monitor_builder.set_rebin_type(rebin_type)
+            self._normalize_to_monitor_builder.set_incident_monitor(mon_spec.spectrum)
 
         # The prompt peak correction values
         set_prompt_peak_correction(self._normalize_to_monitor_builder, user_file_items)
@@ -1341,11 +1067,11 @@ class UserFileStateDirectorISIS(object):
         # The incident monitor spectrum for transmission calculation
         if MonId.spectrum in user_file_items:
             mon_spectrum = user_file_items[MonId.spectrum]
-            for monitor in mon_spectrum:
-                if not monitor.is_trans:
-                    rebin_type = RebinType.InterpolatingRebin if monitor.interpolate else RebinType.Rebin
-                    self._calculate_transmission_builder.set_rebin_type(rebin_type)
-                    self._calculate_transmission_builder.set_incident_monitor(monitor.spectrum)
+            mon_spec = [spec for spec in mon_spectrum if spec.is_trans]
+            mon_spec = mon_spec[-1]
+            rebin_type = RebinType.InterpolatingRebin if mon_spec.interpolate else RebinType.Rebin
+            self._calculate_transmission_builder.set_rebin_type(rebin_type)
+            self._calculate_transmission_builder.set_incident_monitor(mon_spec.spectrum)
 
         # The general background settings
         set_background_tof_general(self._calculate_transmission_builder, user_file_items)

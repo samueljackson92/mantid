@@ -8,7 +8,7 @@ from mantid.api import AlgorithmManager, AnalysisDataService
 from mantid.kernel import (DateAndTime)
 from SANS2.Common.SANSConstants import SANSConstants
 from SANS2.Common.SANSLogTagger import (get_tag, has_tag, set_tag)
-from SANS2.Common.SANSType import DetectorType
+from SANS2.Common.SANSType import (DetectorType, RangeStepType)
 
 
 # -------------------------------------------
@@ -219,12 +219,12 @@ def parse_event_slice_setting(string_to_parse):
       * From 8 to 9 > '8-9' --> return [[8,9]]
       * From 8 to 9 and from 10 to 12 > '8-9, 10-12' --> return [[8,9],[10,12]]
       * From 5 to 10 in steps of 1 > '5:1:10' --> return [[5,6],[6,7],[7,8],[8,9],[9,10]]
-      * From 5 > '>5' --> return [[5,-1]]
+      * From 5 > '>5' --> return [[5, -1]]
       * Till 5 > '<5' --> return [[-1,5]]
 
     Any combination of these syntax separated by comma is valid.
-    A special mark is used to signalize no limit: -1,
-    As, so, for an empty string, it will return: [[-1, -1]].
+    A special mark is used to signal no limit: -1,
+    As, so, for an empty string, it will return: None.
 
     It does not accept negative values.
     """
@@ -268,9 +268,9 @@ def parse_event_slice_setting(string_to_parse):
         line = re.sub(range_marker_pattern, "", line)
         value = float(line)
         if is_lower_bound:
-            return [value, None]
+            return [value, -1]
         else:
-            return [None, value]
+            return [-1, value]
 
     # Check if the input actually exists.
     if not string_to_parse:
@@ -302,3 +302,78 @@ def parse_event_slice_setting(string_to_parse):
             raise ValueError("The provided event slice configuration {0} cannot be parsed because "
                              "of {1}".format(slice_settings, slice_setting))
     return all_ranges
+
+
+def get_ranges_from_event_slice_setting(string_to_parse):
+    parsed_elements = parse_event_slice_setting(string_to_parse)
+    if not parsed_elements:
+        return
+    # We have the elements in the form [[a, b], [c, d], ...] but want [a, c, ...] and [b, d, ...]
+    lower = [element[0] for element in parsed_elements]
+    upper = [element[1] for element in parsed_elements]
+    return lower, upper
+
+
+def get_bins_for_rebin_setting(min_value, max_value, step_value, step_type):
+    """
+    Creates a list of bins for the rebin setting.
+
+    @param min_value: the minimum value
+    @param max_value: the maximum value
+    @param step_value: the step value
+    @param step_type: the step type, ie if linear or logarithmic
+    @return: a list of bin values
+    """
+    lower_bound = min_value
+    bins = []
+    while lower_bound < max_value:
+
+        bins.append(lower_bound)
+        # We can either have linear or logarithmic steps. The logarithmic step depends on the lower bound.
+        if step_type is RangeStepType.Lin:
+            step = step_value
+        else:
+            step = lower_bound*step_value
+
+        # Check if the step will bring us out of bounds. If so, then set the new upper value to the max_value
+        upper_bound = lower_bound + step
+        upper_bound = upper_bound if upper_bound < max_value else max_value
+
+        # Now we advance the lower bound
+        lower_bound = upper_bound
+    # Add the last lower_bound
+    bins.append(lower_bound)
+    return bins
+
+
+def get_range_lists_from_bin_list(bin_list):
+    return bin_list[:-1], bin_list[1:]
+
+
+def get_ranges_for_rebin_setting(min_value, max_value, step_value, step_type):
+    """
+    Creates two lists of lower and upper bounds for the
+
+    @param min_value: the minimum value
+    @param max_value: the maximum value
+    @param step_value: the step value
+    @param step_type: the step type, ie if linear or logarithmic
+    @return: two ranges lists, one for the lower and one for the upper bounds.
+    """
+    bins = get_bins_for_rebin_setting(min_value, max_value, step_value, step_type)
+    return get_range_lists_from_bin_list(bins)
+
+
+def get_ranges_for_rebin_array(rebin_array):
+    """
+    Converts a rebin string into min, step (+ step_type), max
+
+    @param rebin_array: a simple rebin array, ie min, step, max
+    @return: two ranges lists, one for the lower and one for the upper bounds.
+    """
+    min_value = rebin_array[0]
+    step_value = rebin_array[1]
+    max_value = rebin_array[2]
+    step_type = RangeStepType.Lin if step_value >= 0. else RangeStepType.Log
+    step_value = abs(step_value)
+    return get_ranges_for_rebin_setting(min_value, max_value, step_value, step_type)

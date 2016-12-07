@@ -14,10 +14,11 @@ single_entry_with_detector = namedtuple('range_entry_with_detector', 'entry, det
 back_single_monitor_entry = namedtuple('back_single_monitor_entry', 'monitor, start, stop')
 
 # Limits
-mask_angle_entry = namedtuple('mask_angle_entry', 'min, max, is_no_mirror')
+mask_angle_entry = namedtuple('mask_angle_entry', 'min, max, use_mirror')
 simple_range = namedtuple('simple_range', 'start, stop, step, step_type')
 complex_range = namedtuple('complex_steps', 'start, step1, mid, step2, stop, step_type1, step_type2')
-rebin_string_values = namedtuple('rebin_string_values', 'rebin_values')
+rebin_string_values = namedtuple('rebin_string_values', 'value')
+event_binning_string_values = namedtuple('event_binning_string_values', 'value')
 
 # Mask
 mask_line = namedtuple('mask_line', 'width, angle, x, y')
@@ -38,9 +39,9 @@ monitor_spectrum = namedtuple('monitor_spectrum', 'spectrum, is_trans, interpola
 monitor_file = namedtuple('monitor_file', 'file_path, detector_type')
 
 
-# -----------------------------------------------------------------
-# --- User File keywords ------------------------------------------
-# -----------------------------------------------------------------
+# ------------------------------------------------------------------
+# --- State director keys ------------------------------------------
+# ------------------------------------------------------------------
 
 # --- DET
 @sans_type("reduction_mode", "rescale", "shift", "rescale_fit", "shift_fit", "correction_x", "correction_y",
@@ -122,4 +123,10 @@ class PrintId(object):
 # -- BACK
 @sans_type("all_monitors", "single_monitors", "monitor_off", "trans")
 class BackId(object):
+    pass
+
+
+# -- OTHER - not settable in user file
+@sans_type("reduction_dimensionality")
+class OtherId(object):
     pass

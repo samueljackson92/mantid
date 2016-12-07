@@ -44,9 +44,9 @@ def all_list_elements_are_of_specific_type_and_not_empty(value, comparison_type,
         # Perform additional check
         if not additional_comparison(element):
             is_of_type = False
-
     if not value:
         is_of_type = False
+
     return is_of_type
 
 

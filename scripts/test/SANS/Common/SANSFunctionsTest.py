@@ -3,8 +3,10 @@ import mantid
 
 from mantid.kernel import (V3D, Quat)
 from SANS2.Common.SANSFunctions import (quaternion_to_angle_and_axis, create_unmanaged_algorithm, add_to_sample_log,
-                                        convert_bank_name_to_detector_type_isis, parse_event_slice_setting)
-from SANS2.Common.SANSType import DetectorType
+                                        convert_bank_name_to_detector_type_isis, parse_event_slice_setting,
+                                        get_bins_for_rebin_setting, get_range_lists_from_bin_list,
+                                        get_ranges_from_event_slice_setting, get_ranges_for_rebin_array)
+from SANS2.Common.SANSType import (DetectorType, RangeStepType)
 
 
 class SANSFunctionsTest(unittest.TestCase):
@@ -101,11 +103,14 @@ class SANSFunctionsTest(unittest.TestCase):
         self.assertTrue(convert_bank_name_to_detector_type_isis("dEtectorBench  ") is DetectorType.Lab)
         self.assertTrue(convert_bank_name_to_detector_type_isis("front-detector") is DetectorType.Hab)
         self.assertTrue(convert_bank_name_to_detector_type_isis("Hab") is DetectorType.Hab)
+        self.assertTrue(convert_bank_name_to_detector_type_isis("front") is DetectorType.Hab)
+        self.assertTrue(convert_bank_name_to_detector_type_isis("rear") is DetectorType.Lab)
+        self.assertTrue(convert_bank_name_to_detector_type_isis("main") is DetectorType.Lab)
 
     def test_that_raises_when_detector_name_is_not_known(self):
         self.assertRaises(RuntimeError, convert_bank_name_to_detector_type_isis, "rear-detector-bank")
         self.assertRaises(RuntimeError, convert_bank_name_to_detector_type_isis, "detectorBenc")
-        self.assertRaises(RuntimeError, convert_bank_name_to_detector_type_isis, "front")
+        self.assertRaises(RuntimeError, convert_bank_name_to_detector_type_isis, "frontd")
 
     def test_that_can_parse_event_slices_when_they_are_valid(self):
         slice_string = "1:2:4.5, 4-6.6, 34:79:87, <5, >3.2"
@@ -114,8 +119,8 @@ class SANSFunctionsTest(unittest.TestCase):
         self.assertTrue(parsed_ranges[1] == [3, 4.5])
         self.assertTrue(parsed_ranges[2] == [4, 6.6])
         self.assertTrue(parsed_ranges[3] == [34, 87])
-        self.assertTrue(parsed_ranges[4] == [None, 5])
-        self.assertTrue(parsed_ranges[5] == [3.2, None])
+        self.assertTrue(parsed_ranges[4] == [-1, 5])
+        self.assertTrue(parsed_ranges[5] == [3.2, -1])
 
     def test_that_raises_when_min_is_larger_than_max(self):
         self.assertRaises(ValueError, parse_event_slice_setting, "4:2:2.5")
@@ -124,6 +129,60 @@ class SANSFunctionsTest(unittest.TestCase):
     def test_that_raises_when_unknown_search_string_appears(self):
         self.assertRaises(ValueError, parse_event_slice_setting, "4:2.5")
         self.assertRaises(ValueError, parse_event_slice_setting, "4:2-2.5, 1:4")
+
+    def test_that_gets_range_list_for_event_slice_string(self):
+        lower, upper = get_ranges_from_event_slice_setting("1:2:4.5, 4-6.6, 34:79:87, <5, >3.2")
+        self.assertTrue(lower[0] == 1.)
+        self.assertTrue(lower[1] == 3.)
+        self.assertTrue(lower[2] == 4.)
+        self.assertTrue(lower[3] == 34.)
+        self.assertTrue(lower[4] == -1)
+        self.assertTrue(lower[5] == 3.2)
+        self.assertTrue(upper[0] == 3.)
+        self.assertTrue(upper[1] == 4.5)
+        self.assertTrue(upper[2] == 6.6)
+        self.assertTrue(upper[3] == 87.)
+        self.assertTrue(upper[4] == 5.)
+        self.assertTrue(upper[5] == -1)
+
+    def test_that_can_parse_a_linear_rebin_string_correctly(self):
+        bins = get_bins_for_rebin_setting(2., 10., 3., RangeStepType.Lin)
+        self.assertTrue(bins[0] == 2.)
+        self.assertTrue(bins[1] == 5.)
+        self.assertTrue(bins[2] == 8.)
+        self.assertTrue(bins[3] == 10.)
+
+    def test_that_can_parse_a_log_rebin_string_correctly(self):
+        bins = get_bins_for_rebin_setting(2., 100., 2., RangeStepType.Log)
+        # We expect
+        # 1  --> 2.
+        # 2  --> 2. + 2.*2 == 6
+        # 3  --> 6. + 6.*2 == 18.
+        # 4  --> 18. + 18.*2 == 54.
+        # 5  --> 54. + 54.*2 > 100. ==> 100.
+        self.assertTrue(bins[0] == 2.)
+        self.assertTrue(bins[1] == 6.)
+        self.assertTrue(bins[2] == 18.)
+        self.assertTrue(bins[3] == 54.)
+        self.assertTrue(bins[4] == 100.)
+
+    def test_that_gets_range_lists_correctly_from_bin_list(self):
+        bin_list = [1, 2, 3, 4, 5]
+        lower, upper = get_range_lists_from_bin_list(bin_list)
+        self.assertTrue(len(lower) == len(bin_list)-1)
+        self.assertTrue(len(upper) == len(bin_list)-1)
+        self.assertTrue(lower[0] == bin_list[0])
+        self.assertTrue(upper[0] == bin_list[1])
+
+    def test_that_gets_range_lists_correctly_from_rebin_array(self):
+        rebin_array = [2, 3, 10]
+        lower, upper = get_ranges_for_rebin_array(rebin_array)
+        self.assertTrue(len(lower) == 3)
+        self.assertTrue(len(upper) == 3)
+        self.assertTrue(lower[0] == 2)
+        self.assertTrue(upper[0] == 5)
+        self.assertTrue(lower[2] == 8)
+        self.assertTrue(upper[2] == 10)
 
 
 if __name__ == '__main__':

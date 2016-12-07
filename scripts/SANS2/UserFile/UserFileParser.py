@@ -585,10 +585,10 @@ class LimitParser(UserFileComponentParser):
                does_pattern_match(self._wavelength_complex_pattern, line)
 
     def _extract_angle_limit(self, line):
-        is_no_mirror = re.search(self._phi_no_mirror, line) is not None
+        use_mirror = re.search(self._phi_no_mirror, line) is None
         angles_string = re.sub(self._phi, "", line)
         angles = extract_float_range(angles_string)
-        return {LimitsId.angle: mask_angle_entry(min=angles[0], max=angles[1], is_no_mirror=is_no_mirror)}
+        return {LimitsId.angle: mask_angle_entry(min=angles[0], max=angles[1], use_mirror=use_mirror)}
 
     def _extract_event_binning(self, line):
         event_binning = re.sub(self._events_time, "", line)
@@ -596,7 +596,7 @@ class LimitParser(UserFileComponentParser):
             output = self._extract_simple_pattern(event_binning, LimitsId.events_binning_range)
         else:
             rebin_values = extract_float_list(event_binning)
-            output = {LimitsId.events_binning: rebin_string_values(rebin_values=rebin_values)}
+            output = {LimitsId.events_binning: rebin_string_values(value=rebin_values)}
         return output
 
     def _extract_cut_limit(self, line):
@@ -612,17 +612,6 @@ class LimitParser(UserFileComponentParser):
         radius_range_string = re.sub(self._radius, "", line)
         radius_range = extract_float_list(radius_range_string, separator=" ")
         return {LimitsId.radius: range_entry(start=radius_range[0], stop=radius_range[1])}
-        # radius_range_string = re.sub(self._radius, "", line)
-        # radius_range = extract_float_list(radius_range_string, separator=" ")
-        #
-        # has_three_entries = len(radius_range) == 3
-        # min_value = radius_range[1] if has_three_entries else radius_range[0]
-        # max_value = radius_range[2] if has_three_entries else radius_range[1]
-        # min_value = None if min_value < 0 else min_value
-        # max_value = None if max_value < 0 else max_value
-        #
-        # return {LimitsId.radius: range_entry(start=min_value,
-        #                                              stop=max_value)}
 
     def _extract_q_limit(self, line):
         q_range = re.sub(self._q, "", line)
@@ -1601,7 +1590,7 @@ class FitParser(UserFileComponentParser):
         fit_string = re.sub(self._lin_or_log_or_poly_to_remove, "", fit_string)
 
         # We should now have something like [poly_order] [w1 w2]
-        # There are four posibilities
+        # There are four posibilties
         # 1. There is no number
         # 2. There is one number -> it has to be the poly_order
         # 3. There are two numbers -> it has to be the w1 and w2

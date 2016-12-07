@@ -137,9 +137,9 @@ class LimitParserTest(unittest.TestCase):
 
     def test_that_angle_limit_is_parsed_correctly(self):
         valid_settings = {"L/PhI 123   345.2": {LimitsId.angle: mask_angle_entry(min=123, max=345.2,
-                                                                                 is_no_mirror=False)},
+                                                                                 use_mirror=True)},
                           "L/PHI / NOMIRROR 123 -345.2": {LimitsId.angle: mask_angle_entry(min=123, max=-345.2,
-                                                                                           is_no_mirror=True)}}
+                                                                                           use_mirror=False)}}
 
         invalid_settings = {"L/PHI/NMIRROR/ 23 454": RuntimeError,
                             "L /pHI/ 23": RuntimeError,

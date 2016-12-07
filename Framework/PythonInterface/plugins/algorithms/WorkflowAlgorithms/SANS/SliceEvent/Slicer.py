@@ -76,7 +76,7 @@ class ISISSlicer(Slicer):
         super(ISISSlicer, self).__init__()
 
     def create_slice(self, workspace, slice_info):
-        #Get the slice limits
+        # Get the slice limits
         start_time = slice_info.start_time
         end_time = slice_info.end_time
 
@@ -90,6 +90,13 @@ class ISISSlicer(Slicer):
 
         # Slice the workspace
         total_charge, total_time = get_charge_and_time(workspace)
+
+        # If the start_time is -1 or the end_time is -1 then use the limit of that slice
+        if start_time == -1:
+            start_time = 0.0
+        if end_time == -1:
+            end_time = total_time + 0.001
+
         sliced_workspace = slice_by_time(workspace, start_time[0], end_time[0])
         partial_charge, partial_time = get_charge_and_time(sliced_workspace)
 
@@ -121,7 +128,7 @@ class SliceEventFactory(object):
         if isinstance(workspace, Workspace2D):
             slicer = NullSlicer()
         elif instrument is SANSInstrument.LARMOR or instrument is SANSInstrument.LOQ or \
-             instrument is SANSInstrument.SANS2D: # noqa
+             instrument is SANSInstrument.SANS2D:  # noqa
             slicer = ISISSlicer()
         else:
             slicer = NullSlicer()

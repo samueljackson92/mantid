@@ -154,5 +154,6 @@ class SANSStateFunctionsTest(unittest.TestCase):
         # Clean up
         SANSStateFunctionsTest._remove_workspaces()
 
+
 if __name__ == '__main__':
     unittest.main()
