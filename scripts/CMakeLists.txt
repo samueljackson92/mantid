@@ -60,7 +60,6 @@ set ( TEST_PY_FILES
 # Addition tests for SANS components
 add_subdirectory(test/SANS)
 
-
 # python unit tests
 if (PYUNITTEST_FOUND)
   pyunittest_add_test ( ${CMAKE_CURRENT_SOURCE_DIR}/test PythonScriptsTest ${TEST_PY_FILES} )
