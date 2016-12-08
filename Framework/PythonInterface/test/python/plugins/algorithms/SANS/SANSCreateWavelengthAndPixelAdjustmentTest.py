@@ -3,11 +3,11 @@ import mantid
 
 import os
 import numpy as np
-from SANS2.State.StateDirector.TestDirector import TestDirector
-from SANS2.State.StateBuilder.SANSStateWavelengthAndPixelAdjustmentBuilder import get_wavelength_and_pixel_adjustment_builder
-from SANS2.Common.SANSType import (RebinType, RangeStepType, convert_detector_type_to_string, DetectorType)
-from SANS2.Common.SANSFunctions import (create_unmanaged_algorithm)
-from SANS2.Common.SANSConstants import SANSConstants
+from sans.test_helper.test_director import TestDirector
+from sans.state.wavelength_and_pixel_adjustment import get_wavelength_and_pixel_adjustment_builder
+from sans.common.sans_type import (RebinType, RangeStepType, convert_detector_type_to_string, DetectorType)
+from sans.common.general_functions import (create_unmanaged_algorithm)
+from sans.common.constants import SANSConstants
 
 
 class SANSCalculateTransmissionTest(unittest.TestCase):

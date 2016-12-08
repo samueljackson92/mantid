@@ -1,12 +1,12 @@
 import unittest
 import mantid
 
-from SANS2.Common.SANSFunctions import (create_unmanaged_algorithm)
-from SANS2.Common.SANSConstants import SANSConstants
-from SANS2.State.StateDirector.TestDirector import TestDirector
-from SANS2.State.StateBuilder.SANSStateConvertToQBuilder import get_convert_to_q_builder
-from SANS2.State.StateBuilder.SANSStateDataBuilder import get_data_builder
-from SANS2.Common.SANSType import (SANSFacility, SampleShape, ReductionDimensionality, RangeStepType)
+from sans.common.general_functions import (create_unmanaged_algorithm)
+from sans.common.constants import SANSConstants
+from sans.common.sans_type import (SANSFacility, SampleShape, ReductionDimensionality, RangeStepType)
+from sans.test_helper.test_director import TestDirector
+from sans.state.convert_to_q import get_convert_to_q_builder
+from sans.state.data import get_data_builder
 
 
 class SANSConvertToQTest(unittest.TestCase):

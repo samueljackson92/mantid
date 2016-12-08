@@ -6,16 +6,16 @@ import stresstesting
 
 from mantid.api import AlgorithmManager
 from mantid.kernel import (Quat, V3D)
-from SANS.Move.SANSMoveWorkspaces import (SANSMoveFactory, SANSMoveLOQ, SANSMoveSANS2D, SANSMoveLARMORNewStyle,
-                                          SANSMoveLARMOROldStyle)
-from SANS2.Common.SANSConstants import SANSConstants
-from SANS2.Common.SANSType import SANSFacility
+from sans.algorithm_detail.move_workspaces import (SANSMoveFactory, SANSMoveLOQ, SANSMoveSANS2D, SANSMoveLARMORNewStyle,
+                                                   SANSMoveLARMOROldStyle)
+from sans.common.constants import SANSConstants
+from sans.common.sans_type import SANSFacility
 # Not clear why the names in the module are not found by Pylint, but it seems to get confused. Hence this check
 # needs to be disabled here.
 # pylint: disable=no-name-in-module
-from SANS2.State.StateDirector.TestDirector import TestDirector
-from SANS2.State.StateBuilder.SANSStateMoveBuilder import get_move_builder
-from SANS2.State.StateBuilder.SANSStateDataBuilder import get_data_builder
+from sans.test_helper.test_director import TestDirector
+from sans.state.move import get_move_builder
+from sans.state.data import get_data_builder
 
 
 def load_workspace(file_name):

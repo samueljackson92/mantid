@@ -1,11 +1,11 @@
 import unittest
 import mantid
 
-from SANS2.State.StateDirector.TestDirector import TestDirector
-from SANS2.State.StateBuilder.SANSStateNormalizeToMonitorBuilder import get_normalize_to_monitor_builder
-from SANS2.Common.SANSType import (RebinType, RangeStepType)
-from SANS2.Common.SANSFunctions import (create_unmanaged_algorithm)
-from SANS2.Common.SANSConstants import SANSConstants
+from sans.test_helper.test_director import TestDirector
+from sans.state.normalize_to_monitor import get_normalize_to_monitor_builder
+from sans.common.sans_type import (RebinType, RangeStepType)
+from sans.common.general_functions import (create_unmanaged_algorithm)
+from sans.common.constants import SANSConstants
 
 
 def get_expected_for_spectrum_1_case(monitor_workspace, selected_detector):

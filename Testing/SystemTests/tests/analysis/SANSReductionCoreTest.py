@@ -7,12 +7,12 @@ import stresstesting
 import mantid
 from mantid.api import AlgorithmManager
 
-from SANS2.State.StateBuilder.SANSStateDataBuilder import get_data_builder
-from SANS2.Common.SANSType import (DetectorType, DetectorType, convert_detector_type_to_string, DataType,
-                                           convert_reduction_data_type_to_string, SANSFacility)
-from SANS2.UserFile.UserFileStateDirector import UserFileStateDirectorISIS
-from SANS2.Common.SANSConstants import SANSConstants
-from SANS2.Common.SANSFunctions import create_unmanaged_algorithm
+from sans.state.data import get_data_builder
+from sans.common.sans_type import (DetectorType, DetectorType, convert_detector_type_to_string, DataType,
+                                   convert_reduction_data_type_to_string, SANSFacility)
+from sans.user_file.user_file_state_director import UserFileStateDirectorISIS
+from sans.common.constants import SANSConstants
+from sans.common.general_functions import create_unmanaged_algorithm
 
 
 # -----------------------------------------------

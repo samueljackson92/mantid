@@ -1,11 +1,11 @@
 import unittest
 import mantid
 import numpy as np
-from SANS2.State.StateDirector.TestDirector import TestDirector
-from SANS2.State.StateBuilder.SANSStateCalculateTransmissionBuilder import get_calculate_transmission_builder
-from SANS2.Common.SANSType import (RebinType, RangeStepType, FitType)
-from SANS2.Common.SANSFunctions import (create_unmanaged_algorithm)
-from SANS2.Common.SANSConstants import SANSConstants
+from sans.test_helper.test_director import TestDirector
+from sans.state.calculate_transmission import get_calculate_transmission_builder
+from sans.common.sans_type import (RebinType, RangeStepType, FitType)
+from sans.common.general_functions import (create_unmanaged_algorithm)
+from sans.common.constants import SANSConstants
 
 
 def get_expected_for_spectrum_n(data_workspace, selected_workspace_index, value_array):

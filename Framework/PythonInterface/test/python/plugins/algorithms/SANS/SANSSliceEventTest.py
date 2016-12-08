@@ -3,9 +3,9 @@ import mantid
 
 from mantid.kernel import DateAndTime
 from mantid.dataobjects import Workspace2D
-from SANS2.Common.SANSFunctions import (create_unmanaged_algorithm)
-from SANS2.State.StateDirector.TestDirector import TestDirector
-from SANS2.State.StateBuilder.SANSStateSliceEventBuilder import get_slice_event_builder
+from sans.common.general_functions import (create_unmanaged_algorithm)
+from sans.test_helper.test_director import TestDirector
+from sans.state.slice_event import get_slice_event_builder
 
 
 def provide_workspace_with_proton_charge(is_event=True):

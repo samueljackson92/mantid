@@ -4,8 +4,8 @@ import mantid
 import unittest
 import stresstesting
 
-from SANS2.Common.SANSFunctions import create_unmanaged_algorithm
-from SANS2.Common.SANSConstants import SANSConstants
+from sans.common.general_functions import create_unmanaged_algorithm
+from sans.common.constants import SANSConstants
 
 
 # -----------------------------------------------

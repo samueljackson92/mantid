@@ -7,10 +7,10 @@ import os
 import mantid
 from mantid.api import AlgorithmManager
 
-from SANS2.Common.SANSType import SANSFacility
-from SANS2.State.StateDirector.TestDirector import TestDirector
-from SANS2.State.StateBuilder.SANSStateDataBuilder import get_data_builder
-from SANS2.State.StateBuilder.SANSStateMaskBuilder import get_mask_builder
+from sans.common.sans_type import SANSFacility
+from sans.test_helper.test_director import TestDirector
+from sans.state.data import get_data_builder
+from sans.state.mask import get_mask_builder
 
 
 def get_masked_spectrum_numbers(workspace):

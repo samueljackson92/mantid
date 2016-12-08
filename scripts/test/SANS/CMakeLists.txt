@@ -1,8 +1,6 @@
-add_subdirectory(CommandInterface)
+add_subdirectory(algorithm_detail)
 add_subdirectory(common)
-add_subdirectory(ConvertToQ)
-add_subdirectory(Scale)
+add_subdirectory(command_interface)
 add_subdirectory(state)
-add_subdirectory(UserFileParser)
-add_subdirectory(WavelengthAndPixelAdjustment)
+add_subdirectory(user_file)
 

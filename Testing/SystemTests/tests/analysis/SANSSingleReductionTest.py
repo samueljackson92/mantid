@@ -5,12 +5,12 @@ import stresstesting
 
 import mantid
 from mantid.api import AlgorithmManager
-from SANS2.UserFile.UserFileStateDirector import UserFileStateDirectorISIS
-from SANS2.State.StateBuilder.SANSStateDataBuilder import get_data_builder
-from SANS2.Common.SANSType import (SANSFacility, ISISReductionMode, ReductionDimensionality, RangeStepType,
+from sans.user_file.user_file_state_director import UserFileStateDirectorISIS
+from sans.state.data import get_data_builder
+from sans.common.sans_type import (SANSFacility, ISISReductionMode, ReductionDimensionality, RangeStepType,
                                    FitModeForMerge)
-from SANS2.Common.SANSConstants import SANSConstants
-from SANS2.Common.SANSFunctions import create_unmanaged_algorithm
+from sans.common.constants import SANSConstants
+from sans.common.general_functions import create_unmanaged_algorithm
 
 
 # -----------------------------------------------
@@ -62,7 +62,8 @@ class SANSSingleReductionTest(unittest.TestCase):
 
         single_reduction_options = {"SANSState": state_dict,
                                     "SampleScatterWorkspace": sample_scatter,
-                                    "SampleScatterMonitorWorkspace": sample_monitor}
+                                    "SampleScatterMonitorWorkspace": sample_monitor,
+                                    "UseOptimizations": False}
         if sample_transmission:
             single_reduction_options.update({"SampleTransmissionWorkspace": sample_transmission})
 

@@ -2,12 +2,12 @@ import unittest
 import mantid
 import math
 
-from SANS2.Common.SANSFunctions import (create_unmanaged_algorithm)
-from SANS2.Common.SANSConstants import SANSConstants
-from SANS2.State.StateDirector.TestDirector import TestDirector
-from SANS2.State.StateBuilder.SANSStateScaleBuilder import get_scale_builder
-from SANS2.State.StateBuilder.SANSStateDataBuilder import get_data_builder
-from SANS2.Common.SANSType import (SANSFacility, SampleShape)
+from sans.common.general_functions import (create_unmanaged_algorithm)
+from sans.common.constants import SANSConstants
+from sans.common.sans_type import (SANSFacility, SampleShape)
+from sans.test_helper.test_director import TestDirector
+from sans.state.scale import get_scale_builder
+from sans.state.data import get_data_builder
 
 
 class SANSScaleTest(unittest.TestCase):
