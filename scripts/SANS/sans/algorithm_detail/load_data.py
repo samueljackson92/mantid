@@ -122,7 +122,7 @@ def get_loader_info_for_isis_nexus(file_information, period):
     loader_options = {"Filename": file_information.get_file_name()}
     if file_information.is_event_mode():
         loader_name = "LoadEventNexus"
-        # TODO: Multiperiod event files
+        # Note that currently we don't have a way to only load one monitor
         loader_options.update({"LoadMonitors": True})
     else:
         loader_name = "LoadISISNexus"
@@ -326,6 +326,9 @@ def tag_workspaces_with_file_names(workspaces, file_information, is_transmission
     :param is_monitor: if we are dealing with a monitor
     """
     # Set tag for the original file name from which the workspace was loaded
+
+
+
     file_tags = get_expected_file_tags(file_information, is_transmission, period)
     if len(file_tags) != len(workspaces):
         raise RuntimeError("Issue while tagging the loaded data. The number of tags does not match the number "
@@ -357,6 +360,9 @@ def run_loader(loader, file_information, is_transmission, period):
     # Either we have a single-period workspace or we want a single period from a multi-period workspace in which case
     # we extract it via OutputWorkspace or we want all child workspaces of a multi-period workspace in which case we
     # need to extract it via OutputWorkspace_1, OutputWorkspace_2, ...
+    # Important note: We cannot just grab the individual periods from the GroupWorkspace since all we get from
+    # the group workspace is a weak pointer, which invalidates our handle as soon as the group workspace goes
+    # out of scope. All of this makes sense for the ADS, but is a pain otherwise.
     if number_of_periods == 1 or (number_of_periods > 1 and period is not StateData.ALL_PERIODS):
         workspaces.append(loader.getProperty(SANSConstants.output_workspace).value)
     else:
@@ -371,6 +377,7 @@ def run_loader(loader, file_information, is_transmission, period):
             for index in range(1, number_of_periods + 1):
                 workspace_monitors.append(loader.getProperty(SANSConstants.output_monitor_workspace_group +
                                                              str(index)).value)
+
     if workspaces:
         tag_workspaces_with_file_names(workspaces, file_information, is_transmission, period, is_monitor=False)
     if workspace_monitors:
@@ -414,11 +421,6 @@ def load_isis(data_type, file_information, period, use_cached, calibration_file_
     return workspace_pack, workspace_monitor_pack
 
 
-# --------------------------------------------
-# Put functions for other implementations here:
-# --------------------------------------------
-
-
 # -------------------------------------------------
 # Load classes
 # -------------------------------------------------
@@ -449,7 +451,8 @@ class SANSLoadDataISIS(SANSLoadData):
         file_info, period_info = get_file_and_period_information_from_data(data_info)
         # Scatter files and Transmission/Direct files have to be loaded slightly differently,
         # hence we separate the loading process.
-        # TODO: make parallel with multiprocessing (check how ws_handle is being passed)
+        # NOTE FOR FUTURE OPTIMIZATION:
+        #   we can make the loop below parallel in principle. We would have to use the multiprocessing library.
         workspaces = {}
         workspace_monitors = {}
 

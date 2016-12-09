@@ -38,10 +38,13 @@ monitor_length = namedtuple('monitor_length', 'length, spectrum, interpolate')
 monitor_spectrum = namedtuple('monitor_spectrum', 'spectrum, is_trans, interpolate')
 monitor_file = namedtuple('monitor_file', 'file_path, detector_type')
 
+# Det
+det_fit_range = namedtuple('det_fit_range', 'start, stop, use_fit')
 
 # ------------------------------------------------------------------
 # --- State director keys ------------------------------------------
 # ------------------------------------------------------------------
+
 
 # --- DET
 @sans_type("reduction_mode", "rescale", "shift", "rescale_fit", "shift_fit", "correction_x", "correction_y",

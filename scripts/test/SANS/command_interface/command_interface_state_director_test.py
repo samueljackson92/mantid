@@ -4,7 +4,7 @@ from sans.command_interface.command_interface_state_director import (NParameterC
                                                                      CommandInterfaceStateDirector, DataCommand,
                                                                      DataCommandId, FitData)
 from sans.common.sans_type import (SANSFacility, RebinType, DetectorType, ReductionDimensionality,
-                                   FitType, RangeStepType, ISISReductionMode)
+                                   FitType, RangeStepType, ISISReductionMode, FitModeForMerge)
 from sans.common.constants import SANSConstants
 
 
@@ -56,7 +56,7 @@ class CommandInterfaceStateDirectorTest(unittest.TestCase):
         self._assert_raises_nothing(command_interface.add_command, command)
 
         # Detector
-        command = NParameterCommand(command_id=NParameterCommandId.detector, values=[DetectorType.Hab])
+        command = NParameterCommand(command_id=NParameterCommandId.detector, values=[ISISReductionMode.Hab])
         self._assert_raises_nothing(command_interface.add_command, command)
 
         # Gravity
@@ -73,7 +73,8 @@ class CommandInterfaceStateDirectorTest(unittest.TestCase):
         self._assert_raises_nothing(command_interface.add_command, command)
 
         # Front detector rescale
-        command = NParameterCommand(command_id=NParameterCommandId.detector, values=[ISISReductionMode.Hab])
+        command = NParameterCommand(command_id=NParameterCommandId.front_detector_rescale, values=[1.2, 2.4, True,
+                                                                                                   False, None, 7.2])
         self._assert_raises_nothing(command_interface.add_command, command)
 
         # Event slices
@@ -135,7 +136,12 @@ class CommandInterfaceStateDirectorTest(unittest.TestCase):
 
         self.assertTrue(state.adjustment.calculate_transmission.fit[SANSConstants.can].wavelength_low == 10.4)
         self.assertTrue(state.adjustment.calculate_transmission.fit[SANSConstants.can].wavelength_high == 12.54)
-        # # TODO front detector rescale
+
+        self.assertTrue(state.reduction.merge_scale == 1.2)
+        self.assertTrue(state.reduction.merge_shift == 2.4)
+        self.assertTrue(state.reduction.merge_fit_mode is FitModeForMerge.ScaleOnly)
+        self.assertTrue(state.reduction.merge_range_min is None)
+        self.assertTrue(state.reduction.merge_range_max == 7.2)
 
         # Event slices
         start_values = state.slice.start_time

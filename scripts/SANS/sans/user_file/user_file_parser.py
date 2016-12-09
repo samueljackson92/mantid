@@ -12,7 +12,7 @@ from sans.user_file.user_file_common import (DetectorId, BackId, range_entry, ba
                                              mask_line, range_entry_with_detector, SampleId, SetId, set_scales_entry,
                                              position_entry, TransId, TubeCalibrationFileId, QResolutionId, FitId,
                                              fit_general, MonId, monitor_length, monitor_file, GravityId,
-                                             monitor_spectrum, PrintId, rebin_string_values)
+                                             monitor_spectrum, PrintId, rebin_string_values, det_fit_range)
 
 
 # -----------------------------------------------------------------
@@ -424,17 +424,17 @@ class DetParser(UserFileComponentParser):
             rescale_fit_string = re.sub(self._rescale_fit, "", line)
             if rescale_fit_string:
                 rescale_fit = extract_float_range(rescale_fit_string)
-                value = range_entry(start=rescale_fit[0], stop=rescale_fit[1])
+                value = det_fit_range(start=rescale_fit[0], stop=rescale_fit[1], use_fit=True)
             else:
-                value = range_entry(start=None, stop=None)
+                value = det_fit_range(start=None, stop=None, use_fit=True)
             return {DetectorId.rescale_fit: value}
         elif self._shift_fit_pattern.match(line) is not None:
             shift_fit_string = re.sub(self._shift_fit, "", line)
             if shift_fit_string:
                 shift_fit = extract_float_range(shift_fit_string)
-                value = range_entry(start=shift_fit[0], stop=shift_fit[1])
+                value = det_fit_range(start=shift_fit[0], stop=shift_fit[1], use_fit=True)
             else:
-                value = range_entry(start=None, stop=None)
+                value = det_fit_range(start=None, stop=None, use_fit=True)
             return {DetectorId.shift_fit: value}
         else:
             raise RuntimeError("DetParser: Could not extract line: {0}".format(line))

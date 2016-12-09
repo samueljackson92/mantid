@@ -87,9 +87,6 @@ class SANSLoad(DataProcessorAlgorithm):
                              direction=Direction.Output,
                              doc='The number of workspace for sample direct.')
 
-        # ------------------
-        # Monitor workspaces
-        # ------------------
         self.declareProperty(MatrixWorkspaceProperty('CanScatterWorkspace', '',
                                                      optional=PropertyMode.Optional, direction=Direction.Output),
                              doc='The can scatter workspace. This workspace does not contain monitors.')
@@ -123,8 +120,11 @@ class SANSLoad(DataProcessorAlgorithm):
         state = create_deserialized_sans_state_from_property_manager(state_property_manager)
 
         # Run the appropriate SANSLoader and get the workspaces and the workspace monitors
+        # Note that cache optimization is only applied to the calibration workspace since it is not available as a
+        # return property and it is also something which is most likely not to change between different reductions.
         use_cached = self.getProperty("UseCached").value
         publish_to_ads = self.getProperty("PublishToCache").value
+
         data = state.data
         progress = self._get_progress_for_file_loading(data)
 
@@ -299,7 +299,9 @@ class SANSLoad(DataProcessorAlgorithm):
                                     there will be only one element in this list. Only when dealing with multiperiod
                                     data can we expected to see more workspaces in the list.
         """
+        self.setProperty(name, workspace_collection[0])
         if len(workspace_collection) > 1:
+            # Note that the first output is the same as we have set above.
             counter = 1
             for workspace in workspace_collection:
                 output_name = name + "_" + str(counter)
@@ -314,8 +316,6 @@ class SANSLoad(DataProcessorAlgorithm):
                     self.setProperty(output_name, user_specified_name)
                 self.setProperty(output_name, workspace)
                 counter += 1
-        else:
-            self.setProperty(name, workspace_collection[0])
         return len(workspace_collection)
 
     def set_property_with_number_of_workspaces(self, name, workspace_collection):

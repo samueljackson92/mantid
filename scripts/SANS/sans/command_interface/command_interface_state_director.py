@@ -5,7 +5,7 @@ from sans.user_file.user_file_parser import (UserFileParser)
 from sans.user_file.user_file_reader import (UserFileReader)
 from sans.user_file.user_file_common import (MonId, monitor_spectrum, OtherId, SampleId, GravityId, SetId, position_entry,
                                            fit_general, FitId, monitor_file, mask_angle_entry, LimitsId, range_entry,
-                                           simple_range, DetectorId, event_binning_string_values)
+                                           simple_range, DetectorId, event_binning_string_values, det_fit_range)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -358,16 +358,12 @@ class CommandInterfaceStateDirector(object):
         # Set the scale and the shift
         new_state_entries = {DetectorId.rescale: scale, DetectorId.shift: shift}
 
-        # Set the fit for the scaling if required
-        if fit_scale:
-            if q_min and q_max:
-                pass
-            else:
-                pass
-        # Set the fitting of the scale
-        range_entry(start=q_min, stop=q_min)
+        # Set the fit fot the scale
+        new_state_entries.update({DetectorId.rescale_fit: det_fit_range(start=q_min, stop=q_max, use_fit=fit_scale)})
 
-        new_state_entries = {LimitsId.events_binning: ""}
+        # Set the fit for shift
+        new_state_entries.update({DetectorId.shift_fit: det_fit_range(start=q_min, stop=q_max, use_fit=fit_shift)})
+
         self.add_to_processed_state_settings(new_state_entries)
 
     def _process_event_slices(self, command):
