@@ -3,6 +3,7 @@
 ##
 
 set ( TEST_PY_FILES
+  batch_csv_file_parser_test.py
   command_interface_state_director_test.py
 )
 

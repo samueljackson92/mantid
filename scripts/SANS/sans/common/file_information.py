@@ -698,7 +698,7 @@ class SANSFileInformationISISAdded(SANSFileInformation):
         return self._run_number
 
     def get_type(self):
-        return SANSFileType.ISISNexus
+        return SANSFileType.ISISNexusAdded
 
     def is_event_mode(self):
         return self._is_event_mode

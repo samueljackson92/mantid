@@ -269,70 +269,70 @@ class SANSLoadTest(unittest.TestCase):
     #
     #     # Check that calibration is added
     #     self.assertFalse(SANSLoadTest._has_calibration_been_applied(load_alg))
-
-    def test_that_runs_for_raw_file_with_histogram_data_and_single_period(self):
-        # Arrange
-        state = SANSLoadTest._get_simple_state(sample_scatter="SANS2D00000808.raw",
-                                               sample_trans="SANS2D00028784",
-                                               sample_direct="SANS2D00028804")
-
-        # Act
-        output_workspace_names = {"SampleScatterWorkspace": "sample_scatter",
-                                  "SampleScatterMonitorWorkspace": "sample_monitor_scatter",
-                                  "SampleTransmissionWorkspace": "sample_transmission",
-                                  "SampleDirectWorkspace": "sample_direct"}
-        load_alg = self._run_load(state, publish_to_cache=False, use_cached=False, move_workspace=False,
-                                  output_workspace_names=output_workspace_names)
-
-        # Assert
-        expected_number_of_workspaces = [1, 1, 1, 0, 0, 0]
-        expected_number_on_ads = 0
-        workspace_type = [Workspace2D, Workspace2D, Workspace2D, None, None, None]
-        self._do_test_output(load_alg, expected_number_of_workspaces, expected_number_on_ads, workspace_type)
-
-        # Check that calibration is added
-        self.assertFalse(SANSLoadTest._has_calibration_been_applied(load_alg))
-
-    def test_that_runs_for_isis_nexus_file_with_histogram_data_and_multi_period(self):
-        # Arrange
-        state = SANSLoadTest._get_simple_state(sample_scatter="SANS2D00005512.nxs")
-
-        # Act
-        output_workspace_names = {"SampleScatterWorkspace": "sample_scatter",
-                                  "SampleScatterMonitorWorkspace": "sample_monitor_scatter"}
-        load_alg = self._run_load(state, publish_to_cache=False, use_cached=False, move_workspace=False,
-                                  output_workspace_names=output_workspace_names)
-
-        # Assert
-        expected_number_of_workspaces = [13, 0, 0, 0, 0, 0]
-        expected_number_on_ads = 0
-        workspace_type = [Workspace2D, None, None, None, None, None]
-        self._do_test_output(load_alg, expected_number_of_workspaces, expected_number_on_ads, workspace_type)
-
-        # Check that calibration is added
-        self.assertFalse(SANSLoadTest._has_calibration_been_applied(load_alg))
-
-    def test_that_runs_for_isis_nexus_file_with_histogram_data_and_multi_period_and_select_single_period(self):
-        # Arrange
-        special_selection_on_group = 3
-        state = SANSLoadTest._get_simple_state(sample_scatter="SANS2D00005512.nxs",
-                                               sample_scatter_period=special_selection_on_group)
-
-        # Act
-        output_workspace_names = {"SampleScatterWorkspace": "sample_scatter",
-                                  "SampleScatterMonitorWorkspace": "sample_monitor_scatter"}
-        load_alg = self._run_load(state, publish_to_cache=False, use_cached=False, move_workspace=False,
-                                  output_workspace_names=output_workspace_names)
-
-        # Assert
-        expected_number_of_workspaces = [1, 0, 0, 0, 0, 0]
-        expected_number_on_ads = 0
-        workspace_type = [Workspace2D, None, None, None, None, None]
-        self._do_test_output(load_alg, expected_number_of_workspaces, expected_number_on_ads, workspace_type)
-
-        # Check that calibration is added
-        self.assertFalse(SANSLoadTest._has_calibration_been_applied(load_alg))
-
+    #
+    # def test_that_runs_for_raw_file_with_histogram_data_and_single_period(self):
+    #     # Arrange
+    #     state = SANSLoadTest._get_simple_state(sample_scatter="SANS2D00000808.raw",
+    #                                            sample_trans="SANS2D00028784",
+    #                                            sample_direct="SANS2D00028804")
+    #
+    #     # Act
+    #     output_workspace_names = {"SampleScatterWorkspace": "sample_scatter",
+    #                               "SampleScatterMonitorWorkspace": "sample_monitor_scatter",
+    #                               "SampleTransmissionWorkspace": "sample_transmission",
+    #                               "SampleDirectWorkspace": "sample_direct"}
+    #     load_alg = self._run_load(state, publish_to_cache=False, use_cached=False, move_workspace=False,
+    #                               output_workspace_names=output_workspace_names)
+    #
+    #     # Assert
+    #     expected_number_of_workspaces = [1, 1, 1, 0, 0, 0]
+    #     expected_number_on_ads = 0
+    #     workspace_type = [Workspace2D, Workspace2D, Workspace2D, None, None, None]
+    #     self._do_test_output(load_alg, expected_number_of_workspaces, expected_number_on_ads, workspace_type)
+    #
+    #     # Check that calibration is added
+    #     self.assertFalse(SANSLoadTest._has_calibration_been_applied(load_alg))
+    #
+    # def test_that_runs_for_isis_nexus_file_with_histogram_data_and_multi_period(self):
+    #     # Arrange
+    #     state = SANSLoadTest._get_simple_state(sample_scatter="SANS2D00005512.nxs")
+    #
+    #     # Act
+    #     output_workspace_names = {"SampleScatterWorkspace": "sample_scatter",
+    #                               "SampleScatterMonitorWorkspace": "sample_monitor_scatter"}
+    #     load_alg = self._run_load(state, publish_to_cache=False, use_cached=False, move_workspace=False,
+    #                               output_workspace_names=output_workspace_names)
+    #
+    #     # Assert
+    #     expected_number_of_workspaces = [13, 0, 0, 0, 0, 0]
+    #     expected_number_on_ads = 0
+    #     workspace_type = [Workspace2D, None, None, None, None, None]
+    #     self._do_test_output(load_alg, expected_number_of_workspaces, expected_number_on_ads, workspace_type)
+    #
+    #     # Check that calibration is added
+    #     self.assertFalse(SANSLoadTest._has_calibration_been_applied(load_alg))
+    #
+    # def test_that_runs_for_isis_nexus_file_with_histogram_data_and_multi_period_and_select_single_period(self):
+    #     # Arrange
+    #     special_selection_on_group = 3
+    #     state = SANSLoadTest._get_simple_state(sample_scatter="SANS2D00005512.nxs",
+    #                                            sample_scatter_period=special_selection_on_group)
+    #
+    #     # Act
+    #     output_workspace_names = {"SampleScatterWorkspace": "sample_scatter",
+    #                               "SampleScatterMonitorWorkspace": "sample_monitor_scatter"}
+    #     load_alg = self._run_load(state, publish_to_cache=False, use_cached=False, move_workspace=False,
+    #                               output_workspace_names=output_workspace_names)
+    #
+    #     # Assert
+    #     expected_number_of_workspaces = [1, 0, 0, 0, 0, 0]
+    #     expected_number_on_ads = 0
+    #     workspace_type = [Workspace2D, None, None, None, None, None]
+    #     self._do_test_output(load_alg, expected_number_of_workspaces, expected_number_on_ads, workspace_type)
+    #
+    #     # Check that calibration is added
+    #     self.assertFalse(SANSLoadTest._has_calibration_been_applied(load_alg))
+    #
     # def test_that_can_load_isis_nexus_file_with_event_data_and_multi_period(self):
     #     # Arrange
     #     state = SANSLoadTest._get_simple_state(sample_scatter="LARMOR00013065.nxs",
@@ -355,7 +355,7 @@ class SANSLoadTest(unittest.TestCase):
     #
     #     # Confirm that the ADS workspace contains the calibration file
     #     try:
-    #         AnalysisDataService.retrieve("TUBE_SANS2D_BOTH_27345_20Mar15")
+    #         AnalysisDataService.retrieve("80tubeCalibration_18-04-2016_r9330-9335")
     #         on_ads = True
     #     except RuntimeError:
     #         on_ads = False
@@ -363,6 +363,54 @@ class SANSLoadTest(unittest.TestCase):
     #
     #     # Cleanup
     #     remove_all_workspaces_from_ads()
+    #
+    # def test_that_runs_for_isis_nexus_file_with_event_data_and_multi_period_and_select_single_period(self):
+    #     # Arrange
+    #     special_selection_on_group = 3
+    #     state = SANSLoadTest._get_simple_state(sample_scatter="LARMOR00013065.nxs",
+    #                                            sample_scatter_period=special_selection_on_group)
+    #
+    #     # Act
+    #     output_workspace_names = {"SampleScatterWorkspace": "sample_scatter",
+    #                               "SampleScatterMonitorWorkspace": "sample_monitor_scatter"}
+    #     load_alg = self._run_load(state, publish_to_cache=True, use_cached=True, move_workspace=False,
+    #                               output_workspace_names=output_workspace_names)
+    #
+    #     # Assert
+    #     expected_number_of_workspaces = [1, 0, 0, 0, 0, 0]
+    #     expected_number_on_ads = 0
+    #     workspace_type = [EventWorkspace, None, None, None, None, None]
+    #     self._do_test_output(load_alg, expected_number_of_workspaces, expected_number_on_ads, workspace_type)
+    #
+    #     # Check that calibration has not been added
+    #     self.assertFalse(SANSLoadTest._has_calibration_been_applied(load_alg))
+    #
+    #     # Cleanup
+    #     remove_all_workspaces_from_ads()
+
+    def test_that_can_load_single_period_from_added_multi_period_histogram_file(self):
+        # Arrange
+        special_selection_on_group = 7
+        state = SANSLoadTest._get_simple_state(sample_scatter="AddedMultiPeriodTestFile-add.nxs",
+                                               sample_scatter_period=special_selection_on_group)
+
+        # Act
+        output_workspace_names = {"SampleScatterWorkspace": "sample_scatter",
+                                  "SampleScatterMonitorWorkspace": "sample_monitor_scatter"}
+        load_alg = self._run_load(state, publish_to_cache=True, use_cached=True, move_workspace=False,
+                                  output_workspace_names=output_workspace_names)
+
+        # Assert
+        expected_number_of_workspaces = [1, 0, 0, 0, 0, 0]
+        expected_number_on_ads = 0
+        workspace_type = [EventWorkspace, None, None, None, None, None]
+        self._do_test_output(load_alg, expected_number_of_workspaces, expected_number_on_ads, workspace_type)
+
+        # Check that calibration is added
+        self.assertFalse(SANSLoadTest._has_calibration_been_applied(load_alg))
+
+        # Cleanup
+        remove_all_workspaces_from_ads()
 
 
 class SANSLoadDataRunnerTest(stresstesting.MantidStressTest):

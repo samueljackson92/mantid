@@ -475,3 +475,15 @@ def convert_string_to_output_mode(output_mode_as_string):
     else:
         raise ValueError("BatchMode: Cannot convert unknown output mode string: {0}".format(output_mode_as_string))
     return output_mode
+
+
+# -----------------------------------
+#  Entries of a batch reduction file
+# -----------------------------------
+@sans_type("SampleScatter", "SampleTransmission", "SampleDirect", "CanScatter", "CanTransmission", "CanDirect",
+           "Output", "UserFile")
+class BatchReductionEntry(object):
+    """
+    Entries for batch reduction file.
+    """
+    pass
