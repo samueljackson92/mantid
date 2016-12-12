@@ -14,9 +14,9 @@ from sans.state.data import (StateData)
 from sans.algorithm_detail.calibration import apply_calibration
 
 
-# -------------------
-# Free functions
-# -------------------
+# ----------------------------------------------------------------------------------------------------------------------
+# General functions
+# ----------------------------------------------------------------------------------------------------------------------
 def update_file_information(file_information_dict, factory, data_type, file_name):
     info = factory.create_sans_file_information(file_name)
     file_information_dict.update({data_type: info})
@@ -110,84 +110,9 @@ def get_expected_file_tags(file_information, is_transmission, period):
     return names
 
 
-def get_loader_info_for_isis_nexus(file_information, period):
-    """
-    Get name and the options for the loading algorithm.
-
-    This takes a SANSFileInformation object and provides the inputs for the adequate loading strategy.
-    :param file_information: a SANSFileInformation object.
-    :param period: the period to load.
-    :return: the name of the load algorithm and the selected load options.
-    """
-    loader_options = {"Filename": file_information.get_file_name()}
-    if file_information.is_event_mode():
-        loader_name = "LoadEventNexus"
-        # Note that currently we don't have a way to only load one monitor
-        loader_options.update({"LoadMonitors": True})
-    else:
-        loader_name = "LoadISISNexus"
-        loader_options.update({"LoadMonitors": "Separate"})
-        if period is not StateData.ALL_PERIODS:
-            loader_options.update({"EntryNumber": period})
-    return loader_name, loader_options
-
-
-def get_loader_info_for_isis_nexus_transmission(file_information, period):
-    """
-    Get the load algorithm information for an nexus transmission file for ISIS
-
-    :param file_information: a SANSFileInformation object.
-    :param period: the period to load.
-    :return: the name of the load algorithm and the selected load options.
-    """
-    loader_name = "LoadNexusMonitors"
-    # TODO how to load a single period?
-    loader_options = {"Filename": file_information.get_file_name()}
-    loader_options.update({"LoadEventMonitors": True,
-                           "LoadHistoMonitors": True})
-    return loader_name, loader_options
-
-
-def get_loader_info_for_raw(file_information, period):
-    """
-    Get the load algorithm information for an raw file
-
-    :param file_information: a SANSFileInformation object.
-    :param period: the period to load.
-    :return: the name of the load algorithm and the selected load options.
-    """
-    loader_name = "LoadRaw"
-    loader_options = {"Filename": file_information.get_file_name()}
-    loader_options.update({"LoadMonitors": "Separate"})
-    if period is not StateData.ALL_PERIODS:
-        loader_options.update({"PeriodList": period})
-    return loader_name, loader_options
-
-
-def get_loading_strategy(file_information, period, is_transmission):
-    """
-    Selects a loading strategy depending on the file type and if we are dealing with a transmission
-
-    :param file_information: a SANSFileInformation object.
-    :param period: the period to load.
-    :param is_transmission: if the file to load is a transmission type, i.e. for transmission or direct.
-    :return: the name of the load algorithm and the selected load options.
-    """
-    if is_transmission and file_information.get_type() == SANSFileType.ISISNexus:
-        loader_name, loader_options = get_loader_info_for_isis_nexus_transmission(file_information, period)
-    elif file_information.get_type() == SANSFileType.ISISNexus:
-        loader_name, loader_options = get_loader_info_for_isis_nexus(file_information, period)
-    elif file_information.get_type() == SANSFileType.ISISRaw:
-        loader_name, loader_options = get_loader_info_for_raw(file_information, period)
-    elif file_information.get_type() == SANSFileType.ISISNexusAdded:
-        raise NotImplementedError("SANSLoad: Cannot load SANS file of type {0}".format(str(file_information.get_type())))
-        # TODO: Add loader for added
-    else:
-        raise RuntimeError("SANSLoad: Cannot load SANS file of type {0}".format(str(file_information.get_type())))
-    loader = create_unmanaged_algorithm(loader_name, **loader_options)
-    return loader
-
-
+# ----------------------------------------------------------------------------------------------------------------------
+# Caching workspaces
+# ----------------------------------------------------------------------------------------------------------------------
 def add_workspaces_to_analysis_data_service(workspaces, workspace_names, is_monitor):
     """
     Adds a list of workspaces to the ADS.
@@ -327,8 +252,6 @@ def tag_workspaces_with_file_names(workspaces, file_information, is_transmission
     """
     # Set tag for the original file name from which the workspace was loaded
 
-
-
     file_tags = get_expected_file_tags(file_information, is_transmission, period)
     if len(file_tags) != len(workspaces):
         raise RuntimeError("Issue while tagging the loaded data. The number of tags does not match the number "
@@ -340,6 +263,10 @@ def tag_workspaces_with_file_names(workspaces, file_information, is_transmission
                 file_tag += SANSConstants.monitor_suffix
             set_tag(SANSConstants.sans_file_tag, file_tag, workspace)
 
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Loading strategies
+# ----------------------------------------------------------------------------------------------------------------------
 
 def run_loader(loader, file_information, is_transmission, period):
     """
@@ -385,6 +312,128 @@ def run_loader(loader, file_information, is_transmission, period):
     return workspaces, workspace_monitors
 
 
+def loader_for_isis_nexus(file_information, is_transmission, period):
+    """
+    Get name and the options for the loading algorithm.
+
+    This takes a SANSFileInformation object and provides the inputs for the adequate loading strategy.
+    :param file_information: a SANSFileInformation object.
+    :param is_transmission: if the workspace is a transmission workspace.
+    :param period: the period to load.
+    :return: the name of the load algorithm and the selected load options.
+    """
+    loader_options = {"Filename": file_information.get_file_name()}
+    if file_information.is_event_mode():
+        loader_name = "LoadEventNexus"
+        # Note that currently we don't have a way to only load one monitor
+        loader_options.update({"LoadMonitors": True})
+    elif not file_information.is_event_mode() and not is_transmission:
+        loader_name = "LoadISISNexus"
+        loader_options.update({"LoadMonitors": "Separate"})
+        if period is not StateData.ALL_PERIODS:
+            loader_options.update({"EntryNumber": period})
+    else:
+        # We must be dealing with a transmission file, we need to load the whole file.
+        # The file itself will most of the time only contain monitors anyway, but sometimes the detector
+        # is used as a sort of monitor, hence we cannot sort out the monitors.
+        loader_name = "LoadISISNexus"
+        loader_options.update({"LoadMonitors": "Include"})
+        if period is not StateData.ALL_PERIODS:
+            loader_options.update({"EntryNumber": period})
+
+    loader_alg = create_unmanaged_algorithm(loader_name, **loader_options)
+    return run_loader(loader_alg, file_information, is_transmission, period)
+
+
+def loader_for_added_isis_nexus(file_information, is_transmission, period):
+    """
+    Get the name and options for the load algorithm for ISIS nexus.
+
+    @param file_information: a SANSFileInformation object.
+    @param period: the period to load
+    @return: the name of the load algorithm and the selected load options
+    """
+    loader_name = "LoadNexusProcessed"
+    load_options = {"Filename": file_information.get_file_name()}
+    if period != StateData.ALL_PERIODS:
+        if file_information.is_event_mode():
+            # In this case we would have to load the Nth entry and the 2*Nth entry which is the monitor
+            pass
+        else:
+            pass
+    return loader_name, load_options
+
+
+def loader_for_added_isis_nexus(file_information, is_transmission, period):
+    """
+    Get the name and options for the load algorithm for ISIS nexus.
+
+    @param file_information: a SANSFileInformation object.
+    @param period: the period to load
+    @return: the name of the load algorithm and the selected load options
+    """
+    loader_name = "LoadNexusProcessed"
+    load_options = {"Filename": file_information.get_file_name()}
+    if period != StateData.ALL_PERIODS:
+        if file_information.is_event_mode():
+            # In this case we would have to load the Nth entry and the 2*Nth entry which is the monitor
+            pass
+        else:
+            pass
+    return loader_name, load_options
+
+
+def loader_for_raw(file_information, is_transmission, period):
+    """
+    Get the load algorithm information for an raw file
+
+    :param file_information: a SANSFileInformation object.
+    :param is_transmission: if the workspace is a transmission workspace.
+    :param period: the period to load.
+    :return: the name of the load algorithm and the selected load options.
+    """
+    loader_name = "LoadRaw"
+    loader_options = {SANSConstants.file_name: file_information.get_file_name()}
+    loader_options.update({"LoadMonitors": "Separate"})
+    if period != StateData.ALL_PERIODS:
+        loader_options.update({"PeriodList": period})
+    loader_alg = create_unmanaged_algorithm(loader_name, **loader_options)
+    workspaces, monitor_workspaces = run_loader(loader_alg, file_information, is_transmission, period)
+
+    # Add the sample details to the loaded workspace
+    sample_name = "LoadSampleDetailsFromRaw"
+    sample_options = {SANSConstants.file_name: file_information.get_file_name()}
+    sample_alg = create_unmanaged_algorithm(sample_name, **sample_options)
+
+    for workspace in workspaces:
+        sample_alg.setProperty(SANSConstants.input_workspace, workspace)
+        sample_alg.execute()
+
+    for monitor_workspace in monitor_workspaces:
+        sample_alg.setProperty(SANSConstants.input_workspace, monitor_workspace)
+        sample_alg.execute()
+
+    return workspaces, monitor_workspaces
+
+
+def get_loader_strategy(file_information):
+    """
+    Selects a loading strategy depending on the file type and if we are dealing with a transmission
+
+    :param file_information: a SANSFileInformation object.
+    :return: a handle to the correct loading function/strategy.
+    """
+    if file_information.get_type() == SANSFileType.ISISNexus:
+        loader = loader_for_isis_nexus
+    elif file_information.get_type() == SANSFileType.ISISRaw:
+        loader = loader_for_raw
+    elif file_information.get_type() == SANSFileType.ISISNexusAdded:
+        loader = loader_for_added_isis_nexus
+    else:
+        raise RuntimeError("SANSLoad: Cannot load SANS file of type {0}".format(str(file_information.get_type())))
+    return loader
+
+
 def load_isis(data_type, file_information, period, use_cached, calibration_file_name):
     """
     Loads workspaces according a SANSFileInformation object for ISIS.
@@ -402,23 +451,38 @@ def load_isis(data_type, file_information, period, use_cached, calibration_file_
     workspace_monitor = []
 
     is_transmission = is_transmission_type(data_type)
+
     # Make potentially use of loaded workspaces. For now we can only identify them by their name
     if use_cached:
         workspace, workspace_monitor = use_cached_workspaces_from_ads(file_information, is_transmission, period,
                                                                       calibration_file_name)
 
     # Load the workspace if required. We need to load it if there is no workspace loaded from the cache or, in the case
-    # of scatter, ie. non-trans, there is no monitor workspace
+    # of scatter, ie. non-trans, there is no monitor workspace. There are several ways to load the data
     if len(workspace) == 0 or (len(workspace_monitor) == 0 and not is_transmission):
-        # Get the loading strategy
-        loader = get_loading_strategy(file_information, period, is_transmission)
-        workspace, workspace_monitor = run_loader(loader, file_information, is_transmission, period)
+        loader = get_loader_strategy(file_information)
+        workspace, workspace_monitor = loader(file_information, is_transmission, period)
 
     # Associate the data type with the workspace
     workspace_pack = {data_type: workspace}
     workspace_monitor_pack = {data_type: workspace_monitor} if len(workspace_monitor) > 0 else None
 
     return workspace_pack, workspace_monitor_pack
+
+
+def is_data_transmission_and_event_mode(file_infos):
+    """
+    Checks if a file is used as a transmission workspace and contains event-mode data. This is not allowed.
+
+    @param file_infos: a dict of DataType vs FileInformation objects
+    @return: True if the file setting is bad else False
+    """
+    is_bad_file_setting = False
+    for key, value in file_infos.items():
+        if is_transmission_type(key) and value.is_event_mode():
+            is_bad_file_setting = True
+            break
+    return is_bad_file_setting
 
 
 # -------------------------------------------------
@@ -448,11 +512,18 @@ class SANSLoadDataISIS(SANSLoadData):
     """Load implementation of SANSLoad for ISIS data"""
     def do_execute(self, data_info, use_cached, publish_to_ads, progress):
         # Get all entries from the state file
-        file_info, period_info = get_file_and_period_information_from_data(data_info)
-        # Scatter files and Transmission/Direct files have to be loaded slightly differently,
-        # hence we separate the loading process.
-        # NOTE FOR FUTURE OPTIMIZATION:
-        #   we can make the loop below parallel in principle. We would have to use the multiprocessing library.
+        file_infos, period_infos = get_file_and_period_information_from_data(data_info)
+
+        # Several important remarks regarding the loading
+        # 1. Scatter files are loaded as with monitors and the data in two separate workspaces.
+        # 2. Transmission files are loaded entirely. They cannot be event-mode
+        # 3. Added data is handled differently because it is already processed data.
+
+        # Check that the transmission data is not event mode
+        if is_data_transmission_and_event_mode(file_infos):
+            raise RuntimeError("SANSLoad: You have provided an event-type file for a transmission workspace. "
+                               "Only histogram-type files are supported.")
+
         workspaces = {}
         workspace_monitors = {}
 
@@ -461,12 +532,12 @@ class SANSLoadDataISIS(SANSLoadData):
         else:
             calibration_file = ""
 
-        for key, value in file_info.items():
+        for key, value in file_infos.items():
             # Loading
             report_message = "Loading {0}".format(convert_from_data_type_to_string(key))
             progress.report(report_message)
 
-            workspace_pack, workspace_monitors_pack = load_isis(key, value, period_info[key],
+            workspace_pack, workspace_monitors_pack = load_isis(key, value, period_infos[key],
                                                                 use_cached, calibration_file)
 
             # Add them to the already loaded workspaces

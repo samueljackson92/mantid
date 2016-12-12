@@ -609,6 +609,10 @@ class SANSFileInformation(object):
         pass
 
     @abstractmethod
+    def is_event_mode(self):
+        pass
+
+    @abstractmethod
     def is_added_data(self):
         pass
 
@@ -737,6 +741,9 @@ class SANSFileInformationRaw(SANSFileInformation):
 
     def get_type(self):
         return SANSFileType.ISISRaw
+
+    def is_event_mode(self):
+        return False
 
     def is_added_data(self):
         return False

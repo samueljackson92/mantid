@@ -2223,7 +2223,6 @@ class TransmissionCalc(ReductionStep):
             through the sample
         """
         self.output_wksp = None
-
         # look for run files that contain transmission data
         test1, test2 = self._get_run_wksps(reducer)
         if test1 or test2:
