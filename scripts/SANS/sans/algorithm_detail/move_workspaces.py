@@ -397,12 +397,11 @@ class SANSMoveSANS2D(SANSMove):
                     hab_detector.side_correction*(1.0 - math.cos(rotation_in_radians)) +
                     (hab_detector_radius + hab_detector.radius_correction)*(math.sin(rotation_in_radians))) -
                    hab_detector_default_x_m - x)
-
         y_shift = hab_detector.y_translation_correction - y
-
         z_shift = (hab_detector_z + hab_detector.z_translation_correction +
                    (hab_detector_radius + hab_detector.radius_correction) * (1.0 - math.cos(rotation_in_radians)) -
                    hab_detector.side_correction * math.sin(rotation_in_radians)) - hab_detector_default_sd_m
+
         offset = {CanonicalCoordinates.X: x_shift,
                   CanonicalCoordinates.Y: y_shift,
                   CanonicalCoordinates.Z: z_shift}
@@ -435,7 +434,6 @@ class SANSMoveSANS2D(SANSMove):
                   CanonicalCoordinates.Y: y_shift,
                   CanonicalCoordinates.Z: z_shift}
         move_component(workspace, offset, detector_name)
-
 
     @staticmethod
     def _move_monitor_4(workspace, move_info):

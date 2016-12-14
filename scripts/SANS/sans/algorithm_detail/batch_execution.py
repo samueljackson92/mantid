@@ -34,9 +34,8 @@ def single_reduction_for_batch(state, use_optimizations, output_mode):
                          SANSDataType.CanDirect: "CanDirectWorkspace"}
 
     workspace_to_monitor = {SANSDataType.SampleScatter: "SampleScatterMonitorWorkspace",
-                            SANSDataType.CanScatter: "SampleScatterMonitorWorkspace"}
+                            SANSDataType.CanScatter: "CanScatterMonitorWorkspace"}
     workspaces, monitors = provide_loaded_data(state, use_optimizations, workspace_to_name, workspace_to_monitor)
-
     # Split into individual bundles which can be reduced individually
     reduction_packages = get_reduction_packages(state, workspaces, monitors)
 

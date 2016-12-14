@@ -299,7 +299,6 @@ class SANSLoad(DataProcessorAlgorithm):
                                     there will be only one element in this list. Only when dealing with multiperiod
                                     data can we expected to see more workspaces in the list.
         """
-        self.setProperty(name, workspace_collection[0])
         if len(workspace_collection) > 1:
             # Note that the first output is the same as we have set above.
             counter = 1
@@ -316,6 +315,8 @@ class SANSLoad(DataProcessorAlgorithm):
                     self.setProperty(output_name, user_specified_name)
                 self.setProperty(output_name, workspace)
                 counter += 1
+        else:
+            self.setProperty(name, workspace_collection[0])
         return len(workspace_collection)
 
     def set_property_with_number_of_workspaces(self, name, workspace_collection):

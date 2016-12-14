@@ -377,7 +377,7 @@ def get_added_nexus_information(file_name):
         # 2. Every data entry needs to have "-ADD_ADDED_EVENT_DATA" in the workspace name and every
         #    monitor data entry needs to have a "ADD_MONITORS_ADDED_EVENT_DATA" in the workspace name.
         # 3. Every data entry has matching monitor entry, e.g. random_name-add_added_event_data_4 needs
-        #    random_name-add_monitors_added_event_data_4.
+        #    random_name-add_monitors_added_event_data_4.s
         if (has_same_number_of_entries(workspace_names, monitor_workspace_names) and
             has_added_tag(workspace_names, monitor_workspace_names) and
             entries_match(workspace_names, monitor_workspace_names)):
@@ -385,7 +385,8 @@ def get_added_nexus_information(file_name):
             num_periods = len(workspace_names)
         else:
             is_added_file_event = False
-            num_periods = -1
+            num_periods = 1
+
         return is_added_file_event, num_periods
 
     def get_added_histogram_info(h5_file_handle, key_collection):
@@ -396,7 +397,7 @@ def get_added_nexus_information(file_name):
             entry = h5_file_handle[key]
             if check_if_event_mode(entry):
                 is_added_file_histogram = False
-                num_periods = -1
+                num_periods = 1
                 break
         return is_added_file_histogram, num_periods
 
@@ -423,15 +424,15 @@ def get_added_nexus_information(file_name):
                 else:
                     is_added = True
                     is_event = False
-                    number_of_periods = -1
+                    number_of_periods = 1
         except IOError:
             is_added = False
             is_event = False
-            number_of_periods = -1
+            number_of_periods = 1
     else:
         is_added = False
         is_event = False
-        number_of_periods = -1
+        number_of_periods = 1
     return is_added, number_of_periods, is_event
 
 

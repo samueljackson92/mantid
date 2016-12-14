@@ -1,7 +1,6 @@
 # pylint: disable=too-many-public-methods, invalid-name, too-many-arguments
 
 import unittest
-import os
 import stresstesting
 
 import mantid
@@ -9,7 +8,7 @@ from mantid.api import AnalysisDataService
 
 from sans.user_file.user_file_state_director import UserFileStateDirectorISIS
 from sans.state.data import get_data_builder
-from sans.common.sans_type import SANSFacility
+from sans.common.sans_type import SANSFacility, ISISReductionMode
 from sans.common.constants import SANSConstants
 from sans.common.general_functions import create_unmanaged_algorithm
 
@@ -40,27 +39,12 @@ class SANSBatchReductionTest(unittest.TestCase):
         load_alg.execute()
         reference_workspace = load_alg.getProperty(SANSConstants.output_workspace).value
 
-        # Save the workspace out and reload it again. This makes equalizes it with the reference workspace
-        f_name = os.path.join(mantid.config.getString('defaultsave.directory'),
-                              'SANS_temp_batch_reduction_testout.nxs')
-
-        save_name = "SaveNexus"
-        save_options = {"Filename": f_name,
-                        "InputWorkspace": workspace}
-        save_alg = create_unmanaged_algorithm(save_name, **save_options)
-        save_alg.execute()
-        load_alg.setProperty("Filename", f_name)
-        load_alg.setProperty(SANSConstants.output_workspace, SANSConstants.dummy)
-        load_alg.execute()
-
-        ws = load_alg.getProperty(SANSConstants.output_workspace).value
-
         # Compare reference file with the output_workspace
         # We need to disable the instrument comparison, it takes way too long
         # We need to disable the sample -- Not clear why yet
         # operation how many entries can be found in the sample logs
         compare_name = "CompareWorkspaces"
-        compare_options = {"Workspace1": ws,
+        compare_options = {"Workspace1": workspace,
                            "Workspace2": reference_workspace,
                            "Tolerance": 1e-6,
                            "CheckInstrument": False,
@@ -77,10 +61,6 @@ class SANSBatchReductionTest(unittest.TestCase):
         result = compare_alg.getProperty("Result").value
         self.assertTrue(result)
 
-        # Remove file
-        if os.path.exists(f_name):
-            os.remove(f_name)
-
     def test_that_batch_reduction_evaluates_LAB(self):
         # Arrange
         # Build the data information
@@ -88,12 +68,19 @@ class SANSBatchReductionTest(unittest.TestCase):
         data_builder.set_sample_scatter("SANS2D00034484")
         data_builder.set_sample_transmission("SANS2D00034505")
         data_builder.set_sample_direct("SANS2D00034461")
+        data_builder.set_can_scatter("SANS2D00034481")
+        data_builder.set_can_transmission("SANS2D00034502")
+        data_builder.set_can_direct("SANS2D00034461")
+
         data_builder.set_calibration("TUBE_SANS2D_BOTH_31681_25Sept15.nxs")
+
         data_info = data_builder.build()
 
         # Get the rest of the state from the user file
         user_file_director = UserFileStateDirectorISIS(data_info)
         user_file_director.set_user_file("USER_SANS2D_154E_2p4_4m_M3_Xpress_8mm_SampleChanger.txt")
+        # Set the reduction mode to LAB
+        user_file_director.set_reduction_builder_reduction_mode(ISISReductionMode.Lab)
         state = user_file_director.construct()
 
         # Act
@@ -104,8 +91,9 @@ class SANSBatchReductionTest(unittest.TestCase):
         output_workspace = AnalysisDataService.retrieve(workspace_name)
 
         # Evaluate it up to a defined point
-        reference_file_name = "SANS2D_ws_D20_reference.nxs"
+        reference_file_name = "SANS2D_ws_D20_reference_LAB_1D.nxs"
         self._compare_workspace(output_workspace, reference_file_name)
+
         if AnalysisDataService.doesExist(workspace_name):
             AnalysisDataService.remove(workspace_name)
 
