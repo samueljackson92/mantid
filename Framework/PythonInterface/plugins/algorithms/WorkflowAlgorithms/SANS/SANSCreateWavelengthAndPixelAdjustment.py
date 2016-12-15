@@ -32,7 +32,7 @@ class SANSCreateWavelengthAndPixelAdjustment(DataProcessorAlgorithm):
         workspace_validator.add(WorkspaceUnitValidator("Wavelength"))
 
         self.declareProperty(MatrixWorkspaceProperty("TransmissionWorkspace", '',
-                                                     optional=PropertyMode.Mandatory, direction=Direction.Input,
+                                                     optional=PropertyMode.Optional, direction=Direction.Input,
                                                      validator=workspace_validator),
                              doc='The calculated transmission workspace in wavelength units.')
         self.declareProperty(MatrixWorkspaceProperty("NormalizeToMonitorWorkspace", '',
@@ -93,16 +93,20 @@ class SANSCreateWavelengthAndPixelAdjustment(DataProcessorAlgorithm):
         3. The workspace resulting from the monitor normalization
 
         :param wavelength_adjustment_file: the file path to the wavelength adjustment file
-        :param transmission_workspace: the calculated transmission workspace
+        :param transmission_workspace: the calculated transmission workspace (which can be None)
         :param monitor_normalization_workspace: the monitor normalization workspace
         :param rebin_string: the parameters for rebinning
         :return: a general wavelength adjustment workspace
         """
-        wavelength_adjustment_workspaces = [monitor_normalization_workspace, transmission_workspace]
+        wavelength_adjustment_workspaces = [monitor_normalization_workspace]
+
+        if transmission_workspace:
+            wavelength_adjustment_workspaces.append(transmission_workspace)
 
         # Get the wavelength correction workspace from the file
         if wavelength_adjustment_file:
-            wavelength_correction_workspace_from_file = self._load_wavelength_correction_file(wavelength_adjustment_file)
+            wavelength_correction_workspace_from_file = \
+                self._load_wavelength_correction_file(wavelength_adjustment_file)
             wavelength_adjustment_workspaces.append(wavelength_correction_workspace_from_file)
 
         # Multiply all workspaces
@@ -202,7 +206,7 @@ class SANSCreateWavelengthAndPixelAdjustment(DataProcessorAlgorithm):
         # The transmission and the normalize to monitor workspace must have exactly one histogram present
         transmission_workspace = self.getProperty("TransmissionWorkspace").value
         normalize_to_monitor = self.getProperty("NormalizeToMonitorWorkspace").value
-        if transmission_workspace.getNumberHistograms() != 1:
+        if transmission_workspace and transmission_workspace.getNumberHistograms() != 1:
             errors.update({"TransmissionWorkspace": "The transmission workspace can have only one histogram."})
         if normalize_to_monitor.getNumberHistograms() != 1:
             errors.update({"NormalizeToMonitorWorkspace": "The monitor normalization workspace can have"

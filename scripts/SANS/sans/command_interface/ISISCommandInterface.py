@@ -1,6 +1,7 @@
 import re
 import inspect
 from six import types
+from mantid.kernel import config
 from mantid.api import (AnalysisDataService, WorkspaceGroup)
 from sans.command_interface.command_interface_functions import (print_message, warning_message)
 from sans.command_interface.command_interface_state_director import (CommandInterfaceStateDirector, DataCommand,
@@ -9,14 +10,14 @@ from sans.command_interface.command_interface_state_director import (CommandInte
 from sans.common.constants import SANSConstants
 from sans.common.file_information import (find_sans_file, find_full_file_path)
 from sans.common.sans_type import (RebinType, DetectorType, FitType, RangeStepType, ReductionDimensionality,
-                                   ISISReductionMode)
-from sans.common.general_functions import (convert_bank_name_to_detector_type_isis)
+                                   ISISReductionMode, SANSFacility)
+from sans.common.general_functions import (convert_bank_name_to_detector_type_isis, create_unmanaged_algorithm)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 # CommandInterfaceStateDirector global instance
 # ----------------------------------------------------------------------------------------------------------------------
-director = CommandInterfaceStateDirector()
+director = CommandInterfaceStateDirector(SANSFacility.ISIS)
 
 
 def deprecated(obj):
@@ -32,7 +33,7 @@ def deprecated(obj):
 
         def print_warning_wrapper(*args, **kwargs):
             warning_message("The {0} has been marked as deprecated and may be "
-                            "removed in a future version of Mantid.  If you "
+                            "removed in a future version of Mantid. If you "
                             "believe this to have been marked in error, please "
                             "contact the member of the Mantid team responsible "
                             "for ISIS SANS.".format(obj_desc))
@@ -60,20 +61,24 @@ def SetVerboseMode(state):
     pass
 
 
+# ----------------------------------------------------------------------------------------------------------------------
+# Setting instruments
+# ----------------------------------------------------------------------------------------------------------------------
 def SANS2D(idf_path=None):
-    pass
+    config['default.instrument'] = 'SANS2D'
 
 
 def SANS2DTUBES():
-    pass
+    config['default.instrument'] = 'SANS2D'
 
 
 def LOQ(idf_path='LOQ_Definition_20020226-.xml'):
-    pass
+    config['default.instrument'] = 'LOQ'
+
 
 
 def LARMOR(idf_path = None):
-    pass
+    config['default.instrument'] = 'LARMOR'
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -268,6 +273,14 @@ def Set2D():
                                        values=[ReductionDimensionality.TwoDim])
     director.add_command(set_2d_command)
 
+
+def UseCompatibilityMode():
+    """
+    Sets the compatibility mode to True
+    """
+    set_2d_command = NParameterCommand(command_id=NParameterCommandId.compatibility_mode,
+                                       values=[True])
+    director.add_command(set_2d_command)
 
 # -------------------------
 # Single parameter commands
@@ -560,7 +573,7 @@ def LimitsQXY(qmin, qmax, step, type):
 
 # --------------------------
 # Six parameter commands
-# ---------------------------
+# --------------------------
 def SetFrontDetRescaleShift(scale=1.0, shift=0.0, fitScale=False, fitShift=False, qMin=None, qMax=None):
     """
         Stores property about the detector which is used to rescale and shift
@@ -581,8 +594,11 @@ def SetFrontDetRescaleShift(scale=1.0, shift=0.0, fitScale=False, fitShift=False
     director.add_command(front_command)
 
 
+# --------------------------------------------
+# Commands which actually kick off a reduction
+# --------------------------------------------
 def WavRangeReduction(wav_start=None, wav_end=None, full_trans_wav=None, name_suffix=None, combineDet=None,
-                      resetSetup=True, out_fit_settings=dict()):
+                      resetSetup=True, out_fit_settings=None):
     """
         Run reduction from loading the raw data to calculating Q. Its optional arguments allows specifics
         details to be adjusted, and optionally the old setup is reset at the end. Note if FIT of RESCALE or SHIFT
@@ -609,16 +625,42 @@ def WavRangeReduction(wav_start=None, wav_end=None, full_trans_wav=None, name_su
                                  to remember the 'scale and fit' of the fitting algorithm.
         @return Name of one of the workspaces created
     """
+    print_message('WavRangeReduction(' + str(wav_start) + ', ' + str(wav_end) + ', ' + str(full_trans_wav) + ')')
+    _ = resetSetup
+    _ = out_fit_settings
 
     # Set the provided parameters
+    if combineDet is None:
+        reduction_mode = None
+    elif combineDet == 'rear':
+        reduction_mode = ISISReductionMode.Lab
+    elif combineDet == "front":
+        reduction_mode = ISISReductionMode.Hab
+    elif combineDet == "merged":
+        reduction_mode = ISISReductionMode.Merged
+    elif combineDet == "both":
+        reduction_mode = ISISReductionMode.All
+    else:
+        raise RuntimeError("WavRangeReduction: The combineDet input parameter was given a value of {0}. rear, front,"
+                           " both, merged and no input are allowd".format(combineDet))
+
+    wavelength_command = NParameterCommand(command_id=NParameterCommandId.wavrange_settings,
+                                           values=[wav_start, wav_end, full_trans_wav, name_suffix, reduction_mode])
+    director.add_command(wavelength_command)
 
     # Get the states
-    states = director.process_commands
+    state = director.process_commands()
+    serialized_state = state.property_manager
+    states = {"1": serialized_state}
 
     # Run the reduction
-
+    batch_name = "SANSBatchReduction"
+    batch_options = {"SANSStates": states,
+                     "OutputMode": "PublishToADS",
+                     "UseOptimizations": True}
+    batch_alg = create_unmanaged_algorithm(batch_name, **batch_options)
+    batch_alg.execute()
     # Provide the name of the output workspace
-
     output_workspace_name = ""
     return output_workspace_name
 

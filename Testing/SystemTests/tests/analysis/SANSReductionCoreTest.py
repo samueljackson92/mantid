@@ -31,16 +31,24 @@ class SANSReductionCoreTest(unittest.TestCase):
         load_alg.setProperty("MoveWorkspace", False)
         load_alg.setProperty("SampleScatterWorkspace", "dummy")
         load_alg.setProperty("SampleScatterMonitorWorkspace", "dummy")
-        load_alg.setProperty("SampleTransmissionWorkspace", "dummy")
-        load_alg.setProperty("SampleDirectWorkspace", "dummy")
+        if state.data.sample_transmission:
+            load_alg.setProperty("SampleTransmissionWorkspace", "dummy")
+        if state.data.sample_direct:
+            load_alg.setProperty("SampleDirectWorkspace", "dummy")
 
         # Act
         load_alg.execute()
         self.assertTrue(load_alg.isExecuted())
         sample_scatter = load_alg.getProperty("SampleScatterWorkspace").value
         sample_scatter_monitor_workspace = load_alg.getProperty("SampleScatterMonitorWorkspace").value
-        transmission_workspace = load_alg.getProperty("SampleTransmissionWorkspace").value
-        direct_workspace = load_alg.getProperty("SampleDirectWorkspace").value
+        if state.data.sample_transmission:
+            transmission_workspace = load_alg.getProperty("SampleTransmissionWorkspace").value
+        else:
+            transmission_workspace = None
+        if state.data.sample_direct:
+            direct_workspace = load_alg.getProperty("SampleDirectWorkspace").value
+        else:
+            direct_workspace = None
         return sample_scatter, sample_scatter_monitor_workspace, transmission_workspace, direct_workspace
 
     def _run_reduction_core(self, state, workspace, monitor, transmission=None, direct=None,

@@ -1,3 +1,4 @@
+from copy import deepcopy
 from sans.common.sans_type import (sans_type, ReductionDimensionality, DetectorType, DataType)
 from sans.user_file.user_file_state_director import UserFileStateDirectorISIS
 from sans.state.data import get_data_builder
@@ -20,12 +21,13 @@ class DataCommandId(object):
     pass
 
 
-@sans_type("clean", "reduction_dimensionality",  # Null Parameter commands
+@sans_type("clean", "reduction_dimensionality", "compatibility_mode",  # Null Parameter commands
            "user_file", "mask", "sample_offset", "detector", "event_slices",  # Single parameter commands
            "flood_file", "wavelength_correction_file",  # Single parameter commands
            "incident_spectrum", "gravity",  # Double parameter commands
            "centre",   # Three parameter commands
            "trans_fit", "phi_limit", "mask_radius", "wavelength_limit", "qxy_limit",  # Four parameter commands
+           "wavrange_settings",  # Five parameter commands
            "front_detector_rescale"  # Six parameter commands
            )
 class NParameterCommandId(object):
@@ -239,7 +241,9 @@ class CommandInterfaceStateDirector(object):
                             NParameterCommandId.wavelength_correction_file: self._process_wavelength_correction_file,
                             NParameterCommandId.mask_radius: self._process_mask_radius,
                             NParameterCommandId.wavelength_limit: self._process_wavelength_limit,
-                            NParameterCommandId.qxy_limit: self._process_qxy_limit
+                            NParameterCommandId.qxy_limit: self._process_qxy_limit,
+                            NParameterCommandId.wavrange_settings: self._process_wavrange,
+                            NParameterCommandId.compatibility_mode: self._process_compatibility_mode
                             }
 
     def add_to_processed_state_settings(self, new_state_settings):
@@ -368,7 +372,7 @@ class CommandInterfaceStateDirector(object):
 
     def _process_event_slices(self, command):
         event_slice_value = command.values
-        new_state_entries = {LimitsId.events_binning: event_binning_string_values(value=event_slice_value)}
+        new_state_entries = {OtherId.event_slices: event_binning_string_values(value=event_slice_value)}
         self.add_to_processed_state_settings(new_state_entries)
 
     def _process_flood_file(self, command):
@@ -405,10 +409,51 @@ class CommandInterfaceStateDirector(object):
                                                                step=wavelength_step, step_type=wavelength_step_type)}
         self.add_to_processed_state_settings(new_state_entries)
 
+    def _process_wavrange(self, command):
+        wavelength_low = command.values[0]
+        wavelength_high = command.values[1]
+        full_wavelength_range = command.values[2]
+        # TODO add output workspace name suffix
+        output_workspace_name_suffix = command.values[3]
+        reduction_mode = command.values[3]
+
+        # Update the lower and the upper wavelength values. Note that this is considered an incomplete setting, since
+        # not step or step type have been specified. This means we need to update one of the processed commands, which
+        # is not nice but the command interface forces us to do so. We take a copy of the last LimitsId.wavelength
+        # entry, we copy it and then change the desired settings. This means it has to be set at this point, else
+        # something is wrong
+        if LimitsId.wavelength in self._processed_state_settings:
+            last_entry = self._processed_state_settings[LimitsId.wavelength][-1]
+            copied_range = deepcopy(last_entry)
+
+            if wavelength_low:
+                copied_range.start = wavelength_low
+            if wavelength_high:
+                copied_range.stop = wavelength_high
+            if wavelength_low or wavelength_high:
+                copied_entry = {LimitsId.wavelength: copied_range}
+                self.add_to_processed_state_settings(copied_entry)
+        else:
+            raise RuntimeError("CommandInterfaceStateDirector: Setting the lower and upper wavelength bounds is not"
+                               " possible. We require also a step and step range")
+
+        if full_wavelength_range:
+            full_wavelength_range_entry = {OtherId.use_full_wavelength_range: full_wavelength_range}
+            self.add_to_processed_state_settings(full_wavelength_range_entry)
+
+        if reduction_mode:
+            reduction_mode_entry = {DetectorId.reduction_mode: reduction_mode}
+            self.add_to_processed_state_settings(reduction_mode_entry)
+
     def _process_qxy_limit(self, command):
         q_min = command.values[0]
         q_max = command.values[1]
         q_step = command.values[2]
         q_step_type = command.values[3]
         new_state_entries = {LimitsId.qxy: simple_range(start=q_min, stop=q_max, step=q_step, step_type=q_step_type)}
+        self.add_to_processed_state_settings(new_state_entries)
+
+    def _process_compatibility_mode(self, command):
+        use_compatibility_mode = command.values[0]
+        new_state_entries = {OtherId.use_compatibility_mode: use_compatibility_mode}
         self.add_to_processed_state_settings(new_state_entries)

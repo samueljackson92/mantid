@@ -110,24 +110,39 @@ class SANSReductionCore(DataProcessorAlgorithm):
         monitor_workspace = self._get_monitor_workspace()
         workspace, monitor_workspace, slice_event_factor = self._slice(state, workspace, monitor_workspace)
 
-        # **************************************************
-        # ONLY FOR DEVELOPMENT AND TESTING -- BEGIN
-        # **************************************************
-        # We convert the workspace here to a histogram workspace, since we cannot otherwise compare the results between
-        # the old and the new reduction workspace in a meaningful manner. The old one is histogram and the new one
-        # is event.
-        rebin_name = "Rebin"
-        rebin_option = {SANSConstants.input_workspace: workspace,
-                        SANSConstants.output_workspace: SANSConstants.dummy,
-                        "Params": "8000,-0.025,100000",
-                        "PreserveEvents": False}
-
-        rebin_alg = create_unmanaged_algorithm(rebin_name, **rebin_option)
-        rebin_alg.execute()
-        workspace = rebin_alg.getProperty(SANSConstants.output_workspace).value
-        # **************************************************
-        # ONLY FOR DEVELOPMENT AND TESTING -- END
-        # **************************************************
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # COMPATIBILITY BEGIN
+        # IMPORTANT: This section of the code should only be temporary. It allows us to convert to histogram
+        # early on and hence compare the new reduction results with the output of the new reduction chain.
+        # Once the new reduction chain is established, we should remove the compatibility feature.
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        compatibility = state.compatibility
+        if compatibility.use_compatibility_mode:
+            # We convert the workspace here to a histogram workspace, since we cannot otherwise
+            # compare the results between the old and the new reduction workspace in a meaningful manner.
+            # The old one is histogram and the new one is event.
+            # Rebin to monitor workspace
+            if compatibility.time_rebin_string:
+                rebin_name = "Rebin"
+                rebin_option = {SANSConstants.input_workspace: workspace,
+                                "Params": compatibility.time_rebin_string,
+                                SANSConstants.output_workspace: SANSConstants.dummy,
+                                "PreserveEvents": False}
+                rebin_alg = create_unmanaged_algorithm(rebin_name, **rebin_option)
+                rebin_alg.execute()
+                workspace = rebin_alg.getProperty(SANSConstants.output_workspace).value
+            else:
+                rebin_name = "RebinToWorkspace"
+                rebin_option = {"WorkspaceToRebin": workspace,
+                                "WorkspaceToMatch": monitor_workspace,
+                                SANSConstants.output_workspace: SANSConstants.dummy,
+                                "PreserveEvents": False}
+                rebin_alg = create_unmanaged_algorithm(rebin_name, **rebin_option)
+                rebin_alg.execute()
+                workspace = rebin_alg.getProperty(SANSConstants.output_workspace).value
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # COMPATIBILITY END
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         # ------------------------------------------------------------
         # 4. Move the workspace into the correct position

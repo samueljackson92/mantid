@@ -593,10 +593,15 @@ class LimitParser(UserFileComponentParser):
     def _extract_event_binning(self, line):
         event_binning = re.sub(self._events_time, "", line)
         if does_pattern_match(self._events_time_pattern_simple_pattern, line):
-            output = self._extract_simple_pattern(event_binning, LimitsId.events_binning_range)
+            simple_pattern = self._extract_simple_pattern(event_binning, LimitsId.events_binning)
+            rebin_values = simple_pattern[LimitsId.events_binning]
+            prefix = -1. if rebin_values.step_type is RangeStepType.Log else 1.
+            binning_string = str(rebin_values.start) + "," + str(prefix*rebin_values.step) + "," + \
+                             str(rebin_values.stop)
         else:
             rebin_values = extract_float_list(event_binning)
-            output = {LimitsId.events_binning: rebin_string_values(value=rebin_values)}
+            binning_string = ",".join([str(val) for val in rebin_values])
+        output = {LimitsId.events_binning: binning_string}
         return output
 
     def _extract_cut_limit(self, line):

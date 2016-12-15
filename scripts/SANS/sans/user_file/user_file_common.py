@@ -130,6 +130,6 @@ class BackId(object):
 
 
 # -- OTHER - not settable in user file
-@sans_type("reduction_dimensionality")
+@sans_type("reduction_dimensionality", "use_full_wavelength_range", "event_slices", "use_compatibility_mode")
 class OtherId(object):
     pass

@@ -1,11 +1,13 @@
 #pylint: disable=no-init
 import stresstesting
-from mantid.simpleapi import *
-from ISISCommandInterface import *
+import mantid
+from sans.command_interface.ISISCommandInterface import (SANS2D, MaskFile, AssignSample, WavRangeReduction,
+                                                         UseCompatibilityMode)
 
 
-class SANS2DLimitEventsTime(stresstesting.MantidStressTest):
+class SANS2DLimitEventsTimeV2Test(stresstesting.MantidStressTest):
     def runTest(self):
+        UseCompatibilityMode()
         SANS2D()
         MaskFile('MaskSANS2DReductionGUI_LimitEventsTime.txt')
         AssignSample('22048')

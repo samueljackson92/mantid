@@ -361,7 +361,7 @@ def split_reduction_packages_for_event_packages(reduction_packages):
     states = []
     for start, end in zip(start_time, end_time):
         state_copy = deepcopy(state)
-        slice_event_info = state_copy.slice_
+        slice_event_info = state_copy.slice
         slice_event_info.start_time = [start]
         slice_event_info.end_time = [end]
         states.append(state_copy)

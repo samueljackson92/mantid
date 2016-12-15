@@ -29,6 +29,7 @@ from sans.state.normalize_to_monitor import get_normalize_to_monitor_builder
 from sans.state.calculate_transmission import get_calculate_transmission_builder
 from sans.state.wavelength_and_pixel_adjustment import get_wavelength_and_pixel_adjustment_builder
 from sans.state.convert_to_q import get_convert_to_q_builder
+from sans.state.compatibility import get_compatibility_builder
 
 
 def check_if_contains_only_one_element(to_check, element_name):
@@ -187,6 +188,8 @@ class UserFileStateDirectorISIS(object):
 
         self._convert_to_q_builder = get_convert_to_q_builder(self._data)
 
+        self._compatibility_builder = get_compatibility_builder(self._data)
+
         # Now that we have setup all builders in the director we want to also allow for manual setting
         # of some components. In order to get the desired results we need to perform setter forwarding, e.g
         # self._scale_builder has the setter set_width, then the director should have a method called
@@ -208,6 +211,8 @@ class UserFileStateDirectorISIS(object):
         set_up_setter_forwarding_from_director_to_builder(self, "_calculate_transmission_builder")
         set_up_setter_forwarding_from_director_to_builder(self, "_wavelength_and_pixel_adjustment_builder")
         set_up_setter_forwarding_from_director_to_builder(self, "_convert_to_q_builder")
+
+        set_up_setter_forwarding_from_director_to_builder(self, "_compatibility_builder")
 
     def set_user_file(self, user_file):
         file_path = find_full_file_path(user_file)
@@ -259,6 +264,9 @@ class UserFileStateDirectorISIS(object):
 
         # Convert to Q state
         self._set_up_convert_to_q_state(user_file_items)
+
+        # Compatibility state
+        self._set_up_compatibility(user_file_items)
 
     def construct(self):
         # Create the different sub states and add them to the state
@@ -316,6 +324,11 @@ class UserFileStateDirectorISIS(object):
         convert_to_q_state = self._convert_to_q_builder.build()
         convert_to_q_state.validate()
         self._state_builder.set_convert_to_q(convert_to_q_state)
+
+        # Compatibility state
+        compatibility_state = self._compatibility_builder.build()
+        compatibility_state.validate()
+        self._state_builder.set_compatibility(compatibility_state)
 
         # Data state
         self._state_builder.set_data(self._data)
@@ -913,21 +926,22 @@ class UserFileStateDirectorISIS(object):
             self._wavelength_builder.set_wavelength_step_type(wavelength_limits.step_type)
 
     def _set_up_slice_event_state(self, user_file_items):
-        if LimitsId.events_binning in user_file_items:
-            events_binning = user_file_items[LimitsId.events_binning]
-            check_if_contains_only_one_element(events_binning, LimitsId.events_binning)
-            events_binning = events_binning[-1]
+        # Setting up the slice limits is current
+        if OtherId.event_slices in user_file_items:
+            event_slices = user_file_items[OtherId.event_slices]
+            check_if_contains_only_one_element(event_slices, OtherId.event_slices)
+            event_slices = event_slices[-1]
             # The events binning can come in three forms.
             # 1. As a simple range object
             # 2. As an already parsed rebin array, ie min, step, max
             # 3. As a string. Note that this includes custom commands.
-            if isinstance(events_binning, simple_range):
-                start, stop = get_ranges_for_rebin_setting(events_binning.start, events_binning.stop,
-                                                           events_binning.step, events_binning.step_type)
-            elif isinstance(events_binning, rebin_string_values):
-                start, stop = get_ranges_for_rebin_array(events_binning.value)
+            if isinstance(event_slices, simple_range):
+                start, stop = get_ranges_for_rebin_setting(event_slices.start, event_slices.stop,
+                                                           event_slices.step, event_slices.step_type)
+            elif isinstance(event_slices, rebin_string_values):
+                start, stop = get_ranges_for_rebin_array(event_slices.value)
             else:
-                start, stop = get_ranges_from_event_slice_setting(events_binning.value)
+                start, stop = get_ranges_from_event_slice_setting(event_slices.value)
             self._slice_event_builder.set_start_time(start)
             self._slice_event_builder.set_end_time(stop)
 
@@ -1100,7 +1114,7 @@ class UserFileStateDirectorISIS(object):
             # 1. General settings where the entry data_type is not specified. Settings apply to both sample and can
             # 2. Sample settings
             # 3. Can settings
-            # We first apply the genenral settings. Specialized settings for can or sample override the general settings
+            # We first apply the general settings. Specialized settings for can or sample override the general settings
             # As usual if there are multiple settings for a specific case, then the last in the list is used.
 
             # 1. General settings
@@ -1147,6 +1161,13 @@ class UserFileStateDirectorISIS(object):
             self._calculate_transmission_builder.set_wavelength_step(wavelength_limits.step)
             self._calculate_transmission_builder.set_wavelength_step_type(wavelength_limits.step_type)
 
+        # Set the full wavelength range. Note that this can currently only be set from the ISISCommandInterface
+        if OtherId.use_full_wavelength_range in user_file_items:
+            use_full_wavelength_range = user_file_items[OtherId.use_full_wavelength_range]
+            check_if_contains_only_one_element(use_full_wavelength_range, OtherId.use_full_wavelength_range)
+            use_full_wavelength_range = use_full_wavelength_range[-1]
+            self._calculate_transmission_builder.set_use_full_wavelength_range(use_full_wavelength_range)
+
     def _set_up_wavelength_and_pixel_adjustment(self, user_file_items):
         # Get the flat/flood files. There can be entries for LAB and HAB.
         if MonId.flat in user_file_items:
@@ -1185,6 +1206,19 @@ class UserFileStateDirectorISIS(object):
             self._wavelength_and_pixel_adjustment_builder.set_wavelength_high(wavelength_limits.stop)
             self._wavelength_and_pixel_adjustment_builder.set_wavelength_step(wavelength_limits.step)
             self._wavelength_and_pixel_adjustment_builder.set_wavelength_step_type(wavelength_limits.step_type)
+
+    def _set_up_compatibility(self, user_file_items):
+        if LimitsId.events_binning in user_file_items:
+            events_binning = user_file_items[LimitsId.events_binning]
+            check_if_contains_only_one_element(events_binning, LimitsId.events_binning)
+            events_binning = events_binning[-1]
+            self._compatibility_builder.set_time_rebin_string(events_binning)
+
+        if OtherId.use_compatibility_mode in user_file_items:
+            use_compatibility_mode = user_file_items[OtherId.use_compatibility_mode]
+            check_if_contains_only_one_element(use_compatibility_mode, OtherId.use_compatibility_mode)
+            use_compatibility_mode = use_compatibility_mode[-1]
+            self._compatibility_builder.set_use_compatibility_mode(use_compatibility_mode)
 
     def _add_information_to_data_state(self, user_file_items):
         # The only thing that should be set on the data is the tube calibration file which is specified in

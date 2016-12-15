@@ -140,6 +140,7 @@ class SANSCreateAdjustmentWorkspaces(DataProcessorAlgorithm):
             wave_pixel_adjustment_options.update({"TransmissionWorkspace": calculated_transmission_workspace})
         wave_pixel_adjustment_alg = create_unmanaged_algorithm(wave_pixel_adjustment_name,
                                                                **wave_pixel_adjustment_options)
+
         wave_pixel_adjustment_alg.execute()
         wavelength_out = wave_pixel_adjustment_alg.getProperty("OutputWorkspaceWavelengthAdjustment").value
         pixel_out = wave_pixel_adjustment_alg.getProperty("OutputWorkspacePixelAdjustment").value
