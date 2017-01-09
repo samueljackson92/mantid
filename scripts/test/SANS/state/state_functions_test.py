@@ -7,9 +7,8 @@ from sans.state.state_functions import (get_output_workspace_name, is_pure_none_
                                             write_hash_into_reduced_can_workspace, get_reduced_can_workspace_from_ads)
 from sans.test_helper.test_director import TestDirector
 from sans.state.data import StateData
-from sans.common.sans_type import (ReductionDimensionality, ISISReductionMode, OutputParts)
+from sans.common.enums import (ReductionDimensionality, ISISReductionMode, OutputParts)
 from sans.common.general_functions import create_unmanaged_algorithm
-from sans.common.constants import SANSConstants
 
 
 class StateFunctionsTest(unittest.TestCase):
@@ -36,7 +35,7 @@ class StateFunctionsTest(unittest.TestCase):
     @staticmethod
     def _prepare_workspaces(number_of_workspaces, tagged_workspace_names=None, state=None):
         create_name = "CreateSampleWorkspace"
-        create_options = {SANSConstants.output_workspace: SANSConstants.dummy,
+        create_options = {"OutputWorkspace": "test",
                           "NumBanks": 1,
                           "BankPixelWidth": 2,
                           "XMin": 1,
@@ -46,14 +45,14 @@ class StateFunctionsTest(unittest.TestCase):
 
         for index in range(number_of_workspaces):
             create_alg.execute()
-            workspace = create_alg.getProperty(SANSConstants.output_workspace).value
-            workspace_name = SANSConstants.dummy + "_" + str(index)
+            workspace = create_alg.getProperty("OutputWorkspace").value
+            workspace_name = "test" + "_" + str(index)
             AnalysisDataService.addOrReplace(workspace_name, workspace)
 
         if tagged_workspace_names is not None:
             for key, value in tagged_workspace_names.items():
                 create_alg.execute()
-                workspace = create_alg.getProperty(SANSConstants.output_workspace).value
+                workspace = create_alg.getProperty("OutputWorkspace").value
                 AnalysisDataService.addOrReplace(value, workspace)
                 write_hash_into_reduced_can_workspace(state, workspace, key)
 
@@ -78,7 +77,7 @@ class StateFunctionsTest(unittest.TestCase):
         # Arrange
         state = StateFunctionsTest._get_state()
         # Act
-        output_workspace = get_output_workspace_name(state, ISISReductionMode.Lab)
+        output_workspace = get_output_workspace_name(state, ISISReductionMode.LAB)
         # Assert
         self.assertTrue("12345rear_1D12.0_34.0Phi12.0_56.0_t4.57_T12.37" == output_workspace)
 
@@ -152,7 +151,7 @@ class StateFunctionsTest(unittest.TestCase):
         self.assertTrue(workspace_norm is None)
 
         # Clean up
-    #     StateFunctionsTest._remove_workspaces()
+        StateFunctionsTest._remove_workspaces()
 
 if __name__ == '__main__':
     unittest.main()

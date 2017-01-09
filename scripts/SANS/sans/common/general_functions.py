@@ -6,7 +6,7 @@ from math import (acos, sqrt, degrees)
 import re
 from mantid.api import AlgorithmManager, AnalysisDataService
 from mantid.kernel import (DateAndTime)
-from sans.common.constants import SANSConstants
+from sans.common.constants import SANS_FILE_TAG
 from sans.common.log_tagger import (get_tag, has_tag, set_tag)
 from sans.common.sans_type import (DetectorType, RangeStepType)
 
@@ -152,7 +152,7 @@ def add_to_sample_log(workspace, log_name, log_value, log_type):
                         " but it is passed as {0}".format(type(log_value)))
 
     add_log_name = "AddSampleLog"
-    add_log_options = {SANSConstants.workspace: workspace,
+    add_log_options = {"Workspace": workspace,
                        "LogName": log_name,
                        "LogText": log_value,
                        "LogType": log_type}
@@ -167,10 +167,10 @@ def append_to_sans_file_tag(workspace, to_append):
     :param workspace: the workspace which contains the sample logs with the sans file tag.
     :param to_append: the additional tag
     """
-    if has_tag(SANSConstants.sans_file_tag, workspace):
-        value = get_tag(SANSConstants.sans_file_tag, workspace)
+    if has_tag(SANS_FILE_TAG, workspace):
+        value = get_tag(SANS_FILE_TAG, workspace)
         value += to_append
-        set_tag(SANSConstants.sans_file_tag, value, workspace)
+        set_tag(SANS_FILE_TAG, value, workspace)
 
 
 def get_ads_workspace_references():
