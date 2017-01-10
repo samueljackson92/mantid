@@ -2,9 +2,8 @@ import unittest
 import mantid
 from sans.test_helper.test_director import TestDirector
 from sans.common.general_functions import create_unmanaged_algorithm
-from sans.common.constants import SANSConstants
-from sans.common.sans_type import (DetectorType, DataType,
-                                           convert_detector_type_to_string, convert_reduction_data_type_to_string)
+from sans.common.constants import EMPTY_NAME
+from sans.common.enums import (DetectorType, DataType)
 
 
 class SANSCreateAdjustmentWorkspacesTest(unittest.TestCase):
@@ -25,7 +24,7 @@ class SANSCreateAdjustmentWorkspacesTest(unittest.TestCase):
     def _get_sample_monitor_data(value):
         create_name = "CreateSampleWorkspace"
         name = "test_workspace"
-        create_options = {SANSConstants.output_workspace: name,
+        create_options = {"OutputWorkspace": name,
                           "NumBanks": 0,
                           "NumMonitors": 8,
                           "XMin": SANSCreateAdjustmentWorkspacesTest.test_tof_min,
@@ -33,7 +32,7 @@ class SANSCreateAdjustmentWorkspacesTest(unittest.TestCase):
                           "BinWidth": SANSCreateAdjustmentWorkspacesTest.test_tof_width}
         create_alg = create_unmanaged_algorithm(create_name, **create_options)
         create_alg.execute()
-        monitor_workspace = create_alg.getProperty(SANSConstants.output_workspace).value
+        monitor_workspace = create_alg.getProperty("OutputWorkspace").value
         for hist in range(monitor_workspace.getNumberHistograms()):
             data_y = monitor_workspace.dataY(hist)
             for index in range(len(data_y)):
@@ -46,7 +45,7 @@ class SANSCreateAdjustmentWorkspacesTest(unittest.TestCase):
     def _get_sample_data():
         create_name = "CreateSampleWorkspace"
         name = "test_workspace"
-        create_options = {SANSConstants.output_workspace: name,
+        create_options = {"OutputWorkspace": name,
                           "NumBanks": 1,
                           "NumMonitors": 1,
                           "XMin": SANSCreateAdjustmentWorkspacesTest.test_wav_min,
@@ -55,37 +54,37 @@ class SANSCreateAdjustmentWorkspacesTest(unittest.TestCase):
                           "XUnit": "Wavelength"}
         create_alg = create_unmanaged_algorithm(create_name, **create_options)
         create_alg.execute()
-        return create_alg.getProperty(SANSConstants.output_workspace).value
+        return create_alg.getProperty("OutputWorkspace").value
 
     @staticmethod
     def _load_workspace(file_name):
         load_name = "Load"
-        load_options = {SANSConstants.output_workspace: SANSConstants.dummy,
+        load_options = {"OutputWorkspace": EMPTY_NAME,
                         "Filename": file_name}
         load_alg = create_unmanaged_algorithm(load_name, **load_options)
         load_alg.execute()
-        return load_alg.getProperty(SANSConstants.output_workspace).value
+        return load_alg.getProperty("OutputWorkspace").value
 
     @staticmethod
     def _clone_workspace(workspace):
         clone_name = "CloneWorkspace"
-        clone_options = {SANSConstants.input_workspace: workspace,
-                         SANSConstants.output_workspace: SANSConstants.dummy}
+        clone_options = {"InputWorkspace": workspace,
+                         "OutputWorkspace": EMPTY_NAME}
         clone_alg = create_unmanaged_algorithm(clone_name, **clone_options)
         clone_alg.execute()
-        return clone_alg.getProperty(SANSConstants.output_workspace).value
+        return clone_alg.getProperty("OutputWorkspace").value
 
     @staticmethod
     def _rebin_workspace(workspace):
         rebin_name = "Rebin"
-        rebin_options = {SANSConstants.input_workspace: workspace,
-                         SANSConstants.output_workspace: SANSConstants.dummy,
+        rebin_options = {"InputWorkspace": workspace,
+                         "OutputWorkspace": EMPTY_NAME,
                          "Params": "{0}, {1}, {2}".format(SANSCreateAdjustmentWorkspacesTest.test_tof_min,
                                                           SANSCreateAdjustmentWorkspacesTest.test_tof_width,
                                                           SANSCreateAdjustmentWorkspacesTest.test_tof_max)}
         rebin_alg = create_unmanaged_algorithm(rebin_name, **rebin_options)
         rebin_alg.execute()
-        return rebin_alg.getProperty(SANSConstants.output_workspace).value
+        return rebin_alg.getProperty("OutputWorkspace").value
 
     @staticmethod
     def _get_trans_type_data(value):
@@ -114,17 +113,17 @@ class SANSCreateAdjustmentWorkspacesTest(unittest.TestCase):
                               "MonitorWorkspace": sample_monitor_data,
                               "TransmissionWorkspace": transmission_data,
                               "DirectWorkspace": direct_data,
-                              "OutputWorkspaceWavelengthAdjustment": SANSConstants.dummy,
-                              "OutputWorkspacePixelAdjustment": SANSConstants.dummy,
-                              "OutputWorkspaceWavelengthAndPixelAdjustment": SANSConstants.dummy}
+                              "OutputWorkspaceWavelengthAdjustment": EMPTY_NAME,
+                              "OutputWorkspacePixelAdjustment": EMPTY_NAME,
+                              "OutputWorkspaceWavelengthAndPixelAdjustment": EMPTY_NAME}
         if is_sample:
-            adjustment_options.update({"DataType": convert_reduction_data_type_to_string(DataType.Sample)})
+            adjustment_options.update({"DataType": DataType.to_string(DataType.Sample)})
         else:
-            adjustment_options.update({"DataType": convert_reduction_data_type_to_string(DataType.Can)})
+            adjustment_options.update({"DataType": DataType.to_string(DataType.Can)})
         if is_lab:
-            adjustment_options.update({"Component": convert_detector_type_to_string(DetectorType.Lab)})
+            adjustment_options.update({"Component": DetectorType.to_string(DetectorType.Lab)})
         else:
-            adjustment_options.update({"Component": convert_detector_type_to_string(DetectorType.Hab)})
+            adjustment_options.update({"Component": DetectorType.to_string(DetectorType.Hab)})
 
         adjustment_alg = create_unmanaged_algorithm(adjustment_name, **adjustment_options)
         adjustment_alg.execute()
@@ -150,10 +149,6 @@ class SANSCreateAdjustmentWorkspacesTest(unittest.TestCase):
                 SANSCreateAdjustmentWorkspacesTest._run_test(serialized_state, sample_data, sample_monitor_data,
                                                              transmission_data, direct_data)
             raised = False
-        except:  # noqa
-            raised = True
-        self.assertFalse(raised)
-        if not raised:
             # We expect a wavelength adjustment workspace
             self.assertTrue(wavelength_adjustment)
             # We don't expect a pixel adjustment workspace since no files where specified
@@ -161,6 +156,9 @@ class SANSCreateAdjustmentWorkspacesTest(unittest.TestCase):
             # We expect a wavelength and pixel adjustment workspace since we set the flag to true and provided a
             # sample data set
             self.assertTrue(wavelength_and_pixel_adjustment)
+        except:  # noqa
+            raised = True
+        self.assertFalse(raised)
 
 
 if __name__ == '__main__':

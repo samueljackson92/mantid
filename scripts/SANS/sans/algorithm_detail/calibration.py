@@ -5,10 +5,10 @@ from os.path import (basename, splitext, isfile)
 from mantid.api import (AnalysisDataService)
 
 from sans.common.file_information import find_full_file_path
-from sans.common.constants import SANSConstants
+from sans.common.constants import (EMPTY_NAME, CALIBRATION_WORKSPACE_TAG)
 from sans.common.log_tagger import (has_tag, get_tag, set_tag)
 from sans.common.general_functions import create_unmanaged_algorithm
-from sans.common.sans_type import SANSDataType
+from sans.common.enums import SANSDataType
 
 
 # -----------------------------
@@ -23,8 +23,8 @@ def has_calibration_already_been_applied(workspace, full_file_path):
     :return: True if the calibration has been applied else False
     """
     has_calibration_applied = False
-    if has_tag(SANSConstants.Calibration.calibration_workspace_tag, workspace):
-        value = get_tag(SANSConstants.Calibration.calibration_workspace_tag, workspace)
+    if has_tag(CALIBRATION_WORKSPACE_TAG, workspace):
+        value = get_tag(CALIBRATION_WORKSPACE_TAG, workspace)
         has_calibration_applied = value == full_file_path
     return has_calibration_applied
 
@@ -37,7 +37,7 @@ def add_calibration_tag_to_workspace(workspace, full_file_path):
     :param workspace: the workspace to which the calibration tag is added
     :param full_file_path: the full file path to the calibration file
     """
-    set_tag(SANSConstants.Calibration.calibration_workspace_tag, full_file_path, workspace)
+    set_tag(CALIBRATION_WORKSPACE_TAG, full_file_path, workspace)
 
 
 def get_expected_calibration_workspace_name(full_file_path):
@@ -84,11 +84,11 @@ def get_calibration_workspace(full_file_path, use_loaded):
         if not isfile(full_file_path):
             raise RuntimeError("SANSCalibration: The file for  {0} does not seem to exist".format(full_file_path))
         loader_name = "LoadNexusProcessed"
-        loader_options = {SANSConstants.file_name: full_file_path,
-                          SANSConstants.output_workspace: "dummy"}
+        loader_options = {"Filename": full_file_path,
+                          "OutputWorkspace": "dummy"}
         loader = create_unmanaged_algorithm(loader_name, **loader_options)
         loader.execute()
-        calibration_workspace = loader.getProperty(SANSConstants.output_workspace).value
+        calibration_workspace = loader.getProperty("OutputWorkspace").value
 
     return calibration_workspace
 
@@ -101,11 +101,11 @@ def get_cloned_calibration_workspace(calibration_workspace):
     :return: a cloned calibration workspace
     """
     clone_name = "CloneWorkspace"
-    clone_options = {SANSConstants.input_workspace: calibration_workspace,
-                     SANSConstants.output_workspace: SANSConstants.dummy}
+    clone_options = {"InputWorkspace": calibration_workspace,
+                     "OutputWorkspace": EMPTY_NAME}
     alg = create_unmanaged_algorithm(clone_name, **clone_options)
     alg.execute()
-    return alg.getProperty(SANSConstants.output_workspace).value
+    return alg.getProperty("OutputWorkspace").value
 
 
 def get_missing_parameters(calibration_workspace, workspace):
@@ -167,8 +167,8 @@ def calibrate(calibration_workspace, workspace_to_calibrate):
     :param workspace_to_calibrate: the workspace which has the calibration applied to it.
     """
     copy_instrument_name = "CopyInstrumentParameters"
-    copy_instrument_options = {SANSConstants.input_workspace: calibration_workspace,
-                               SANSConstants.output_workspace: workspace_to_calibrate}
+    copy_instrument_options = {"InputWorkspace": calibration_workspace,
+                               "OutputWorkspace": workspace_to_calibrate}
     alg = create_unmanaged_algorithm(copy_instrument_name, **copy_instrument_options)
     alg.execute()
 

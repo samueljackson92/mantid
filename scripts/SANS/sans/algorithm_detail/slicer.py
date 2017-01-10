@@ -4,8 +4,8 @@ from abc import (ABCMeta, abstractmethod)
 from mantid.dataobjects import Workspace2D
 
 from sans.common.general_functions import (get_charge_and_time, create_unmanaged_algorithm)
-from sans.common.constants import SANSConstants
-from sans.common.sans_type import (SANSInstrument)
+from sans.common.constants import EMPTY_NAME
+from sans.common.enums import (SANSInstrument)
 
 
 def slice_by_time(workspace, start_time=None, stop_time=None):
@@ -18,8 +18,8 @@ def slice_by_time(workspace, start_time=None, stop_time=None):
     :return: the sliced workspace.
     """
     filter_name = "FilterByTime"
-    filter_options = {SANSConstants.input_workspace: workspace,
-                      SANSConstants.output_workspace: SANSConstants.dummy}
+    filter_options = {"InputWorkspace": workspace,
+                      "OutputWorkspace": EMPTY_NAME}
     if start_time:
         filter_options.update({'StartTime': start_time})
     if stop_time:
@@ -27,7 +27,7 @@ def slice_by_time(workspace, start_time=None, stop_time=None):
 
     filter_alg = create_unmanaged_algorithm(filter_name, **filter_options)
     filter_alg.execute()
-    return filter_alg.getProperty(SANSConstants.output_workspace).value
+    return filter_alg.getProperty("OutputWorkspace").value
 
 
 def get_scaled_workspace(workspace, factor):
@@ -39,12 +39,12 @@ def get_scaled_workspace(workspace, factor):
     :return: the scaled workspace.
     """
     scale_name = "Scale"
-    scale_options = {SANSConstants.input_workspace: workspace,
-                     SANSConstants.output_workspace: SANSConstants.dummy,
+    scale_options = {"InputWorkspace": workspace,
+                     "OutputWorkspace": EMPTY_NAME,
                      "Factor": factor}
     scale_alg = create_unmanaged_algorithm(scale_name, **scale_options)
     scale_alg.execute()
-    return scale_alg.getProperty(SANSConstants.output_workspace).value
+    return scale_alg.getProperty("OutputWorkspace").value
 
 
 class Slicer(object):

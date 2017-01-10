@@ -5,12 +5,9 @@
 from mantid.kernel import (Direction, StringArrayProperty, StringListValidator, Property,
                            PropertyManagerProperty, FloatBoundedValidator)
 from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, AlgorithmFactory, PropertyMode, Progress)
-from sans.common.constants import SANSConstants
+from sans.common.constants import EMPTY_NAME
 from sans.common.general_functions import create_unmanaged_algorithm
-from sans.common.sans_type import (RangeStepType, RebinType, FitType, DataType,
-                                   convert_rebin_type_to_string, convert_string_to_rebin_type,
-                                   convert_range_step_type_to_string, convert_string_to_range_step_type,
-                                   convert_reduction_data_type_to_string, convert_string_to_reduction_data_type)
+from sans.common.enums import (RangeStepType, RebinType, FitType, DataType)
 from sans.state.state_base import create_deserialized_sans_state_from_property_manager
 from sans.algorithm_detail.calculate_transmission_helper import (get_detector_id_for_spectrum_number,
                                                                  get_workspace_indices_for_monitors,
@@ -38,14 +35,14 @@ class SANSCalculateTransmission(DataProcessorAlgorithm):
         self.declareProperty(MatrixWorkspaceProperty("DirectWorkspace", '',
                                                      optional=PropertyMode.Mandatory, direction=Direction.Input),
                              doc='The direct workspace in time-of-flight units.')
-        allowed_data = StringListValidator([convert_reduction_data_type_to_string(DataType.Sample),
-                                            convert_reduction_data_type_to_string(DataType.Can)])
-        self.declareProperty("DataType", convert_reduction_data_type_to_string(DataType.Sample),
+        allowed_data = StringListValidator([DataType.to_string(DataType.Sample),
+                                            DataType.to_string(DataType.Can)])
+        self.declareProperty("DataType", DataType.to_string(DataType.Sample),
                              validator=allowed_data, direction=Direction.Input,
                              doc="The component of the instrument which is to be reduced.")
 
         # Output workspace
-        self.declareProperty(MatrixWorkspaceProperty(SANSConstants.output_workspace, '', direction=Direction.Output),
+        self.declareProperty(MatrixWorkspaceProperty("OutputWorkspace", '', direction=Direction.Output),
                              doc='A calculated transmission workspace in units of wavelength.')
         self.declareProperty(MatrixWorkspaceProperty("UnfittedData", '', direction=Direction.Output),
                              doc='A unfitted data in units of wavelength.')
@@ -83,7 +80,7 @@ class SANSCalculateTransmission(DataProcessorAlgorithm):
 
         # 2. Clean transmission data
         data_type_string = self.getProperty("DataType").value
-        data_type = convert_string_to_reduction_data_type(data_type_string)
+        data_type = DataType.from_string(data_type_string)
         transmission_workspace = self._get_corrected_wavelength_workspace(transmission_workspace, all_detector_ids,
                                                                           calculate_transmission_state)
         direct_workspace = self._get_corrected_wavelength_workspace(direct_workspace, all_detector_ids,
@@ -95,7 +92,7 @@ class SANSCalculateTransmission(DataProcessorAlgorithm):
                               detector_id_transmission_monitor, detector_id_incident_monitor,
                               calculate_transmission_state, data_type)
 
-        self.setProperty(SANSConstants.output_workspace, fitted_transmission_workspace)
+        self.setProperty("OutputWorkspace", fitted_transmission_workspace)
         if unfitted_transmission_workspace:
             self.setProperty("UnfittedData", unfitted_transmission_workspace)
 
@@ -126,7 +123,7 @@ class SANSCalculateTransmission(DataProcessorAlgorithm):
         trans_name = "CalculateTransmission"
         trans_options = {"SampleRunWorkspace": transmission_workspace,
                          "DirectRunWorkspace": direct_workspace,
-                         SANSConstants.output_workspace: SANSConstants.dummy,
+                         "OutputWorkspace": dummy,
                          "IncidentBeamMonitor": incident_monitor_detector_id,
                          "RebinParams": rebin_params,
                          "OutputUnfittedData": True}
@@ -138,7 +135,7 @@ class SANSCalculateTransmission(DataProcessorAlgorithm):
             trans_options.update({"TransmissionMonitor": transmission_monitor_detector_id})
 
         # Get the fit setting for the correct data type, ie either for the Sample of the Can
-        fit_type = calculate_transmission_state.fit[convert_reduction_data_type_to_string(data_type)].fit_type
+        fit_type = calculate_transmission_state.fit[DataType.to_string(data_type)].fit_type
         if fit_type is FitType.Log:
             fit_string = "Log"
         elif fit_type is FitType.Polynomial:
@@ -154,7 +151,7 @@ class SANSCalculateTransmission(DataProcessorAlgorithm):
         trans_alg = create_unmanaged_algorithm(trans_name, **trans_options)
         trans_alg.execute()
 
-        fitted_transmission_workspace = trans_alg.getProperty(SANSConstants.output_workspace).value
+        fitted_transmission_workspace = trans_alg.getProperty("OutputWorkspace").value
         try:
             unfitted_transmission_workspace = trans_alg.getProperty("UnfittedData").value
         except RuntimeError:
@@ -214,12 +211,12 @@ class SANSCalculateTransmission(DataProcessorAlgorithm):
         # that we have to exclude unused spectra as the interpolation runs into
         # problems if we don't.
         extract_name = "ExtractSpectra"
-        extract_options = {SANSConstants.input_workspace: workspace,
-                           SANSConstants.output_workspace: SANSConstants.dummy,
+        extract_options = {"InputWorkspace": workspace,
+                           "OutputWorkspace": EMPTY_NAME,
                            "DetectorList": detector_ids}
         extract_alg = create_unmanaged_algorithm(extract_name, **extract_options)
         extract_alg.execute()
-        workspace = extract_alg.getProperty(SANSConstants.output_workspace).value
+        workspace = extract_alg.getProperty("OutputWorkspace").value
 
         # Make sure that we still have spectra in the workspace
         if workspace.getNumberHistograms() == 0:
@@ -270,16 +267,16 @@ class SANSCalculateTransmission(DataProcessorAlgorithm):
         wavelength_step_type = calculate_transmission_state.wavelength_step_type
 
         convert_name = "ConvertToWavelength"
-        convert_options = {SANSConstants.input_workspace: workspace,
-                           SANSConstants.output_workspace: SANSConstants.dummy,
+        convert_options = {"InputWorkspace": workspace,
+                           "OutputWorkspace": dummy,
                            "WavelengthLow": wavelength_low,
                            "WavelengthHigh": wavelength_high,
                            "WavelengthStep": wavelength_step,
-                           "WavelengthStepType": convert_range_step_type_to_string(wavelength_step_type),
-                           "RebinMode": convert_rebin_type_to_string(rebin_type)}
+                           "WavelengthStepType": RangeStepType.to_string(wavelength_step_type),
+                           "RebinMode": RebinType.to_string(rebin_type)}
         convert_alg = create_unmanaged_algorithm(convert_name, **convert_options)
         convert_alg.execute()
-        return convert_alg.getProperty(SANSConstants.output_workspace).value
+        return convert_alg.getProperty("OutputWorkspace").value
 
     def _perform_prompt_peak_correction(self, workspace, prompt_peak_correction_min, prompt_peak_correction_max):
         """
@@ -294,14 +291,14 @@ class SANSCalculateTransmission(DataProcessorAlgorithm):
         # were explicitly set. Some instruments require it, others don't.
         if prompt_peak_correction_min is not None and prompt_peak_correction_max is not None:
             remove_name = "RemoveBins"
-            remove_options = {SANSConstants.input_workspace: workspace,
-                              SANSConstants.output_workspace: SANSConstants.dummy,
+            remove_options = {"InputWorkspace": workspace,
+                              "OutputWorkspace": EMPTY_NAME,
                               "XMin": prompt_peak_correction_min,
                               "XMax": prompt_peak_correction_max,
                               "Interpolation": "Linear"}
             remove_alg = create_unmanaged_algorithm(remove_name, **remove_options)
             remove_alg.execute()
-            workspace = remove_alg.getProperty(SANSConstants.output_workspace).value
+            workspace = remove_alg.getProperty("OutputWorkspace").value
         return workspace
 
     def validateInputs(self):
@@ -330,9 +327,9 @@ class SANSCalculateTransmission(DataProcessorAlgorithm):
             calculate_transmission_state = state.adjustment.calculate_transmission
             fit = calculate_transmission_state.fit
             data_type_string = self.getProperty("DataType").value
-            data_type = convert_string_to_reduction_data_type(data_type_string)
-            sample = fit[convert_reduction_data_type_to_string(DataType.Sample)]
-            can = fit[convert_reduction_data_type_to_string(DataType.Can)]
+            data_type = DataType.from_string(data_type_string)
+            sample = fit[DataType.to_string(DataType.Sample)]
+            can = fit[DataType.to_string(DataType.Can)]
             if data_type is DataType.Sample and sample.fit_type is None:
                 errors.update({"DataType": "There does not seem to be a fit type set for the selected data type"})
             if data_type is DataType.Can and can.fit_type is None:

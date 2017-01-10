@@ -3,9 +3,8 @@ import mantid
 from sans.command_interface.command_interface_state_director import (NParameterCommand, NParameterCommandId,
                                                                      CommandInterfaceStateDirector, DataCommand,
                                                                      DataCommandId, FitData)
-from sans.common.sans_type import (SANSFacility, RebinType, DetectorType, ReductionDimensionality,
-                                   FitType, RangeStepType, ISISReductionMode, FitModeForMerge)
-from sans.common.constants import SANSConstants
+from sans.common.enums import (SANSFacility, RebinType, DetectorType, ReductionDimensionality,
+                               FitType, RangeStepType, ISISReductionMode, FitModeForMerge, DataType)
 
 
 class CommandInterfaceStateDirectorTest(unittest.TestCase):
@@ -115,8 +114,10 @@ class CommandInterfaceStateDirectorTest(unittest.TestCase):
         # Assert
         # We check here that the elements we set up above (except for from the user file) are being applied
         self.assertTrue(state is not None)
-        self.assertTrue(state.mask.detectors[SANSConstants.high_angle_bank].range_horizontal_strip_start[-1] == 197)
-        self.assertTrue(state.mask.detectors[SANSConstants.high_angle_bank].range_horizontal_strip_stop[-1] == 199)
+        self.assertTrue(state.mask.detectors[DetectorType.to_string(DetectorType.HAB)].range_horizontal_strip_start[-1]
+                        == 197)
+        self.assertTrue(state.mask.detectors[DetectorType.to_string(DetectorType.HAB)].range_horizontal_strip_stop[-1]
+                        == 199)
         self.assertTrue(state.adjustment.normalize_to_monitor.incident_monitor == 1)
         self.assertTrue(state.adjustment.normalize_to_monitor.rebin_type is RebinType.InterpolatingRebin)
         self.assertTrue(state.adjustment.calculate_transmission.incident_monitor == 7)
@@ -129,13 +130,18 @@ class CommandInterfaceStateDirectorTest(unittest.TestCase):
         self.assertTrue(state.reduction.reduction_mode is ISISReductionMode.Hab)
         self.assertTrue(state.convert_to_q.use_gravity)
         self.assertTrue(state.convert_to_q.gravity_extra_length == 12.4)
-        self.assertTrue(state.move.detectors[SANSConstants.high_angle_bank].sample_centre_pos1 == 12.4/1000.)
-        self.assertTrue(state.move.detectors[SANSConstants.high_angle_bank].sample_centre_pos2 == 23.54/1000.)
-        self.assertTrue(state.adjustment.calculate_transmission.fit[SANSConstants.can].fit_type is FitType.Log)
-        self.assertTrue(state.adjustment.calculate_transmission.fit[SANSConstants.can].polynomial_order == 0)
+        self.assertTrue(state.move.detectors[DetectorType.to_string(DetectorType.HAB)].sample_centre_pos1 == 12.4/1000.)
+        self.assertTrue(state.move.detectors[DetectorType.to_string(DetectorType.HAB)].sample_centre_pos2
+                        == 23.54/1000.)
+        self.assertTrue(state.adjustment.calculate_transmission.fit[DataType.to_string(DataType.Can)].fit_type
+                        is FitType.Log)
+        self.assertTrue(state.adjustment.calculate_transmission.fit[DataType.to_string(DataType.Can)].polynomial_order
+                        == 0)
 
-        self.assertTrue(state.adjustment.calculate_transmission.fit[SANSConstants.can].wavelength_low == 10.4)
-        self.assertTrue(state.adjustment.calculate_transmission.fit[SANSConstants.can].wavelength_high == 12.54)
+        self.assertTrue(state.adjustment.calculate_transmission.fit[DataType.to_string(DataType.Can)].wavelength_low
+                        == 10.4)
+        self.assertTrue(state.adjustment.calculate_transmission.fit[DataType.to_string(DataType.Can)].wavelength_high
+                        == 12.54)
 
         self.assertTrue(state.reduction.merge_scale == 1.2)
         self.assertTrue(state.reduction.merge_shift == 2.4)
@@ -153,12 +159,12 @@ class CommandInterfaceStateDirectorTest(unittest.TestCase):
             self.assertTrue(e1 == e2)
 
         self.assertTrue(state.adjustment.wavelength_and_pixel_adjustment.adjustment_files[
-                            SANSConstants.low_angle_bank].pixel_adjustment_file == "test")
+                            DetectorType.to_string(DetectorType.LAB)].pixel_adjustment_file == "test")
         self.assertTrue(state.mask.phi_min == 12.5)
         self.assertTrue(state.mask.phi_max == 123.6)
         self.assertFalse(state.mask.use_mask_phi_mirror)
         self.assertTrue(state.adjustment.wavelength_and_pixel_adjustment.adjustment_files[
-                            SANSConstants.high_angle_bank].wavelength_adjustment_file == "test")
+                            DetectorType.to_string(DetectorType.HAB)].wavelength_adjustment_file == "test")
         self.assertTrue(state.mask.radius_min == 23.5 / 1000.)
         self.assertTrue(state.mask.radius_max == 234.7 / 1000.)
         self.assertTrue(state.wavelength.wavelength_low == 1.23)

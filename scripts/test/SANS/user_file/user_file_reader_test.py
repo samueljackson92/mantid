@@ -1,7 +1,7 @@
 import unittest
 import mantid
 import os
-from sans.common.sans_type import (ISISReductionMode, DetectorType, RangeStepType, FitType)
+from sans.common.enums import (ISISReductionMode, DetectorType, RangeStepType, FitType)
 from sans.user_file.user_file_reader import UserFileReader
 from sans.user_file.user_file_common import (DetectorId, BackId, range_entry, back_single_monitor_entry,
                                              single_entry_with_detector, mask_angle_entry, LimitsId, rebin_string_values,

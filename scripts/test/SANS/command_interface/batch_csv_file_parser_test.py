@@ -2,7 +2,7 @@ import unittest
 import os
 
 import mantid
-from sans.common.sans_type import BatchReductionEntry
+from sans.common.enums import BatchReductionEntry
 from sans.command_interface.batch_csv_file_parser import BatchCsvParser
 
 

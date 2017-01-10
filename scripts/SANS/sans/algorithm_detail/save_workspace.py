@@ -4,8 +4,8 @@ from mantid.api import MatrixWorkspace
 from mantid.dataobjects import EventWorkspace
 
 from sans.common.general_functions import create_unmanaged_algorithm
-from sans.common.constants import SANSConstants
-from sans.common.sans_type import SaveType
+from sans.common.constants import EMPTY_NAME
+from sans.common.enums import SaveType
 
 ZERO_ERROR_DEFAULT = 1e6
 
@@ -21,7 +21,7 @@ def save_to_file(workspace, file_format, file_name):
     :param file_name: the file name.
     :return:
     """
-    save_options = {SANSConstants.input_workspace: workspace}
+    save_options = {"InputWorkspace": workspace}
     save_alg = get_save_strategy(file_format, file_name, save_options)
     save_alg.setRethrows(True)
     save_alg.execute()
@@ -77,11 +77,11 @@ def get_zero_error_free_workspace(workspace):
     :return: The zero-error free workspace
     """
     clone_name = "CloneWorkspace"
-    clone_options = {SANSConstants.input_workspace: workspace,
-                     SANSConstants.output_workspace: SANSConstants.dummy}
+    clone_options = {"InputWorkspace": workspace,
+                     "OutputWorkspace": EMPTY_NAME}
     clone_alg = create_unmanaged_algorithm(clone_name, **clone_options)
     clone_alg.execute()
-    cloned_workspace = clone_alg.getProperty(SANSConstants.output_workspace).value
+    cloned_workspace = clone_alg.getProperty("OutputWorkspace").value
     remove_zero_errors_from_workspace(cloned_workspace)
     return cloned_workspace
 

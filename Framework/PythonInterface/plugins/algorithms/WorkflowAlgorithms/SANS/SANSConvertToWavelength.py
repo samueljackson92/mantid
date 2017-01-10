@@ -4,9 +4,9 @@
 
 from mantid.kernel import (Direction, StringListValidator, Property, PropertyManagerProperty)
 from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, AlgorithmFactory, PropertyMode)
-from sans.common.constants import SANSConstants
+from sans.common.constants import EMPTY_NAME
 from sans.common.general_functions import (create_unmanaged_algorithm, append_to_sans_file_tag)
-from sans.common.sans_type import (convert_rebin_type_to_string, convert_range_step_type_to_string)
+from sans.common.enums import (RangeStepType, RebinType)
 from sans.state.state_base import create_deserialized_sans_state_from_property_manager
 
 
@@ -22,7 +22,7 @@ class SANSConvertToWavelength(DataProcessorAlgorithm):
         self.declareProperty(PropertyManagerProperty('SANSState'),
                              doc='A property manager which fulfills the SANSState contract.')
 
-        self.declareProperty(MatrixWorkspaceProperty(SANSConstants.input_workspace, '',
+        self.declareProperty(MatrixWorkspaceProperty("InputWorkspace", '',
                                                      optional=PropertyMode.Mandatory, direction=Direction.Input),
                              doc='The workspace which is to be converted to wavelength')
 
@@ -37,22 +37,22 @@ class SANSConvertToWavelength(DataProcessorAlgorithm):
         wavelength_state = state.wavelength
 
         # Input workspace
-        workspace = self.getProperty(SANSConstants.input_workspace).value
+        workspace = self.getProperty("InputWorkspace").value
 
         wavelength_name = "ConvertToWavelength"
-        wavelength_options = {SANSConstants.input_workspace: workspace,
-                              SANSConstants.output_workspace: SANSConstants.dummy,
+        wavelength_options = {"InputWorkspace": workspace,
+                              "OutputWorkspace": EMPTY_NAME,
                               "WavelengthLow": wavelength_state.wavelength_low,
                               "WavelengthHigh": wavelength_state.wavelength_high,
                               "WavelengthStep": wavelength_state.wavelength_step,
-                              "WavelengthStepType": convert_range_step_type_to_string(
+                              "WavelengthStepType": RangeStepType.to_string(
                                   wavelength_state.wavelength_step_type),
-                              "RebinMode": convert_rebin_type_to_string(wavelength_state.rebin_type)}
+                              "RebinMode": RebinType.to_string(wavelength_state.rebin_type)}
         wavelength_alg = create_unmanaged_algorithm(wavelength_name, **wavelength_options)
         wavelength_alg.execute()
-        converted_workspace = wavelength_alg.getProperty(SANSConstants.output_workspace).value
+        converted_workspace = wavelength_alg.getProperty("OutputWorkspace").value
         append_to_sans_file_tag(converted_workspace, "_wavelength")
-        self.setProperty(SANSConstants.output_workspace, converted_workspace)
+        self.setProperty("OutputWorkspace", converted_workspace)
 
     def validateInputs(self):
         errors = dict()

@@ -1,8 +1,8 @@
 from abc import (ABCMeta, abstractmethod)
 from math import sqrt
 
-from sans.common.constants import SANSConstants
-from sans.common.sans_type import (SANSInstrument)
+from sans.common.constants import EMPTY_NAME
+from sans.common.enums import (SANSInstrument)
 from sans.common.general_functions import create_unmanaged_algorithm
 
 
@@ -18,18 +18,18 @@ def load_sigma_moderator_workspace(file_name):
     """
     load_name = "LoadRKH"
     load_option = {"Filename": file_name,
-                   SANSConstants.output_workspace: SANSConstants.dummy,
+                   "OutputWorkspace": EMPTY_NAME,
                    "FirstColumnValue": "Wavelength"}
     load_alg = create_unmanaged_algorithm(load_name, **load_option)
     load_alg.execute()
-    moderator_workspace = load_alg.getProperty(SANSConstants.output_workspace).value
+    moderator_workspace = load_alg.getProperty("OutputWorkspace").value
 
     convert_name = "ConvertToHistogram"
-    convert_options = {SANSConstants.input_workspace: moderator_workspace,
-                       SANSConstants.output_workspace: SANSConstants.dummy}
+    convert_options = {"InputWorkspace": moderator_workspace,
+                       "OutputWorkspace": EMPTY_NAME}
     convert_alg = create_unmanaged_algorithm(convert_name, **convert_options)
     convert_alg.execute()
-    return convert_alg.getProperty(SANSConstants.output_workspace).value
+    return convert_alg.getProperty("OutputWorkspace").value
 
 
 def get_aperture_diameters(convert_to_q):
@@ -92,8 +92,8 @@ def create_q_resolution_workspace(convert_to_q, data_workspace):
     gravity_extra_length = convert_to_q.gravity_extra_length
 
     resolution_name = "TOFSANSResolutionByPixel"
-    resolution_options = {SANSConstants.input_workspace: data_workspace,
-                          SANSConstants.output_workspace: SANSConstants.dummy,
+    resolution_options = {"InputWorkspace": data_workspace,
+                          "OutputWorkspace": EMPTY_NAME,
                           "DeltaR": delta_r,
                           "SampleApertureRadius": sample_radius,
                           "SourceApertureRadius": source_radius,
@@ -103,7 +103,7 @@ def create_q_resolution_workspace(convert_to_q, data_workspace):
                           "ExtraLength": gravity_extra_length}
     resolution_alg = create_unmanaged_algorithm(resolution_name, **resolution_options)
     resolution_alg.execute()
-    return resolution_alg.getProperty(SANSConstants.output_workspace).value
+    return resolution_alg.getProperty("OutputWorkspace").value
 
 
 # ----------------------------------------------------------------------------------

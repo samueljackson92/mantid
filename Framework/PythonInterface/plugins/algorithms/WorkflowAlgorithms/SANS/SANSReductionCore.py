@@ -7,10 +7,9 @@ from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, Algorit
                         IEventWorkspace)
 
 from sans.state.state_base import create_deserialized_sans_state_from_property_manager
-from sans.common.constants import SANSConstants
+from sans.common.constants import EMPTY_NAME
 from sans.common.general_functions import (create_unmanaged_algorithm, append_to_sans_file_tag)
-from sans.common.sans_type import (DetectorType, convert_detector_type_to_string,
-                                   convert_reduction_data_type_to_string, DataType)
+from sans.common.enums import (DetectorType, DataType)
 
 
 class SANSReductionCore(DataProcessorAlgorithm):
@@ -57,23 +56,23 @@ class SANSReductionCore(DataProcessorAlgorithm):
                                  " performance boost")
 
         # The component
-        allowed_detectors = StringListValidator([convert_detector_type_to_string(DetectorType.Lab),
-                                                 convert_detector_type_to_string(DetectorType.Hab)])
-        self.declareProperty("Component", convert_detector_type_to_string(DetectorType.Lab),
+        allowed_detectors = StringListValidator([DetectorType.to_string(DetectorType.LAB),
+                                                 DetectorType.to_string(DetectorType.HAB)])
+        self.declareProperty("Component", DetectorType.to_string(DetectorType.LAB),
                              validator=allowed_detectors, direction=Direction.Input,
                              doc="The component of the instrument which is to be reduced.")
 
         # The data type
-        allowed_data = StringListValidator([convert_reduction_data_type_to_string(DataType.Sample),
-                                            convert_reduction_data_type_to_string(DataType.Can)])
-        self.declareProperty("DataType", convert_reduction_data_type_to_string(DataType.Sample),
+        allowed_data = StringListValidator([DataType.to_string(DataType.Sample),
+                                            DataType.to_string(DataType.Can)])
+        self.declareProperty("DataType", DataType.to_string(DataType.Sample),
                              validator=allowed_data, direction=Direction.Input,
                              doc="The component of the instrument which is to be reduced.")
 
         # ----------
         # OUTPUT
         # ----------
-        self.declareProperty(MatrixWorkspaceProperty(SANSConstants.output_workspace, '', direction=Direction.Output),
+        self.declareProperty(MatrixWorkspaceProperty("OutputWorkspace", '', direction=Direction.Output),
                              doc='The output workspace.')
 
         self.declareProperty(MatrixWorkspaceProperty('SumOfCounts', '', optional=PropertyMode.Optional,
@@ -124,22 +123,22 @@ class SANSReductionCore(DataProcessorAlgorithm):
             # Rebin to monitor workspace
             if compatibility.time_rebin_string:
                 rebin_name = "Rebin"
-                rebin_option = {SANSConstants.input_workspace: workspace,
+                rebin_option = {"InputWorkspace": workspace,
                                 "Params": compatibility.time_rebin_string,
-                                SANSConstants.output_workspace: SANSConstants.dummy,
+                                "OutputWorkspace": EMPTY_NAME,
                                 "PreserveEvents": False}
                 rebin_alg = create_unmanaged_algorithm(rebin_name, **rebin_option)
                 rebin_alg.execute()
-                workspace = rebin_alg.getProperty(SANSConstants.output_workspace).value
+                workspace = rebin_alg.getProperty("OutputWorkspace").value
             else:
                 rebin_name = "RebinToWorkspace"
                 rebin_option = {"WorkspaceToRebin": workspace,
                                 "WorkspaceToMatch": monitor_workspace,
-                                SANSConstants.output_workspace: SANSConstants.dummy,
+                                "OutputWorkspace": EMPTY_NAME,
                                 "PreserveEvents": False}
                 rebin_alg = create_unmanaged_algorithm(rebin_name, **rebin_option)
                 rebin_alg.execute()
-                workspace = rebin_alg.getProperty(SANSConstants.output_workspace).value
+                workspace = rebin_alg.getProperty("OutputWorkspace").value
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # COMPATIBILITY END
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -197,7 +196,7 @@ class SANSReductionCore(DataProcessorAlgorithm):
         # ------------------------------------------------------------
         # Populate the output
         # ------------------------------------------------------------
-        self.setProperty(SANSConstants.output_workspace, workspace)
+        self.setProperty("OutputWorkspace", workspace)
 
         # ------------------------------------------------------------
         # Diagnostic output
@@ -213,25 +212,25 @@ class SANSReductionCore(DataProcessorAlgorithm):
     def _get_cropped_workspace(self, component):
         scatter_workspace = self.getProperty("ScatterWorkspace").value
         crop_name = "SANSCrop"
-        crop_options = {SANSConstants.input_workspace: scatter_workspace,
-                        SANSConstants.output_workspace: SANSConstants.dummy,
+        crop_options = {"InputWorkspace": scatter_workspace,
+                        "OutputWorkspace": EMPTY_NAME,
                         "Component": component}
         crop_alg = create_unmanaged_algorithm(crop_name, **crop_options)
         crop_alg.execute()
-        return crop_alg.getProperty(SANSConstants.output_workspace).value
+        return crop_alg.getProperty("OutputWorkspace").value
 
     def _slice(self, state, workspace, monitor_workspace):
         state_serialized = state.property_manager
         slice_name = "SANSSliceEvent"
         slice_options = {"SANSState": state_serialized,
-                         SANSConstants.input_workspace: workspace,
+                         "InputWorkspace": workspace,
                          "InputWorkspaceMonitor": monitor_workspace,
-                         SANSConstants.output_workspace: SANSConstants.dummy,
+                         "OutputWorkspace": EMPTY_NAME,
                          "OutputWorkspaceMonitor": "dummy2"}
         slice_alg = create_unmanaged_algorithm(slice_name, **slice_options)
         slice_alg.execute()
 
-        workspace = slice_alg.getProperty(SANSConstants.output_workspace).value
+        workspace = slice_alg.getProperty("OutputWorkspace").value
         monitor_workspace = slice_alg.getProperty("OutputWorkspaceMonitor").value
         slice_event_factor = slice_alg.getProperty("SliceEventFactor").value
         return workspace, monitor_workspace, slice_event_factor
@@ -242,50 +241,50 @@ class SANSReductionCore(DataProcessorAlgorithm):
         state_serialized = state.property_manager
         move_name = "SANSMove"
         move_options = {"SANSState": state_serialized,
-                        SANSConstants.workspace: workspace,
+                        "Workspace": workspace,
                         "MoveType": "SetToZero",
                         "Component": ""}
         move_alg = create_unmanaged_algorithm(move_name, **move_options)
         move_alg.execute()
-        workspace = move_alg.getProperty(SANSConstants.workspace).value
+        workspace = move_alg.getProperty("Workspace").value
 
         # Do the initial move
         move_alg.setProperty("MoveType", "InitialMove")
         move_alg.setProperty("Component", component)
-        move_alg.setProperty(SANSConstants.workspace, workspace)
+        move_alg.setProperty("Workspace", workspace)
         move_alg.execute()
-        return move_alg.getProperty(SANSConstants.workspace).value
+        return move_alg.getProperty("Workspace").value
 
     def _mask(self, state, workspace, component):
         state_serialized = state.property_manager
         mask_name = "SANSMaskWorkspace"
         mask_options = {"SANSState": state_serialized,
-                        SANSConstants.workspace: workspace,
+                        "Workspace": workspace,
                         "Component": component}
         mask_alg = create_unmanaged_algorithm(mask_name, **mask_options)
         mask_alg.execute()
-        return mask_alg.getProperty(SANSConstants.workspace).value
+        return mask_alg.getProperty("Workspace").value
 
     def _convert_to_wavelength(self, state, workspace):
         state_serialized = state.property_manager
         wavelength_name = "SANSConvertToWavelength"
         wavelength_options = {"SANSState": state_serialized,
-                              SANSConstants.input_workspace: workspace,
-                              SANSConstants.output_workspace: SANSConstants.dummy}
+                              "InputWorkspace": workspace,
+                              "OutputWorkspace": EMPTY_NAME}
         wavelength_alg = create_unmanaged_algorithm(wavelength_name, **wavelength_options)
         wavelength_alg.execute()
-        return wavelength_alg.getProperty(SANSConstants.output_workspace).value
+        return wavelength_alg.getProperty("OutputWorkspace").value
 
     def _scale(self, state, workspace, data_type):
         state_serialized = state.property_manager
         scale_name = "SANSScale"
         scale_options = {"SANSState": state_serialized,
-                         SANSConstants.input_workspace: workspace,
-                         SANSConstants.output_workspace: SANSConstants.dummy,
+                         "InputWorkspace": workspace,
+                         "OutputWorkspace": EMPTY_NAME,
                          "DataType": data_type}
         scale_alg = create_unmanaged_algorithm(scale_name, **scale_options)
         scale_alg.execute()
-        return scale_alg.getProperty(SANSConstants.output_workspace).value
+        return scale_alg.getProperty("OutputWorkspace").value
 
     def _adjustment(self, state, workspace, monitor_workspace, component, data_type):
         transmission_workspace = self._get_transmission_workspace()
@@ -298,9 +297,9 @@ class SANSReductionCore(DataProcessorAlgorithm):
                               "DataType": data_type,
                               "MonitorWorkspace": monitor_workspace,
                               "SampleData": workspace,
-                              "OutputWorkspaceWavelengthAdjustment": SANSConstants.dummy,
-                              "OutputWorkspacePixelAdjustment": SANSConstants.dummy,
-                              "OutputWorkspaceWavelengthAndPixelAdjustment": SANSConstants.dummy}
+                              "OutputWorkspaceWavelengthAdjustment": EMPTY_NAME,
+                              "OutputWorkspacePixelAdjustment": EMPTY_NAME,
+                              "OutputWorkspaceWavelengthAndPixelAdjustment": EMPTY_NAME}
         if transmission_workspace:
             adjustment_options.update({"TransmissionWorkspace": transmission_workspace})
         if direct_workspace:
@@ -319,11 +318,11 @@ class SANSReductionCore(DataProcessorAlgorithm):
             convert_name = "RebinToWorkspace"
             convert_options = {"WorkspaceToRebin": workspace,
                                "WorkspaceToMatch": workspace,
-                               SANSConstants.output_workspace: SANSConstants.output_workspace,
+                               "OutputWorkspace": "OutputWorkspace",
                                "PreserveEvents": False}
             convert_alg = create_unmanaged_algorithm(convert_name, **convert_options)
             convert_alg.execute()
-            workspace = convert_alg.getProperty(SANSConstants.output_workspace).value
+            workspace = convert_alg.getProperty("OutputWorkspace").value
             append_to_sans_file_tag(workspace, "_histogram")
 
         return workspace
@@ -344,8 +343,8 @@ class SANSReductionCore(DataProcessorAlgorithm):
         """
         state_serialized = state.property_manager
         convert_name = "SANSConvertToQ"
-        convert_options = {SANSConstants.input_workspace: workspace,
-                           SANSConstants.output_workspace: SANSConstants.dummy,
+        convert_options = {"InputWorkspace": workspace,
+                           "OutputWorkspace": EMPTY_NAME,
                            "SANSState": state_serialized,
                            "OutputParts": True}
         if wavelength_adjustment_workspace:
@@ -357,7 +356,7 @@ class SANSReductionCore(DataProcessorAlgorithm):
                                         wavelength_and_pixel_adjustment_workspace})
         convert_alg = create_unmanaged_algorithm(convert_name, **convert_options)
         convert_alg.execute()
-        data_workspace = convert_alg.getProperty(SANSConstants.output_workspace).value
+        data_workspace = convert_alg.getProperty("OutputWorkspace").value
         sum_of_counts = convert_alg.getProperty("SumOfCounts").value
         sum_of_norms = convert_alg.getProperty("SumOfNormFactors").value
         return data_workspace, sum_of_counts, sum_of_norms
@@ -392,11 +391,11 @@ class SANSReductionCore(DataProcessorAlgorithm):
 
     def _get_cloned_workspace(self, workspace):
         clone_name = "CloneWorkspace"
-        clone_options = {SANSConstants.input_workspace: workspace,
-                         SANSConstants.output_workspace: SANSConstants.dummy}
+        clone_options = {"InputWorkspace": workspace,
+                         "OutputWorkspace": EMPTY_NAME}
         clone_alg = create_unmanaged_algorithm(clone_name, **clone_options)
         clone_alg.execute()
-        return clone_alg.getProperty(SANSConstants.output_workspace).value
+        return clone_alg.getProperty("OutputWorkspace").value
 
 # Register algorithm with Mantid
 AlgorithmFactory.subscribe(SANSReductionCore)

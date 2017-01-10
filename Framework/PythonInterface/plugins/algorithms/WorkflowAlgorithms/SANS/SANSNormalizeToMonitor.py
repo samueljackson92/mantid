@@ -5,9 +5,9 @@
 from mantid.kernel import (Direction, IntBoundedValidator, FloatBoundedValidator, StringListValidator,
                            Property, PropertyManagerProperty)
 from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, AlgorithmFactory, PropertyMode, Progress)
-from sans.common.constants import SANSConstants
+from sans.common.constants import EMPTY_NAME
 from sans.common.general_functions import create_unmanaged_algorithm
-from sans.common.sans_type import convert_rebin_type_to_string, convert_range_step_type_to_string
+from sans.common.enums import RebinType, RangeStepType
 from sans.state.state_base import create_deserialized_sans_state_from_property_manager
 
 
@@ -24,7 +24,7 @@ class SANSNormalizeToMonitor(DataProcessorAlgorithm):
                              doc='A property manager which fulfills the SANSState contract.')
 
         # Input workspace in TOF
-        self.declareProperty(MatrixWorkspaceProperty(SANSConstants.input_workspace, '',
+        self.declareProperty(MatrixWorkspaceProperty("InputWorkspace", '',
                                                      optional=PropertyMode.Mandatory, direction=Direction.Input),
                              doc='The monitor workspace in time-of-flight units.')
 
@@ -35,7 +35,7 @@ class SANSNormalizeToMonitor(DataProcessorAlgorithm):
                              doc='Optional scale factor for the input workspace.')
 
         # Output workspace
-        self.declareProperty(MatrixWorkspaceProperty(SANSConstants.output_workspace, '', direction=Direction.Output),
+        self.declareProperty(MatrixWorkspaceProperty("OutputWorkspace", '', direction=Direction.Output),
                              doc='A monitor normalization workspace in units of wavelength.')
 
     def PyExec(self):
@@ -61,7 +61,7 @@ class SANSNormalizeToMonitor(DataProcessorAlgorithm):
 
         # 5. Convert to wavelength with the specified bin settings.
         workspace = self._convert_to_wavelength(workspace, normalize_to_monitor_state)
-        self.setProperty(SANSConstants.output_workspace, workspace)
+        self.setProperty("OutputWorkspace", workspace)
 
     def _scale(self, workspace, factor):
         """
@@ -75,13 +75,13 @@ class SANSNormalizeToMonitor(DataProcessorAlgorithm):
         :return: a scaled workspace.
         """
         scale_name = "Scale"
-        scale_options = {SANSConstants.input_workspace: workspace,
-                         SANSConstants.output_workspace: SANSConstants.dummy,
+        scale_options = {"InputWorkspace": workspace,
+                         "OutputWorkspace": EMPTY_NAME,
                          "Factor": factor,
                          "Operation": "Multiply"}
         scale_alg = create_unmanaged_algorithm(scale_name, **scale_options)
         scale_alg.execute()
-        return scale_alg.getProperty(SANSConstants.output_workspace).value
+        return scale_alg.getProperty("OutputWorkspace").value
 
     def _extract_monitor(self, spectrum_number):
         """
@@ -91,16 +91,16 @@ class SANSNormalizeToMonitor(DataProcessorAlgorithm):
         :param spectrum_number: the spectrum number of the incident beam monitor.
         :return: a workspace which only contains the incident beam spectrum.
         """
-        workspace = self.getProperty(SANSConstants.input_workspace).value
+        workspace = self.getProperty("InputWorkspace").value
 
         workspace_index = workspace.getIndexFromSpectrumNumber(spectrum_number)
         extract_name = "ExtractSingleSpectrum"
-        extract_options = {SANSConstants.input_workspace: workspace,
-                           SANSConstants.output_workspace: SANSConstants.dummy,
+        extract_options = {"InputWorkspace": workspace,
+                           "OutputWorkspace": EMPTY_NAME,
                            "WorkspaceIndex": workspace_index}
         extract_alg = create_unmanaged_algorithm(extract_name, **extract_options)
         extract_alg.execute()
-        return extract_alg.getProperty(SANSConstants.output_workspace).value
+        return extract_alg.getProperty("OutputWorkspace").value
 
     def _perform_prompt_peak_correction(self, workspace, normalize_to_monitor_state):
         """
@@ -122,14 +122,14 @@ class SANSNormalizeToMonitor(DataProcessorAlgorithm):
         # were explicitly set. Some instruments require it, others don't.
         if prompt_peak_correction_start is not None and prompt_peak_correction_stop is not None:
             remove_name = "RemoveBins"
-            remove_options = {SANSConstants.input_workspace: workspace,
-                              SANSConstants.output_workspace: SANSConstants.dummy,
+            remove_options = {"InputWorkspace": workspace,
+                              "OutputWorkspace": EMPTY_NAME,
                               "XMin": prompt_peak_correction_start,
                               "XMax": prompt_peak_correction_stop,
                               "Interpolation": "Linear"}
             remove_alg = create_unmanaged_algorithm(remove_name, **remove_options)
             remove_alg.execute()
-            workspace = remove_alg.getProperty(SANSConstants.output_workspace).value
+            workspace = remove_alg.getProperty("OutputWorkspace").value
         return workspace
 
     def _perform_flat_background_correction(self, workspace, normalize_to_monitor_state):
@@ -158,14 +158,14 @@ class SANSNormalizeToMonitor(DataProcessorAlgorithm):
             stop_tof = normalize_to_monitor_state.background_TOF_general_stop
 
         flat_name = "CalculateFlatBackground"
-        flat_options = {SANSConstants.input_workspace: workspace,
-                        SANSConstants.output_workspace: SANSConstants.dummy,
+        flat_options = {"InputWorkspace": workspace,
+                        "OutputWorkspace": EMPTY_NAME,
                         "StartX": start_tof,
                         "EndX": stop_tof,
                         "Mode": "Mean"}
         flat_alg = create_unmanaged_algorithm(flat_name, **flat_options)
         flat_alg.execute()
-        return flat_alg.getProperty(SANSConstants.output_workspace).value
+        return flat_alg.getProperty("OutputWorkspace").value
 
     def _convert_to_wavelength(self, workspace, normalize_to_monitor_state):
         """
@@ -182,17 +182,17 @@ class SANSNormalizeToMonitor(DataProcessorAlgorithm):
         wavelength_rebin_mode = normalize_to_monitor_state.rebin_type
 
         convert_name = "ConvertToWavelength"
-        convert_options = {SANSConstants.input_workspace: workspace,
-                           SANSConstants.output_workspace: SANSConstants.dummy,
+        convert_options = {"InputWorkspace": workspace,
+                           "OutputWorkspace": EMPTY_NAME,
                            "WavelengthLow": wavelength_low,
                            "WavelengthHigh": wavelength_high,
                            "WavelengthStep": wavelength_step,
-                           "WavelengthStepType": convert_range_step_type_to_string(wavelength_step_type),
-                           "RebinMode": convert_rebin_type_to_string(wavelength_rebin_mode)}
+                           "WavelengthStepType": RangeStepType.to_string(wavelength_step_type),
+                           "RebinMode": RebinType.to_string(wavelength_rebin_mode)}
 
         convert_alg = create_unmanaged_algorithm(convert_name, **convert_options)
         convert_alg.execute()
-        return convert_alg.getProperty(SANSConstants.output_workspace).value
+        return convert_alg.getProperty("OutputWorkspace").value
 
     def validateInputs(self):
         errors = dict()

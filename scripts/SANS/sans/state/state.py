@@ -74,7 +74,7 @@ class State(StateBase):
         # We don't enforce a compatibility mode, we just create one if it does not exist
         if not self.compatibility:
             if self.data:
-                self.compatibility = get_compatibility_builder(self.data)
+                self.compatibility = get_compatibility_builder(self.data).build()
 
         if is_invalid:
             raise ValueError("State: There is an issue with your in put. See: {0}".format(json.dumps(is_invalid)))

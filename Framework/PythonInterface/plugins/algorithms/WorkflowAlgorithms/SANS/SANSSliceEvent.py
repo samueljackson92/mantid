@@ -6,7 +6,6 @@ from mantid.kernel import (Direction, PropertyManagerProperty)
 from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, AlgorithmFactory, PropertyMode, Progress)
 
 from sans.algorithm_detail.slicer import (SliceEventFactory, get_scaled_workspace)
-from sans.common.constants import SANSConstants
 from sans.common.general_functions import append_to_sans_file_tag
 from sans.state.state_base import create_deserialized_sans_state_from_property_manager
 
@@ -27,7 +26,7 @@ class SANSSliceEvent(DataProcessorAlgorithm):
                              doc='A property manager which fulfills the SANSState contract.')
 
         # Workspace which is to be moved
-        self.declareProperty(MatrixWorkspaceProperty(SANSConstants.input_workspace, '',
+        self.declareProperty(MatrixWorkspaceProperty("InputWorkspace", '',
                                                      optional=PropertyMode.Mandatory, direction=Direction.Input),
                              doc='The input workspace. If it is an event workspace, then the slice is taken. '
                                  'In case of a Workspace2D the original workspace is returned')
@@ -44,7 +43,7 @@ class SANSSliceEvent(DataProcessorAlgorithm):
                              doc='The factor of the event slicing. This corresponds to the proportion of the the total '
                                  'proton charge, which the slice corresponds to.')
 
-        self.declareProperty(MatrixWorkspaceProperty(SANSConstants.output_workspace, '', direction=Direction.Output),
+        self.declareProperty(MatrixWorkspaceProperty("OutputWorkspace", '', direction=Direction.Output),
                              doc='The sliced workspace')
 
         self.declareProperty(MatrixWorkspaceProperty("OutputWorkspaceMonitor", '', direction=Direction.Output),
@@ -57,7 +56,7 @@ class SANSSliceEvent(DataProcessorAlgorithm):
 
         progress = Progress(self, start=0.0, end=1.0, nreports=3)
         # Get the correct SANS move strategy from the SANSMoveFactory
-        input_workspace = self.getProperty(SANSConstants.input_workspace).value
+        input_workspace = self.getProperty("InputWorkspace").value
         slicer = SliceEventFactory.create_slicer(state, input_workspace)
         slice_info = state.slice
 
@@ -71,7 +70,7 @@ class SANSSliceEvent(DataProcessorAlgorithm):
 
         # Set the outputs
         append_to_sans_file_tag(sliced_workspace, "_sliced")
-        self.setProperty(SANSConstants.output_workspace, sliced_workspace)
+        self.setProperty("OutputWorkspace", sliced_workspace)
         self.setProperty("SliceEventFactor", slice_factor)
         progress.report("Finished slicing.")
 

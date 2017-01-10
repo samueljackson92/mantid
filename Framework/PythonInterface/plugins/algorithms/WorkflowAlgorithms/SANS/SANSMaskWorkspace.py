@@ -7,8 +7,7 @@ from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, Algorit
 
 from sans.algorithm_detail.mask_workspace import MaskFactory
 from sans.state.state_base import create_deserialized_sans_state_from_property_manager
-from sans.common.constants import SANSConstants
-from sans.common.sans_type import DetectorType
+from sans.common.enums import DetectorType
 from sans.common.general_functions import append_to_sans_file_tag
 
 
@@ -25,13 +24,15 @@ class SANSMaskWorkspace(DataProcessorAlgorithm):
                              doc='A property manager which fulfills the SANSState contract.')
 
         # Workspace which is to be masked
-        self.declareProperty(MatrixWorkspaceProperty(SANSConstants.workspace, '',
+        self.declareProperty(MatrixWorkspaceProperty("Workspace", '',
                                                      optional=PropertyMode.Mandatory, direction=Direction.InOut),
                              doc='The sample scatter workspace. This workspace does not contain monitors.')
 
         # The component, i.e. HAB or LAB
-        allowed_detectors = StringListValidator(["LAB", "HAB"])
-        self.declareProperty("Component", "LAB", validator=allowed_detectors, direction=Direction.Input,
+        allowed_detectors = StringListValidator([DetectorType.to_string(DetectorType.LAB),
+                                                 DetectorType.to_string(DetectorType.HAB)])
+        self.declareProperty("Component", DetectorType.to_string(DetectorType.LAB), validator=allowed_detectors,
+                             direction=Direction.Input,
                              doc="The component of the instrument which is to be masked.")
 
     def PyExec(self):
@@ -42,7 +43,7 @@ class SANSMaskWorkspace(DataProcessorAlgorithm):
         component = self._get_component()
 
         # Get the correct SANS masking strategy from the SANSMaskFactory
-        workspace = self.getProperty(SANSConstants.workspace).value
+        workspace = self.getProperty("Workspace").value
         mask_factory = MaskFactory()
         masker = mask_factory.create_masker(state, component)
 
@@ -53,16 +54,12 @@ class SANSMaskWorkspace(DataProcessorAlgorithm):
         workspace = masker.mask_workspace(mask_info, workspace, component, progress)
 
         append_to_sans_file_tag(workspace, "_masked")
-        self.setProperty(SANSConstants.workspace, workspace)
+        self.setProperty("Workspace", workspace)
         progress.report("Completed masking the workspace")
 
     def _get_component(self):
         component_as_string = self.getProperty("Component").value
-        if component_as_string == "HAB":
-            component = DetectorType.Hab
-        else:
-            component = DetectorType.Lab
-        return component
+        return DetectorType.from_string(component_as_string)
 
     def validateInputs(self):
         errors = dict()

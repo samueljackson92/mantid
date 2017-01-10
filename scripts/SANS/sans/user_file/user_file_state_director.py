@@ -1,8 +1,7 @@
 from mantid.kernel import logger
 
-from sans.common.constants import SANSConstants
-from sans.common.sans_type import (DetectorType, FitModeForMerge, RebinType, DataType,
-                                   convert_reduction_data_type_to_string, convert_detector_type_to_string)
+from sans.common.constants import
+from sans.common.enums import (DetectorType, FitModeForMerge, RebinType, DataType)
 from sans.common.file_information import find_full_file_path
 from sans.common.general_functions import (get_ranges_for_rebin_setting, get_ranges_for_rebin_array,
                                            get_ranges_from_event_slice_setting)
@@ -46,10 +45,10 @@ def log_non_existing_field(field):
 
 
 def convert_detector(detector_type):
-    if detector_type is DetectorType.Hab:
-        detector_type_as_string = SANSConstants.high_angle_bank
-    elif detector_type is DetectorType.Lab:
-        detector_type_as_string = SANSConstants.low_angle_bank
+    if detector_type is DetectorType.HAB:
+        detector_type_as_string = DetectorType.to_string(DetectorType.HAB)
+    elif detector_type is DetectorType.LAB:
+        detector_type_as_string = DetectorType.to_string(DetectorType.LAB)
     else:
         raise RuntimeError("UserFileStateDirector: Cannot convert detector {0}".format(detector_type))
     return detector_type_as_string
@@ -351,9 +350,9 @@ class UserFileStateDirectorISIS(object):
         if DetectorId.correction_x in user_file_items:
             corrections_in_x = user_file_items[DetectorId.correction_x]
             for correction_x in corrections_in_x:
-                if correction_x.detector_type is DetectorType.Hab:
+                if correction_x.detector_type is DetectorType.HAB:
                     self._move_builder.set_HAB_x_translation_correction(convert_mm_to_m(correction_x.entry))
-                elif correction_x.detector_type is DetectorType.Lab:
+                elif correction_x.detector_type is DetectorType.LAB:
                     self._move_builder.set_LAB_x_translation_correction(convert_mm_to_m(correction_x.entry))
                 else:
                     raise RuntimeError("UserFileStateDirector: An unknown detector {0} was used for the"
@@ -362,9 +361,9 @@ class UserFileStateDirectorISIS(object):
         if DetectorId.correction_y in user_file_items:
             corrections_in_y = user_file_items[DetectorId.correction_y]
             for correction_y in corrections_in_y:
-                if correction_y.detector_type is DetectorType.Hab:
+                if correction_y.detector_type is DetectorType.HAB:
                     self._move_builder.set_HAB_y_translation_correction(convert_mm_to_m(correction_y.entry))
-                elif correction_y.detector_type is DetectorType.Lab:
+                elif correction_y.detector_type is DetectorType.LAB:
                     self._move_builder.set_LAB_y_translation_correction(convert_mm_to_m(correction_y.entry))
                 else:
                     raise RuntimeError("UserFileStateDirector: An unknown detector {0} was used for the"
@@ -373,9 +372,9 @@ class UserFileStateDirectorISIS(object):
         if DetectorId.correction_z in user_file_items:
             corrections_in_z = user_file_items[DetectorId.correction_z]
             for correction_z in corrections_in_z:
-                if correction_z.detector_type is DetectorType.Hab:
+                if correction_z.detector_type is DetectorType.HAB:
                     self._move_builder.set_HAB_z_translation_correction(convert_mm_to_m(correction_z.entry))
-                elif correction_z.detector_type is DetectorType.Lab:
+                elif correction_z.detector_type is DetectorType.LAB:
                     self._move_builder.set_LAB_z_translation_correction(convert_mm_to_m(correction_z.entry))
                 else:
                     raise RuntimeError("UserFileStateDirector: An unknown detector {0} was used for the"
@@ -389,9 +388,9 @@ class UserFileStateDirectorISIS(object):
             # Should the user have chosen several values, then the last element is selected
             check_if_contains_only_one_element(rotation_correction, DetectorId.correction_rotation)
             rotation_correction = rotation_correction[-1]
-            if rotation_correction.detector_type is DetectorType.Hab:
+            if rotation_correction.detector_type is DetectorType.HAB:
                 self._move_builder.set_HAB_rotation_correction(rotation_correction.entry)
-            elif rotation_correction.detector_type is DetectorType.Lab:
+            elif rotation_correction.detector_type is DetectorType.LAB:
                 self._move_builder.set_LAB_rotation_correction(rotation_correction.entry)
             else:
                 raise RuntimeError("UserFileStateDirector: An unknown detector {0} was used for the"
@@ -403,9 +402,9 @@ class UserFileStateDirectorISIS(object):
         if DetectorId.correction_radius in user_file_items:
             radius_corrections = user_file_items[DetectorId.correction_radius]
             for radius_correction in radius_corrections:
-                if radius_correction.detector_type is DetectorType.Hab:
+                if radius_correction.detector_type is DetectorType.HAB:
                     self._move_builder.set_HAB_radius_correction(convert_mm_to_m(radius_correction.entry))
-                elif radius_correction.detector_type is DetectorType.Lab:
+                elif radius_correction.detector_type is DetectorType.LAB:
                     self._move_builder.set_LAB_radius_correction(convert_mm_to_m(radius_correction.entry))
                 else:
                     raise RuntimeError("UserFileStateDirector: An unknown detector {0} was used for the"
@@ -417,9 +416,9 @@ class UserFileStateDirectorISIS(object):
         if DetectorId.correction_translation in user_file_items:
             side_corrections = user_file_items[DetectorId.correction_translation]
             for side_correction in side_corrections:
-                if side_correction.detector_type is DetectorType.Hab:
+                if side_correction.detector_type is DetectorType.HAB:
                     self._move_builder.set_HAB_side_correction(convert_mm_to_m(side_correction.entry))
-                elif side_correction.detector_type is DetectorType.Lab:
+                elif side_correction.detector_type is DetectorType.LAB:
                     self._move_builder.set_LAB_side_correction(convert_mm_to_m(side_correction.entry))
                 else:
                     raise RuntimeError("UserFileStateDirector: An unknown detector {0} was used for the"
@@ -431,9 +430,9 @@ class UserFileStateDirectorISIS(object):
         if DetectorId.correction_x_tilt in user_file_items:
             tilt_correction = user_file_items[DetectorId.correction_x_tilt]
             tilt_correction = tilt_correction[-1]
-            if tilt_correction.detector_type is DetectorType.Hab:
+            if tilt_correction.detector_type is DetectorType.HAB:
                 self._move_builder.set_HAB_x_tilt_correction(tilt_correction.entry)
-            elif tilt_correction.detector_type is DetectorType.Lab:
+            elif tilt_correction.detector_type is DetectorType.LAB:
                 self._move_builder.set_LAB_side_correction(tilt_correction.entry)
             else:
                 raise RuntimeError("UserFileStateDirector: An unknown detector {0} was used for the"
@@ -442,9 +441,9 @@ class UserFileStateDirectorISIS(object):
         if DetectorId.correction_y_tilt in user_file_items:
             tilt_correction = user_file_items[DetectorId.correction_y_tilt]
             tilt_correction = tilt_correction[-1]
-            if tilt_correction.detector_type is DetectorType.Hab:
+            if tilt_correction.detector_type is DetectorType.HAB:
                 self._move_builder.set_HAB_y_tilt_correction(tilt_correction.entry)
-            elif tilt_correction.detector_type is DetectorType.Lab:
+            elif tilt_correction.detector_type is DetectorType.LAB:
                 self._move_builder.set_LAB_side_correction(tilt_correction.entry)
             else:
                 raise RuntimeError("UserFileStateDirector: An unknown detector {0} was used for the"
@@ -476,9 +475,9 @@ class UserFileStateDirectorISIS(object):
         if SetId.centre in user_file_items:
             beam_centres = user_file_items[SetId.centre]
             beam_centres_for_hab = [beam_centre for beam_centre in beam_centres if beam_centre.detector_type
-                                    is DetectorType.Hab]
+                                    is DetectorType.HAB]
             beam_centres_for_lab = [beam_centre for beam_centre in beam_centres if beam_centre.detector_type
-                                    is DetectorType.Lab]
+                                    is DetectorType.LAB]
             for beam_centre in beam_centres_for_lab:
                 pos1 = beam_centre.pos1
                 pos2 = beam_centre.pos2
@@ -642,10 +641,10 @@ class UserFileStateDirectorISIS(object):
                     raise RuntimeError("UserFileStateDirector: You specified a general time mask with a start time {0}"
                                        " which is larger than the stop time {1} of the mask. This is not"
                                        " valid.".format(times.start, times.stop))
-                if times.detector_type is DetectorType.Hab:
+                if times.detector_type is DetectorType.HAB:
                     start_times_hab.append(times.start)
                     stop_times_hab.append(times.stop)
-                elif times.detector_type is DetectorType.Lab:
+                elif times.detector_type is DetectorType.LAB:
                     start_times_hab.append(times.start)
                     stop_times_hab.append(times.stop)
                 else:
@@ -712,9 +711,9 @@ class UserFileStateDirectorISIS(object):
             entry_hab = []
             entry_lab = []
             for single_vertical_strip_mask in single_vertical_strip_masks:
-                if single_vertical_strip_mask.detector_type is DetectorType.Hab:
+                if single_vertical_strip_mask.detector_type is DetectorType.HAB:
                     entry_hab.append(single_vertical_strip_mask.entry)
-                elif single_vertical_strip_mask.detector_type is DetectorType.Lab:
+                elif single_vertical_strip_mask.detector_type is DetectorType.LAB:
                     entry_lab.append(single_vertical_strip_mask.entry)
                 else:
                     raise RuntimeError("UserFileStateDirector: The vertical single strip mask {0} has an unknown "
@@ -736,10 +735,10 @@ class UserFileStateDirectorISIS(object):
             start_lab = []
             stop_lab = []
             for range_vertical_strip_mask in range_vertical_strip_masks:
-                if range_vertical_strip_mask.detector_type is DetectorType.Hab:
+                if range_vertical_strip_mask.detector_type is DetectorType.HAB:
                     start_hab.append(range_vertical_strip_mask.start)
                     stop_hab.append(range_vertical_strip_mask.stop)
-                elif range_vertical_strip_mask.detector_type is DetectorType.Lab:
+                elif range_vertical_strip_mask.detector_type is DetectorType.LAB:
                     start_lab.append(range_vertical_strip_mask.start)
                     stop_lab.append(range_vertical_strip_mask.stop)
                 else:
@@ -764,9 +763,9 @@ class UserFileStateDirectorISIS(object):
             entry_hab = []
             entry_lab = []
             for single_horizontal_strip_mask in single_horizontal_strip_masks:
-                if single_horizontal_strip_mask.detector_type is DetectorType.Hab:
+                if single_horizontal_strip_mask.detector_type is DetectorType.HAB:
                     entry_hab.append(single_horizontal_strip_mask.entry)
-                elif single_horizontal_strip_mask.detector_type is DetectorType.Lab:
+                elif single_horizontal_strip_mask.detector_type is DetectorType.LAB:
                     entry_lab.append(single_horizontal_strip_mask.entry)
                 else:
                     raise RuntimeError("UserFileStateDirector: The horizontal single strip mask {0} has an unknown "
@@ -788,10 +787,10 @@ class UserFileStateDirectorISIS(object):
             start_lab = []
             stop_lab = []
             for range_horizontal_strip_mask in range_horizontal_strip_masks:
-                if range_horizontal_strip_mask.detector_type is DetectorType.Hab:
+                if range_horizontal_strip_mask.detector_type is DetectorType.HAB:
                     start_hab.append(range_horizontal_strip_mask.start)
                     stop_hab.append(range_horizontal_strip_mask.stop)
-                elif range_horizontal_strip_mask.detector_type is DetectorType.Lab:
+                elif range_horizontal_strip_mask.detector_type is DetectorType.LAB:
                     start_lab.append(range_horizontal_strip_mask.start)
                     stop_lab.append(range_horizontal_strip_mask.stop)
                 else:
@@ -828,12 +827,12 @@ class UserFileStateDirectorISIS(object):
                                        "The values are horizontal_start {0}; horizontal_stop {1}; vertical_start {2};"
                                        " vertical_stop {3}".format(block.horizontal1, block.horizontal2,
                                                                    block.vertical1, block.vertical2))
-                if block.detector_type is DetectorType.Hab:
+                if block.detector_type is DetectorType.HAB:
                     horizontal_start_hab.append(block.horizontal1)
                     horizontal_stop_hab.append(block.horizontal2)
                     vertical_start_hab.append(block.vertical1)
                     vertical_stop_hab.append(block.vertical2)
-                elif block.detector_type is DetectorType.Lab:
+                elif block.detector_type is DetectorType.LAB:
                     horizontal_start_lab.append(block.horizontal1)
                     horizontal_stop_lab.append(block.horizontal2)
                     vertical_start_lab.append(block.vertical1)
@@ -861,10 +860,10 @@ class UserFileStateDirectorISIS(object):
             horizontal_lab = []
             vertical_lab = []
             for block_cross in block_crosses:
-                if block_cross.detector_type is DetectorType.Hab:
+                if block_cross.detector_type is DetectorType.HAB:
                     horizontal_hab.append(block_cross.horizontal)
                     vertical_hab.append(block_cross.vertical)
-                elif block_cross.detector_type is DetectorType.Lab:
+                elif block_cross.detector_type is DetectorType.LAB:
                     horizontal_lab.append(block_cross.horizontal)
                     vertical_lab.append(block_cross.vertical)
                 else:
@@ -1172,8 +1171,8 @@ class UserFileStateDirectorISIS(object):
         # Get the flat/flood files. There can be entries for LAB and HAB.
         if MonId.flat in user_file_items:
             mon_flat = user_file_items[MonId.flat]
-            hab_flat_entries = [item for item in mon_flat if item.detector_type is DetectorType.Hab]
-            lab_flat_entries = [item for item in mon_flat if item.detector_type is DetectorType.Lab]
+            hab_flat_entries = [item for item in mon_flat if item.detector_type is DetectorType.HAB]
+            lab_flat_entries = [item for item in mon_flat if item.detector_type is DetectorType.LAB]
             if hab_flat_entries:
                 hab_flat_entry = hab_flat_entries[-1]
                 self._wavelength_and_pixel_adjustment_builder.set_HAB_pixel_adjustment_file(hab_flat_entry.file_path)
@@ -1185,8 +1184,8 @@ class UserFileStateDirectorISIS(object):
         # Get the direct files. There can be entries for LAB and HAB.
         if MonId.direct in user_file_items:
             mon_direct = user_file_items[MonId.direct]
-            hab_direct_entries = [item for item in mon_direct if item.detector_type is DetectorType.Hab]
-            lab_direct_entries = [item for item in mon_direct if item.detector_type is DetectorType.Lab]
+            hab_direct_entries = [item for item in mon_direct if item.detector_type is DetectorType.HAB]
+            lab_direct_entries = [item for item in mon_direct if item.detector_type is DetectorType.LAB]
             if hab_direct_entries:
                 hab_direct_entry = hab_direct_entries[-1]
                 self._wavelength_and_pixel_adjustment_builder.set_HAB_wavelength_adjustment_file(

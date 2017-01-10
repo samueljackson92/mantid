@@ -6,8 +6,8 @@ from mantid.kernel import (Direction, StringListValidator, PropertyManagerProper
 from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, AlgorithmFactory, PropertyMode, Progress,
                         WorkspaceUnitValidator)
 
-from sans.common.constants import SANSConstants
-from sans.common.sans_type import (ReductionDimensionality, RangeStepType)
+from sans.common.constants import EMPTY_NAME
+from sans.common.enums import (ReductionDimensionality, RangeStepType)
 from sans.common.general_functions import (create_unmanaged_algorithm, append_to_sans_file_tag)
 from sans.state.state_base import create_deserialized_sans_state_from_property_manager
 from sans.algorithm_detail.q_resolution_calculator import QResolutionCalculatorFactory
@@ -31,7 +31,7 @@ class SANSConvertToQ(DataProcessorAlgorithm):
         # Main workspace
         workspace_validator = CompositeValidator()
         workspace_validator.add(WorkspaceUnitValidator("Wavelength"))
-        self.declareProperty(MatrixWorkspaceProperty(SANSConstants.input_workspace, '',
+        self.declareProperty(MatrixWorkspaceProperty("InputWorkspace", '',
                                                      optional=PropertyMode.Mandatory, direction=Direction.Input,
                                                      validator=workspace_validator),
                              doc='The main input workspace.')
@@ -62,7 +62,7 @@ class SANSConvertToQ(DataProcessorAlgorithm):
         # ----------
         # Output
         # ----------
-        self.declareProperty(MatrixWorkspaceProperty(SANSConstants.output_workspace, '',
+        self.declareProperty(MatrixWorkspaceProperty("OutputWorkspace", '',
                                                      optional=PropertyMode.Mandatory, direction=Direction.Output),
                              doc="The reduced workspace")
 
@@ -81,12 +81,12 @@ class SANSConvertToQ(DataProcessorAlgorithm):
 
         # Set the output
         append_to_sans_file_tag(output_workspace, "_convertq")
-        self.setProperty(SANSConstants.output_workspace, output_workspace)
+        self.setProperty("OutputWorkspace", output_workspace)
         if sum_of_counts_workspace and sum_of_norms_workspace:
             self._set_partial_workspaces(sum_of_counts_workspace, sum_of_norms_workspace)
 
     def _run_q_1d(self, state):
-        data_workspace = self.getProperty(SANSConstants.input_workspace).value
+        data_workspace = self.getProperty("InputWorkspace").value
         wavelength_adjustment_workspace = self.getProperty("InputWorkspaceWavelengthAdjustment").value
         pixel_adjustment_workspace = self.getProperty("InputWorkspacePixelAdjustment").value
         wavelength_and_pixel_adjustment_workspace = self.getProperty("InputWorkspaceWavelengthAndPixelAdjustment").value
@@ -108,7 +108,7 @@ class SANSConvertToQ(DataProcessorAlgorithm):
 
         q1d_name = "Q1D"
         q1d_options = {"DetBankWorkspace": data_workspace,
-                       SANSConstants.output_workspace: SANSConstants.dummy,
+                       "OutputWorkspace": EMPTY_NAME,
                        "OutputBinning": q_binning,
                        "AccountForGravity": use_gravity,
                        "RadiusCut": radius_cutoff,
@@ -126,7 +126,7 @@ class SANSConvertToQ(DataProcessorAlgorithm):
 
         q1d_alg = create_unmanaged_algorithm(q1d_name, **q1d_options)
         q1d_alg.execute()
-        reduced_workspace = q1d_alg.getProperty(SANSConstants.output_workspace).value
+        reduced_workspace = q1d_alg.getProperty("OutputWorkspace").value
 
         # Get the partial workspaces
         sum_of_counts_workspace, sum_of_norms_workspace = self._get_partial_output(output_parts, q1d_alg,
@@ -144,7 +144,7 @@ class SANSConvertToQ(DataProcessorAlgorithm):
         @return: the reduced workspace, the sum of counts workspace, the sum of norms workspace or
                  the reduced workspace, None, None
         """
-        data_workspace = self.getProperty(SANSConstants.input_workspace).value
+        data_workspace = self.getProperty("InputWorkspace").value
         wavelength_adjustment_workspace = self.getProperty("InputWorkspaceWavelengthAdjustment").value
         pixel_adjustment_workspace = self.getProperty("InputWorkspacePixelAdjustment").value
 
@@ -161,8 +161,8 @@ class SANSConvertToQ(DataProcessorAlgorithm):
         gravity_extra_length = convert_to_q.gravity_extra_length
 
         qxy_name = "Qxy"
-        qxy_options = {SANSConstants.input_workspace: data_workspace,
-                       SANSConstants.output_workspace: SANSConstants.dummy,
+        qxy_options = {"InputWorkspace": data_workspace,
+                       "OutputWorkspace": EMPTY_NAME,
                        "MaxQxy": max_q_xy,
                        "DeltaQ": delta_q,
                        "AccountForGravity": use_gravity,
@@ -178,7 +178,7 @@ class SANSConvertToQ(DataProcessorAlgorithm):
         qxy_alg = create_unmanaged_algorithm(qxy_name, **qxy_options)
         qxy_alg.execute()
 
-        reduced_workspace = qxy_alg.getProperty(SANSConstants.output_workspace).value
+        reduced_workspace = qxy_alg.getProperty("OutputWorkspace").value
         reduced_workspace = self._replace_special_values(reduced_workspace)
 
         # Get the partial workspaces
@@ -241,7 +241,7 @@ class SANSConvertToQ(DataProcessorAlgorithm):
                                                      optional=PropertyMode.Optional, direction=Direction.Output),
                              doc="The sum of the normalizations workspace.")
 
-        output_name = self.getProperty(SANSConstants.output_workspace).name
+        output_name = self.getProperty("OutputWorkspace").name
         sum_of_counts_workspace_name = output_name + "_sumOfCounts"
         sum_of_norms_workspace_name = output_name + "_sumOfNormFactors"
 
@@ -253,13 +253,13 @@ class SANSConvertToQ(DataProcessorAlgorithm):
 
     def _replace_special_values(self, workspace):
         replace_name = "ReplaceSpecialValues"
-        replace_options = {SANSConstants.input_workspace: workspace,
-                           SANSConstants.output_workspace: SANSConstants.dummy,
+        replace_options = {"InputWorkspace": workspace,
+                           "OutputWorkspace": EMPTY_NAME,
                            "NaNValue": 0.,
                            "InfinityValue": 0.}
         replace_alg = create_unmanaged_algorithm(replace_name, **replace_options)
         replace_alg.execute()
-        return replace_alg.getProperty(SANSConstants.output_workspace).value
+        return replace_alg.getProperty("OutputWorkspace").value
 
     def validateInputs(self):
         errors = dict()

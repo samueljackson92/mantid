@@ -1,5 +1,5 @@
 from math import (isinf, isnan)
-from sans.common.constants import SANSConstants
+from sans.common.constants import EMPTY_NAME
 from sans.common.general_functions import create_unmanaged_algorithm
 
 
@@ -41,13 +41,13 @@ def strip_end_nans(workspace):
 
     # Crop the workspace in place
     crop_name = "CropWorkspace"
-    crop_options = {SANSConstants.input_workspace: workspace,
+    crop_options = {"InputWorkspace": workspace,
                     "XMin": start_q,
                     "XMax": end_q}
     crop_alg = create_unmanaged_algorithm(crop_name, **crop_options)
-    crop_alg.setProperty(SANSConstants.output_workspace, "dummy")
+    crop_alg.setProperty("OutputWorkspace", EMPTY_NAME)
     crop_alg.execute()
-    ws = crop_alg.getProperty(SANSConstants.output_workspace).value
+    ws = crop_alg.getProperty("OutputWorkspace").value
     return ws
 
 

@@ -7,10 +7,10 @@ from sans.command_interface.command_interface_functions import (print_message, w
 from sans.command_interface.command_interface_state_director import (CommandInterfaceStateDirector, DataCommand,
                                                                      DataCommandId, NParameterCommand, NParameterCommandId,
                                                                      FitData)
-from sans.common.constants import SANSConstants
+from sans.common.constants import ALL_PERIODS
 from sans.common.file_information import (find_sans_file, find_full_file_path)
-from sans.common.sans_type import (RebinType, DetectorType, FitType, RangeStepType, ReductionDimensionality,
-                                   ISISReductionMode, SANSFacility)
+from sans.common.enums import (RebinType, DetectorType, FitType, RangeStepType, ReductionDimensionality,
+                               ISISReductionMode, SANSFacility)
 from sans.common.general_functions import (convert_bank_name_to_detector_type_isis, create_unmanaged_algorithm)
 
 
@@ -127,7 +127,7 @@ def FindBeamCentre(rlow, rupp, MaxIter=10, xstart=None, ystart=None, tolerance=1
 # ----------------------------------------------------------------------------------------------------------------------
 # Data related commands
 # ----------------------------------------------------------------------------------------------------------------------
-def AssignSample(sample_run, reload=True, period=SANSConstants.ALL_PERIODS):
+def AssignSample(sample_run, reload=True, period=ALL_PERIODS):
     """
     Sets the sample scatter data.
 
@@ -137,11 +137,11 @@ def AssignSample(sample_run, reload=True, period=SANSConstants.ALL_PERIODS):
     """
     _ = reload
     # First of all the default for all periods used to be -1. If we encounter this then set periods to ALL_PERIODS
-    period = SANSConstants.ALL_PERIODS if period == -1 else period
+    period = ALL_PERIODS if period == -1 else period
 
     # Print the output
     message = 'AssignSample("' + str(sample_run) + '"'
-    if period != SANSConstants.ALL_PERIODS:
+    if period != ALL_PERIODS:
         message += ', ' + str(period)
     message += ')'
     print_message(message)
@@ -154,7 +154,7 @@ def AssignSample(sample_run, reload=True, period=SANSConstants.ALL_PERIODS):
     director.add_command(data_command)
 
 
-def AssignCan(can_run, reload=True, period=SANSConstants.ALL_PERIODS):
+def AssignCan(can_run, reload=True, period=ALL_PERIODS):
     """
     Sets the can scatter data.
 
@@ -164,11 +164,11 @@ def AssignCan(can_run, reload=True, period=SANSConstants.ALL_PERIODS):
     """
     _ = reload
     # First of all the default for all periods used to be -1. If we encounter this then set periods to ALL_PERIODS
-    period = SANSConstants.ALL_PERIODS if period == -1 else period
+    period = ALL_PERIODS if period == -1 else period
 
     # Print the output
     message = 'AssignCan("' + str(can_run) + '"'
-    if period != SANSConstants.ALL_PERIODS:
+    if period != ALL_PERIODS:
         message += ', ' + str(period)
     message += ')'
     print_message(message)
@@ -182,7 +182,7 @@ def AssignCan(can_run, reload=True, period=SANSConstants.ALL_PERIODS):
 
 
 def TransmissionSample(sample, direct, reload=True,
-                       period_t=SANSConstants.ALL_PERIODS, period_d=SANSConstants.ALL_PERIODS):
+                       period_t=ALL_PERIODS, period_d=ALL_PERIODS):
     """
     Specify the transmission and direct runs for the sample.
 
@@ -194,8 +194,8 @@ def TransmissionSample(sample, direct, reload=True,
     """
     _ = reload
     # First of all the default for all periods used to be -1. If we encounter this then set periods to ALL_PERIODS
-    period_t = SANSConstants.ALL_PERIODS if period_t == -1 else period_t
-    period_d = SANSConstants.ALL_PERIODS if period_d == -1 else period_d
+    period_t = ALL_PERIODS if period_t == -1 else period_t
+    period_d = ALL_PERIODS if period_d == -1 else period_d
 
     print_message('TransmissionSample("' + str(sample) + '","' + str(direct) + '")')
 
@@ -222,8 +222,8 @@ def TransmissionCan(can, direct, reload=True, period_t=-1, period_d=-1):
     """
     _ = reload
     # First of all the default for all periods used to be -1. If we encounter this then set periods to ALL_PERIODS
-    period_t = SANSConstants.ALL_PERIODS if period_t == -1 else period_t
-    period_d = SANSConstants.ALL_PERIODS if period_d == -1 else period_d
+    period_t = ALL_PERIODS if period_t == -1 else period_t
+    period_d = ALL_PERIODS if period_d == -1 else period_d
 
     print_message('TransmissionCan("' + str(can) + '","' + str(direct) + '")')
 

@@ -5,9 +5,9 @@ import os
 import numpy as np
 from sans.test_helper.test_director import TestDirector
 from sans.state.wavelength_and_pixel_adjustment import get_wavelength_and_pixel_adjustment_builder
-from sans.common.sans_type import (RebinType, RangeStepType, convert_detector_type_to_string, DetectorType)
+from sans.common.enums import (RebinType, RangeStepType, DetectorType)
 from sans.common.general_functions import (create_unmanaged_algorithm)
-from sans.common.constants import SANSConstants
+from sans.common.constants import EMPTY_NAME
 
 
 class SANSCalculateTransmissionTest(unittest.TestCase):
@@ -75,10 +75,10 @@ class SANSCalculateTransmissionTest(unittest.TestCase):
                           "XMax": 11,
                           "BinWidth": 2,
                           "XUnit": "Wavelength",
-                          SANSConstants.output_workspace: SANSConstants.dummy}
+                          "OutputWorkspace": EMPTY_NAME}
         create_alg = create_unmanaged_algorithm(create_name, **create_options)
         create_alg.execute()
-        workspace = create_alg.getProperty(SANSConstants.output_workspace).value
+        workspace = create_alg.getProperty("OutputWorkspace").value
         data_y = workspace.dataY(0)
         for index in range(len(data_y)):
             data_y[index] = data[index]
@@ -93,9 +93,9 @@ class SANSCalculateTransmissionTest(unittest.TestCase):
                           "OutputWorkspaceWavelengthAdjustment": "out_wavelength",
                           "OutputWorkspacePixelAdjustment": "out_pixels"}
         if is_lab:
-            adjust_options.update({"Component": convert_detector_type_to_string(DetectorType.Lab)})
+            adjust_options.update({"Component": DetectorType.to_string(DetectorType.Lab)})
         else:
-            adjust_options.update({"Component": convert_detector_type_to_string(DetectorType.Hab)})
+            adjust_options.update({"Component": DetectorType.to_string(DetectorType.Hab)})
         adjust_alg = create_unmanaged_algorithm(adjust_name, **adjust_options)
         adjust_alg.execute()
         wavelength_adjustment = adjust_alg.getProperty("OutputWorkspaceWavelengthAdjustment").value

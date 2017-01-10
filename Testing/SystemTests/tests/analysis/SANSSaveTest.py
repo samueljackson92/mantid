@@ -5,7 +5,7 @@ import unittest
 import stresstesting
 
 from sans.common.general_functions import create_unmanaged_algorithm
-from sans.common.constants import SANSConstants
+from sans.common.constants import EMPTY_NAME
 
 
 # -----------------------------------------------
@@ -18,28 +18,28 @@ class SANSSaveTest(unittest.TestCase):
         create_options = {"Instrument": "LARMOR",
                           "BinParams": '1,10,1000',
                           "UnitX": 'MomentumTransfer',
-                          SANSConstants.output_workspace: SANSConstants.dummy}
+                          "OutputWorkspace": EMPTY_NAME}
         create_alg = create_unmanaged_algorithm(create_name, **create_options)
         create_alg.execute()
-        workspace = create_alg.getProperty(SANSConstants.output_workspace).value
+        workspace = create_alg.getProperty("OutputWorkspace").value
 
         crop_name = "CropWorkspace"
-        crop_options = {SANSConstants.input_workspace: workspace,
-                        SANSConstants.output_workspace: SANSConstants.dummy,
+        crop_options = {"InputWorkspace": workspace,
+                        "OutputWorkspace": EMPTY_NAME,
                         "EndWorkspaceIndex": 0}
         crop_alg = create_unmanaged_algorithm(crop_name, **crop_options)
         crop_alg.execute()
-        workspace = crop_alg.getProperty(SANSConstants.output_workspace).value
+        workspace = crop_alg.getProperty("OutputWorkspace").value
 
         if convert_to_numeric_axis:
             convert_name = "ConvertSpectrumAxis"
-            convert_options = {SANSConstants.input_workspace: workspace,
-                               SANSConstants.output_workspace: SANSConstants.dummy,
+            convert_options = {"InputWorkspace": workspace,
+                               "OutputWorkspace": EMPTY_NAME,
                                "Target": 'ElasticQ',
                                "EFixed": 1}
             convert_alg = create_unmanaged_algorithm(convert_name, **convert_options)
             convert_alg.execute()
-            workspace = convert_alg.getProperty(SANSConstants.output_workspace).value
+            workspace = convert_alg.getProperty("OutputWorkspace").value
 
         if with_zero_errors:
             errors = workspace.dataE(0)
@@ -162,11 +162,11 @@ class SANSSaveTest(unittest.TestCase):
         file_name = os.path.join(mantid.config.getString('defaultsave.directory'), "sample_sans_save_file.nxs")
 
         load_name = "LoadNexusProcessed"
-        load_options = {SANSConstants.file_name: file_name,
-                        SANSConstants.output_workspace: SANSConstants.dummy}
+        load_options = {"Filename": file_name,
+                        "OutputWorkspace": EMPTY_NAME}
         load_alg = create_unmanaged_algorithm(load_name, **load_options)
         load_alg.execute()
-        reloaded_workspace = load_alg.getProperty(SANSConstants.output_workspace).value
+        reloaded_workspace = load_alg.getProperty("OutputWorkspace").value
         errors = reloaded_workspace.dataE(0)
         # Make sure that the errors are not zero
         self.assertTrue(errors[0] > 1.0)

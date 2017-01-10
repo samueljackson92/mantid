@@ -1,6 +1,6 @@
-from sans.common.constants import SANSConstants
+from sans.common.constants import EMPTY_NAME
 from sans.common.general_functions import create_unmanaged_algorithm
-from sans.common.sans_type import (ISISReductionMode, convert_detector_type_to_string, DetectorType)
+from sans.common.enums import (ISISReductionMode, DetectorType)
 from sans.state.state_functions import (get_reduced_can_workspace_from_ads, write_hash_into_reduced_can_workspace)
 from sans.algorithm_detail.strip_end_nans_and_infs import strip_end_nans
 from sans.algorithm_detail.merge_reductions import (MergeFactory, is_sample, is_can)
@@ -32,15 +32,15 @@ def run_core_reduction(reduction_alg, reduction_setting_bundle, use_optimization
     if reduction_setting_bundle.direct_workspace is not None:
         reduction_alg.setProperty("DirectWorkspace", reduction_setting_bundle.direct_workspace)
 
-    reduction_alg.setProperty(SANSConstants.output_workspace, SANSConstants.dummy)
-    reduction_alg.setProperty("SumOfCounts", SANSConstants.dummy)
-    reduction_alg.setProperty("SumOfNormFactors", SANSConstants.dummy)
+    reduction_alg.setProperty("OutputWorkspace", EMPTY_NAME)
+    reduction_alg.setProperty("SumOfCounts", EMPTY_NAME)
+    reduction_alg.setProperty("SumOfNormFactors", EMPTY_NAME)
 
     # Run the reduction core
     reduction_alg.execute()
 
     # Get the results
-    output_workspace = reduction_alg.getProperty(SANSConstants.output_workspace).value
+    output_workspace = reduction_alg.getProperty("OutputWorkspace").value
     output_workspace_count = reduction_alg.getProperty("SumOfCounts").value
     output_workspace_norm = reduction_alg.getProperty("SumOfNormFactors").value
 
@@ -107,10 +107,10 @@ def perform_can_subtraction(sample, can):
     subtraction_name = "Minus"
     subtraction_options = {"LHSWorkspace": sample,
                            "RHSWorkspace": can,
-                           SANSConstants.output_workspace: SANSConstants.dummy}
+                           "OutputWorkspace": EMPTY_NAME}
     subtraction_alg = create_unmanaged_algorithm(subtraction_name, **subtraction_options)
     subtraction_alg.execute()
-    output_workspace = subtraction_alg.getProperty(SANSConstants.output_workspace).value
+    output_workspace = subtraction_alg.getProperty("OutputWorkspace").value
 
     # If the workspace is 1D and contains Q resolution (i.e. DX values), then we need to make sure that the
     # resulting output workspace contains the correct values
@@ -127,7 +127,7 @@ def correct_q_resolution_for_can(sample_workspace, can_workspace, subtracted_wor
     would be very small any way). The Q resolution functionality only exists currently
     for 1D, ie when only one spectrum is present.
     """
-    _ = can_workspace # noqa
+    _ = can_workspace  # noqa
     if sample_workspace.getNumberHistograms() == 1 and sample_workspace.hasDx(0):
         subtracted_workspace.setDx(0, sample_workspace.dataDx(0))
 
@@ -177,9 +177,9 @@ def get_component_to_reduce(reduction_setting_bundle):
     reduction_mode = reduction_setting_bundle.reduction_mode
 
     if reduction_mode is ISISReductionMode.Lab:
-        reduction_mode_setting = convert_detector_type_to_string(DetectorType.Lab)
+        reduction_mode_setting = DetectorType.to_string(DetectorType.LAB)
     elif reduction_mode is ISISReductionMode.Hab:
-        reduction_mode_setting = convert_detector_type_to_string(DetectorType.Hab)
+        reduction_mode_setting = DetectorType.to_string(DetectorType.HAB)
     else:
         raise RuntimeError("SingleExecution: An unknown reduction mode was selected: {}. "
                            "Currently only Hab and Lab are supported.".format(reduction_mode))

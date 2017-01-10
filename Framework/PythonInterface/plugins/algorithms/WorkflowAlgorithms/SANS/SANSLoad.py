@@ -8,7 +8,7 @@ from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, Algorit
                         WorkspaceProperty)
 
 from sans.state.state_base import create_deserialized_sans_state_from_property_manager
-from sans.common.sans_type import SANSDataType
+from sans.common.enums import SANSDataType
 from sans.common.general_functions import create_unmanaged_algorithm
 from sans.algorithm_detail.load_data import SANSLoadDataFactory
 

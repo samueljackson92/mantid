@@ -8,7 +8,7 @@ from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, Algorit
 
 from sans.algorithm_detail.move_workspaces import SANSMoveFactory
 from sans.state.state_base import create_deserialized_sans_state_from_property_manager
-from sans.common.constants import SANSConstants
+from sans.common.enums import DetectorType
 
 
 class MoveType(object):
@@ -34,9 +34,9 @@ def get_detector_for_component(move_info, component):
     detectors = move_info.detectors
     selected_detector = None
     if component == "HAB":
-        selected_detector = detectors[SANSConstants.high_angle_bank]
+        selected_detector = detectors[DetectorType.to_string(DetectorType.HAB)]
     elif component == "LAB":
-        selected_detector = detectors[SANSConstants.low_angle_bank]
+        selected_detector = detectors[DetectorType.to_string(DetectorType.LAB)]
     else:
         # Check if the component is part of the detector names
         for _, detector in detectors.items():
@@ -53,7 +53,8 @@ class SANSMove(DataProcessorAlgorithm):
         return 'Moves SANS workspaces.'
 
     def _make_move_type_map(self):
-        return {'InitialMove': MoveType.InitialMove, 'ElementaryDisplacement': MoveType.ElementaryDisplacement,
+        return {'InitialMove': MoveType.InitialMove,
+                'ElementaryDisplacement': MoveType.ElementaryDisplacement,
                 'SetToZero': MoveType.SetToZero}
 
     def PyInit(self):
@@ -62,7 +63,7 @@ class SANSMove(DataProcessorAlgorithm):
                              doc='A property manager which fulfills the SANSState contract.')
 
         # Workspace which is to be moved
-        self.declareProperty(MatrixWorkspaceProperty(SANSConstants.workspace, '',
+        self.declareProperty(MatrixWorkspaceProperty("Workspace", '',
                                                      optional=PropertyMode.Mandatory, direction=Direction.InOut),
                              doc='The sample scatter workspace. This workspace does not contain monitors.')
 
@@ -88,7 +89,7 @@ class SANSMove(DataProcessorAlgorithm):
         state = create_deserialized_sans_state_from_property_manager(state_property_manager)
 
         # Get the correct SANS move strategy from the SANSMoveFactory
-        workspace = self.getProperty(SANSConstants.workspace).value
+        workspace = self.getProperty("Workspace").value
         move_factory = SANSMoveFactory()
         mover = move_factory.create_mover(workspace)
 
@@ -157,7 +158,7 @@ class SANSMove(DataProcessorAlgorithm):
 
             # If the detector is unknown take the position from the LAB
             if selected_detector is None:
-                selected_detector = detectors[SANSConstants.low_angle_bank]
+                selected_detector = detectors[DetectorType.to_string(DetectorType.LAB)]
             pos1 = selected_detector.sample_centre_pos1
             pos2 = selected_detector.sample_centre_pos2
             coordinates = [pos1, pos2]

@@ -1,5 +1,5 @@
 from collections import namedtuple
-from sans.common.sans_type import sans_type
+from sans.common.enums import serializable_enum
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -47,89 +47,90 @@ det_fit_range = namedtuple('det_fit_range', 'start, stop, use_fit')
 
 
 # --- DET
-@sans_type("reduction_mode", "rescale", "shift", "rescale_fit", "shift_fit", "correction_x", "correction_y",
-           "correction_z", "correction_rotation", "correction_radius", "correction_translation", "correction_x_tilt",
-           "correction_y_tilt")
+@serializable_enum("reduction_mode", "rescale", "shift", "rescale_fit", "shift_fit", "correction_x", "correction_y",
+                   "correction_z", "correction_rotation", "correction_radius", "correction_translation",
+                   "correction_x_tilt", "correction_y_tilt")
 class DetectorId(object):
     pass
 
 
 # --- LIMITS
-@sans_type("angle", "events_binning", "events_binning_range", "radius_cut", "wavelength_cut", "radius", "q",
-           "qxy", "wavelength")
+@serializable_enum("angle", "events_binning", "events_binning_range", "radius_cut", "wavelength_cut", "radius", "q",
+                   "qxy", "wavelength")
 class LimitsId(object):
     pass
 
 
 # --- MASK
-@sans_type("line", "time", "time_detector", "clear_detector_mask", "clear_time_mask", "single_spectrum_mask",
-           "spectrum_range_mask", "vertical_single_strip_mask", "vertical_range_strip_mask", "file",
-           "horizontal_single_strip_mask", "horizontal_range_strip_mask", "block", "block_cross")
+@serializable_enum("line", "time", "time_detector", "clear_detector_mask", "clear_time_mask", "single_spectrum_mask",
+                   "spectrum_range_mask", "vertical_single_strip_mask", "vertical_range_strip_mask", "file",
+                   "horizontal_single_strip_mask", "horizontal_range_strip_mask", "block", "block_cross")
 class MaskId(object):
     pass
 
 
 # --- SAMPLE
-@sans_type("path", "offset")
+@serializable_enum("path", "offset")
 class SampleId(object):
     pass
 
 
 # --- SET
-@sans_type("scales", "centre")
+@serializable_enum("scales", "centre")
 class SetId(object):
     pass
 
 
 # --- TRANS
-@sans_type("spec", "spec_shift", "radius", "roi", "mask", "sample_workspace", "can_workspace")
+@serializable_enum("spec", "spec_shift", "radius", "roi", "mask", "sample_workspace", "can_workspace")
 class TransId(object):
     pass
 
 
 # --- TUBECALIBFILE
-@sans_type("file")
+@serializable_enum("file")
 class TubeCalibrationFileId(object):
     pass
 
 
 # -- QRESOLUTION
-@sans_type("on", "delta_r", "collimation_length", "a1", "a2", "h1", "w1", "h2", "w2", "moderator")
+@serializable_enum("on", "delta_r", "collimation_length", "a1", "a2", "h1", "w1", "h2", "w2", "moderator")
 class QResolutionId(object):
     pass
 
 
 # --- FIT
-@sans_type("clear", "monitor_times", "general")
+@serializable_enum("clear", "monitor_times", "general")
 class FitId(object):
     pass
 
 
 # --- GRAVITY
-@sans_type("on_off", "extra_length")
+@serializable_enum("on_off", "extra_length")
 class GravityId(object):
     pass
 
 
 # --- MON
-@sans_type("length", "direct", "flat", "hab", "spectrum", "spectrum_trans", "interpolate")
+@serializable_enum("length", "direct", "flat", "hab", "spectrum", "spectrum_trans", "interpolate")
 class MonId(object):
     pass
 
 
 # --- PRINT
-@sans_type("print_line")
+@serializable_enum("print_line")
 class PrintId(object):
     pass
 
 
 # -- BACK
-@sans_type("all_monitors", "single_monitors", "monitor_off", "trans")
+@serializable_enum("all_monitors", "single_monitors", "monitor_off", "trans")
 class BackId(object):
     pass
 
 
 # -- OTHER - not settable in user file
-@sans_type("reduction_dimensionality", "use_full_wavelength_range", "event_slices", "use_compatibility_mode")
+@serializable_enum("reduction_dimensionality", "use_full_wavelength_range", "event_slices",
+                   "use_compatibility_mode")
 class OtherId(object):
     pass

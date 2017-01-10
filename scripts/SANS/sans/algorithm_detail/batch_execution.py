@@ -3,8 +3,8 @@ from collections import namedtuple
 from mantid.api import AnalysisDataService
 
 from sans.common.general_functions import create_unmanaged_algorithm
-from sans.common.sans_type import (SANSDataType, SaveType, OutputMode)
-from sans.common.constants import SANSConstants
+from sans.common.enums import (SANSDataType, SaveType, OutputMode)
+from sans.common.constants import (EMPTY_NAME, TRANS_SUFFIX, SANS_SUFFIX)
 from sans.common.file_information import (get_extension_for_file_type, SANSFileInformationFactory)
 from sans.state.state_functions import get_output_workspace_name_from_workspace
 from sans.state.data import StateData
@@ -78,9 +78,9 @@ def get_expected_workspace_names(file_information, is_transmission, period):
     """
     suffix_file_type = get_extension_for_file_type(file_information)
     if is_transmission:
-        suffix_data = SANSConstants.trans_suffix
+        suffix_data = TRANS_SUFFIX
     else:
-        suffix_data = SANSConstants.sans_suffix
+        suffix_data = SANS_SUFFIX
 
     run_number = file_information.get_run_number()
 
@@ -466,9 +466,9 @@ def set_properties_for_reduction_algorithm(reduction_alg, reduction_package, wor
             reduction_alg.setProperty(workspace_to_monitor[workspace_type], monitor)
 
     # Set the output workspaces
-    reduction_alg.setProperty("OutputWorkspaceLAB", SANSConstants.dummy)
-    reduction_alg.setProperty("OutputWorkspaceHAB", SANSConstants.dummy)
-    reduction_alg.setProperty("OutputWorkspaceMerged", SANSConstants.dummy)
+    reduction_alg.setProperty("OutputWorkspaceLAB", EMPTY_NAME)
+    reduction_alg.setProperty("OutputWorkspaceHAB", EMPTY_NAME)
+    reduction_alg.setProperty("OutputWorkspaceMerged", EMPTY_NAME)
 
 
 def save_workspaces_to_file(reduced_lab, reduced_hab, reduced_merged, state):
@@ -530,12 +530,12 @@ def save_workspace_to_file(workspace, state):
     save_info = state.save
 
     save_name = "SANSSave"
-    save_options = {SANSConstants.input_workspace: workspace}
+    save_options = {"InputWorkspace": workspace}
     if save_info.file_name:
         file_name = save_info.file_name
     else:
         file_name = get_output_workspace_name_from_workspace(workspace)
-    save_options.update({SANSConstants.file_name: file_name})
+    save_options.update({"Filename": file_name})
 
     file_formats = save_info.file_format
     if SaveType.Nexus in file_formats:

@@ -8,8 +8,7 @@ from mantid.api import AlgorithmManager
 from mantid.kernel import (Quat, V3D)
 from sans.algorithm_detail.move_workspaces import (SANSMoveFactory, SANSMoveLOQ, SANSMoveSANS2D, SANSMoveLARMORNewStyle,
                                                    SANSMoveLARMOROldStyle)
-from sans.common.constants import SANSConstants
-from sans.common.sans_type import SANSFacility
+from sans.common.enums import (SANSFacility, DetectorType)
 # Not clear why the names in the module are not found by Pylint, but it seems to get confused. Hence this check
 # needs to be disabled here.
 # pylint: disable=no-name-in-module
@@ -99,7 +98,7 @@ class SANSMoveTest(unittest.TestCase):
         for index in range(0, 3):
             self.assertAlmostEqual(position[index], expected_position[index], delta=1e-4)
         for index in range(0, 4):
-            pass #self.assertAlmostEqual(rotation[index], expected_rotation[index], delta=1e-4)
+            self.assertAlmostEqual(rotation[index], expected_rotation[index], delta=1e-4)
 
     def check_that_elementary_displacement_with_only_translation_is_correct(self, workspace, move_alg, move_info,
                                                                             coordinates, component, component_key):
@@ -121,7 +120,7 @@ class SANSMoveTest(unittest.TestCase):
 
     def check_that_sets_to_zero(self, workspace, move_alg, move_info, comp_name=None):
         # Reset the position to zero
-        move_alg.setProperty(SANSConstants.workspace, workspace)
+        move_alg.setProperty("Workspace", workspace)
         move_alg.setProperty("MoveType", "SetToZero")
         if comp_name is not None:
             move_alg.setProperty("Component", comp_name)
@@ -132,8 +131,8 @@ class SANSMoveTest(unittest.TestCase):
 
         # Get the components to compare
         if comp_name is None:
-            hab_name = move_info.detectors[SANSConstants.high_angle_bank].detector_name
-            lab_name = move_info.detectors[SANSConstants.low_angle_bank].detector_name
+            hab_name = move_info.detectors[DetectorType.to_string(DetectorType.HAB)].detector_name
+            lab_name = move_info.detectors[DetectorType.to_string(DetectorType.LAB)].detector_name
             component_names = list(move_info.monitor_names.values())
             component_names.append(hab_name)
             component_names.append(lab_name)
@@ -169,7 +168,7 @@ class SANSMoveTest(unittest.TestCase):
         state_dict = state.property_manager
 
         move_alg.setProperty("SANSState", state_dict)
-        move_alg.setProperty(SANSConstants.workspace, workspace)
+        move_alg.setProperty("Workspace", workspace)
         move_alg.setProperty("MoveType", move_type)
 
         if beam_coordinates is not None:
@@ -190,7 +189,7 @@ class SANSMoveTest(unittest.TestCase):
         lab_x_translation_correction = 123.
         beam_coordinates = [45, 25]
         component = "main-detector-bank"
-        component_key = SANSConstants.low_angle_bank
+        component_key = DetectorType.to_string(DetectorType.LAB)
 
         workspace = load_workspace(file_name)
         state = SANSMoveTest._get_simple_state(sample_scatter=file_name,
@@ -212,7 +211,7 @@ class SANSMoveTest(unittest.TestCase):
 
         # # Act + Assert for elementary move on high-angle bank
         component_elementary_move = "HAB"
-        component_elementary_move_key = SANSConstants.high_angle_bank
+        component_elementary_move_key = DetectorType.to_string(DetectorType.HAB)
 
         beam_coordinates_elementary_move = [120, 135]
         self.check_that_elementary_displacement_with_only_translation_is_correct(workspace, move_alg, move_info,
@@ -241,7 +240,7 @@ class SANSMoveTest(unittest.TestCase):
 
         # Assert for initial move for low angle bank
         # These values are on the workspace and in the sample logs,
-        component_to_investigate = SANSConstants.low_angle_bank
+        component_to_investigate = DetectorType.to_string(DetectorType.LAB)
         initial_z_position = 23.281
         rear_det_z = 11.9989755859
         offset = 4.
@@ -255,7 +254,7 @@ class SANSMoveTest(unittest.TestCase):
 
         # Assert for initial move for high angle bank
         # These values are on the workspace and in the sample logs
-        component_to_investigate = SANSConstants.high_angle_bank
+        component_to_investigate = DetectorType.to_string(DetectorType.HAB)
         initial_x_position = 1.1
         x_correction = -0.187987540973
         initial_z_position = 23.281
@@ -270,7 +269,7 @@ class SANSMoveTest(unittest.TestCase):
 
         # Act + Assert for elementary move
         component_elementary_move = "rear-detector"
-        component_elementary_move_key = SANSConstants.low_angle_bank
+        component_elementary_move_key = DetectorType.to_string(DetectorType.LAB)
         beam_coordinates_elementary_move = [120, 135]
         self.check_that_elementary_displacement_with_only_translation_is_correct(workspace, move_alg, state.move,
                                                                                  beam_coordinates_elementary_move,
@@ -299,7 +298,7 @@ class SANSMoveTest(unittest.TestCase):
 
         # Assert low angle bank for initial move
         # These values are on the workspace and in the sample logs
-        component_to_investigate = SANSConstants.low_angle_bank
+        component_to_investigate = DetectorType.to_string(DetectorType.LAB)
         # The rotation couples the movements, hence we just insert absoltute value, to have a type of regression test.
         expected_position = V3D(0, -38, 25.3)
         expected_rotation = Quat(0.978146, 0, 0.20792, 0)
@@ -325,7 +324,7 @@ class SANSMoveTest(unittest.TestCase):
 
         # Assert low angle bank for initial move
         # These values are on the workspace and in the sample logs
-        component_to_investigate = SANSConstants.low_angle_bank
+        component_to_investigate = DetectorType.to_string(DetectorType.LAB)
         # The rotation couples the movements, hence we just insert absolute value, to have a type of regression test
         # solely.
         expected_position = V3D(-beam_coordinates[0], -beam_coordinates[1], 25.3)
@@ -345,8 +344,8 @@ class SANSMoveTest(unittest.TestCase):
         state = SANSMoveTest._get_simple_state(sample_scatter=file_name,
                                                lab_z_translation_correction=lab_z_translation_correction)
         # These values should be used instead of an explicitly specified beam centre
-        state.move.detectors[SANSConstants.high_angle_bank].sample_centre_pos1 = 26.
-        state.move.detectors[SANSConstants.high_angle_bank].sample_centre_pos2 = 98.
+        state.move.detectors[DetectorType.to_string(DetectorType.HAB)].sample_centre_pos1 = 26.
+        state.move.detectors[DetectorType.to_string(DetectorType.HAB)].sample_centre_pos2 = 98.
 
         # Act
         # The component input is not relevant for SANS2D's initial move. All detectors are moved
@@ -355,7 +354,7 @@ class SANSMoveTest(unittest.TestCase):
 
         # Assert for initial move for high angle bank
         # These values are on the workspace and in the sample logs
-        component_to_investigate = SANSConstants.high_angle_bank
+        component_to_investigate = DetectorType.to_string(DetectorType.HAB)
         initial_x_position = 1.1
         x_correction = -0.187987540973
         initial_z_position = 23.281
@@ -377,8 +376,8 @@ class SANSMoveTest(unittest.TestCase):
         state = SANSMoveTest._get_simple_state(sample_scatter=file_name,
                                                lab_z_translation_correction=lab_z_translation_correction)
         # These values should be used instead of an explicitly specified beam centre
-        state.move.detectors[SANSConstants.low_angle_bank].sample_centre_pos1 = 26.
-        state.move.detectors[SANSConstants.low_angle_bank].sample_centre_pos2 = 98.
+        state.move.detectors[DetectorType.to_string(DetectorType.LAB)].sample_centre_pos1 = 26.
+        state.move.detectors[DetectorType.to_string(DetectorType.LAB)].sample_centre_pos2 = 98.
 
         # Act
         # The component input is not relevant for SANS2D's initial move. All detectors are moved
@@ -387,7 +386,7 @@ class SANSMoveTest(unittest.TestCase):
 
         # Assert for initial move for low angle bank
         # These values are on the workspace and in the sample logs,
-        component_to_investigate = SANSConstants.low_angle_bank
+        component_to_investigate = DetectorType.to_string(DetectorType.HAB)
         initial_z_position = 23.281
         rear_det_z = 11.9989755859
         offset = 4.

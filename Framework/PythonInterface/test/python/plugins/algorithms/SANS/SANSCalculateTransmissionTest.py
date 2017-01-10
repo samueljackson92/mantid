@@ -3,9 +3,9 @@ import mantid
 import numpy as np
 from sans.test_helper.test_director import TestDirector
 from sans.state.calculate_transmission import get_calculate_transmission_builder
-from sans.common.sans_type import (RebinType, RangeStepType, FitType)
+from sans.common.enums import (RebinType, RangeStepType, FitType)
 from sans.common.general_functions import (create_unmanaged_algorithm)
-from sans.common.constants import SANSConstants
+from sans.common.constants import EMPTY_NAME
 
 
 def get_expected_for_spectrum_n(data_workspace, selected_workspace_index, value_array):
@@ -59,20 +59,20 @@ class SANSCalculateTransmissionTest(unittest.TestCase):
     @staticmethod
     def _load_workspace(file_name):
         load_name = "Load"
-        load_options = {SANSConstants.output_workspace: SANSConstants.dummy,
+        load_options = {"OutputWorkspace": EMPTY_NAME,
                         "Filename": file_name}
         load_alg = create_unmanaged_algorithm(load_name, **load_options)
         load_alg.execute()
-        return load_alg.getProperty(SANSConstants.output_workspace).value
+        return load_alg.getProperty("OutputWorkspace").value
 
     @staticmethod
     def _clone_workspace(workspace):
         clone_name = "CloneWorkspace"
-        clone_options = {SANSConstants.input_workspace: workspace,
-                         SANSConstants.output_workspace: SANSConstants.dummy}
+        clone_options = {"InputWorkspace": workspace,
+                         "OutputWorkspace": EMPTY_NAME}
         clone_alg = create_unmanaged_algorithm(clone_name, **clone_options)
         clone_alg.execute()
-        return clone_alg.getProperty(SANSConstants.output_workspace).value
+        return clone_alg.getProperty("OutputWorkspace").value
 
     @staticmethod
     def _get_transmission_workspace(data=None):
@@ -183,12 +183,12 @@ class SANSCalculateTransmissionTest(unittest.TestCase):
         """
         # Rebin the workspace
         rebin_name = "Rebin"
-        rebin_options = {SANSConstants.input_workspace: workspace,
-                         SANSConstants.output_workspace: SANSConstants.dummy,
+        rebin_options = {"InputWorkspace": workspace,
+                         "OutputWorkspace": EMPTY_NAME,
                          "Params": "5000,5000,25000"}
         rebin_alg = create_unmanaged_algorithm(rebin_name, **rebin_options)
         rebin_alg.execute()
-        rebinned = rebin_alg.getProperty(SANSConstants.output_workspace).value
+        rebinned = rebin_alg.getProperty("OutputWorkspace").value
 
         # Now set specified monitors to specified values
         if data is not None:
@@ -204,7 +204,7 @@ class SANSCalculateTransmissionTest(unittest.TestCase):
         calculate_transmission_options = {"TransmissionWorkspace": transmission_workspace,
                                           "DirectWorkspace": direct_workspace,
                                           "SANSState": state,
-                                          SANSConstants.output_workspace: SANSConstants.dummy,
+                                          "OutputWorkspace": EMPTY_NAME,
                                           "UnfittedData": "unfitted"}
         if is_sample:
             calculate_transmission_options.update({"DataType": "Sample"})
@@ -214,7 +214,7 @@ class SANSCalculateTransmissionTest(unittest.TestCase):
         calculate_transmission_alg = create_unmanaged_algorithm(calculate_transmission_name,
                                                                 **calculate_transmission_options)
         calculate_transmission_alg.execute()
-        workspace = calculate_transmission_alg.getProperty(SANSConstants.output_workspace).value
+        workspace = calculate_transmission_alg.getProperty("OutputWorkspace").value
         unfitted = calculate_transmission_alg.getProperty("UnfittedData").value
         return workspace, unfitted
 
@@ -350,12 +350,12 @@ class SANSCalculateTransmissionTest(unittest.TestCase):
                                                                                            direct_workspace, state,
                                                                                            is_sample=True)
             was_successful = True
+            self.assertTrue(fitted_workspace.getNumberHistograms() == 1)
         except:  # noqa
             was_successful = False
 
         # Assert
         self.assertTrue(was_successful)
-        self.assertTrue(fitted_workspace.getNumberHistograms() == 1)
 
 
 if __name__ == '__main__':

@@ -5,9 +5,8 @@
 from mantid.kernel import (Direction)
 from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, AlgorithmFactory, PropertyMode,
                         FileProperty, FileAction, Progress)
-from sans.common.sans_type import (SaveType, convert_save_type_to_string)
+from sans.common.enums import (SaveType)
 from sans.algorithm_detail.save_workspace import (save_to_file, get_zero_error_free_workspace, file_format_with_append)
-from sans.common.constants import SANSConstants
 
 
 class SANSSave(DataProcessorAlgorithm):
@@ -18,7 +17,7 @@ class SANSSave(DataProcessorAlgorithm):
         return 'Performs saving of reduced SANS data.'
 
     def PyInit(self):
-        self.declareProperty(MatrixWorkspaceProperty(SANSConstants.input_workspace, '',
+        self.declareProperty(MatrixWorkspaceProperty("InputWorkspace", '',
                                                      optional=PropertyMode.Mandatory, direction=Direction.Input),
                              doc='The workspace which is to be saved.'
                                  ' This workspace needs to be the result of a SANS reduction,'
@@ -68,13 +67,13 @@ class SANSSave(DataProcessorAlgorithm):
         use_zero_error_free = self.getProperty("UseZeroErrorFree").value
         file_formats = self._get_file_formats()
         file_name = self.getProperty("Filename").value
-        workspace = self.getProperty(SANSConstants.input_workspace).value
+        workspace = self.getProperty("InputWorkspace").value
 
         if use_zero_error_free:
             workspace = get_zero_error_free_workspace(workspace)
         progress = Progress(self, start=0.0, end=1.0, nreports=len(file_formats) + 1)
         for file_format in file_formats:
-            progress_message = "Saving to {0}.".format(convert_save_type_to_string(file_format.file_format))
+            progress_message = "Saving to {0}.".format(SaveType.to_string(file_format.file_format))
             progress.report(progress_message)
             save_to_file(workspace, file_format, file_name)
         progress.report("Finished saving workspace to files.")
@@ -82,12 +81,12 @@ class SANSSave(DataProcessorAlgorithm):
     def validateInputs(self):
         errors = dict()
         # The workspace must be 1D or 2D if the second axis is numeric
-        workspace = self.getProperty(SANSConstants.input_workspace).value
+        workspace = self.getProperty("InputWorkspace").value
         number_of_histograms = workspace.getNumberHistograms()
         axis1 = workspace.getAxis(1)
         is_first_axis_numeric = axis1.isNumeric()
         if not is_first_axis_numeric and number_of_histograms > 1:
-            errors.update({SANSConstants.input_workspace: "The input data seems to be 2D. In this case all "
+            errors.update({"InputWorkspace": "The input data seems to be 2D. In this case all "
                                                           "axes need to be numeric."})
 
         # Make sure that at least one file format is selected
@@ -101,7 +100,7 @@ class SANSSave(DataProcessorAlgorithm):
             errors.update({"CSV": "At least one data format needs to be specified."})
 
         # NistQxy cannot be used with 1D data
-        workspace = self.getProperty(SANSConstants.input_workspace).value
+        workspace = self.getProperty("InputWorkspace").value
         is_nistqxy_selected = self.getProperty("NistQxy").value
         if is_nistqxy_selected and number_of_histograms == 1 and not is_first_axis_numeric:
             errors.update({"NistQxy": "Attempting to save a 1D workspace with NistQxy. NistQxy can store 2D data"

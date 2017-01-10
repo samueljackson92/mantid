@@ -2,9 +2,8 @@
 
 from abc import (ABCMeta, abstractmethod)
 
-from sans.common.constants import SANSConstants
 from sans.common.general_functions import create_unmanaged_algorithm
-from sans.common.sans_type import (SANSInstrument, DataType, convert_fit_mode_for_merge_to_string)
+from sans.common.enums import (SANSInstrument, DataType, FitModeForMerge)
 from sans.algorithm_detail.bundles import MergeBundle
 
 
@@ -45,7 +44,7 @@ class ISIS1DMerger(Merger):
 
         # Get fit parameters
         shift_factor, scale_factor, fit_mode = get_shift_and_scale_parameter(reduction_mode_vs_output_bundles)
-        fit_mode_as_string = convert_fit_mode_for_merge_to_string(fit_mode)
+        fit_mode_as_string = FitModeForMerge.to_string(fit_mode)
 
         # Run the SANSStitch algorithm
         stitch_name = "SANSStitch"
@@ -74,7 +73,7 @@ class ISIS1DMerger(Merger):
         # Get the fit values
         shift_from_alg = stitch_alg.getProperty("OutShiftFactor").value
         scale_from_alg = stitch_alg.getProperty("OutScaleFactor").value
-        merged_workspace = stitch_alg.getProperty(SANSConstants.output_workspace).value
+        merged_workspace = stitch_alg.getProperty("OutputWorkspace").value
 
         # Return a merge bundle with the merged workspace and the fitted scale and shift factor (they are good
         # diagnostic tools which are desired by the instrument scientists.

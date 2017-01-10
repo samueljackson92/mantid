@@ -7,7 +7,7 @@ import os
 import mantid
 from mantid.api import AlgorithmManager
 
-from sans.common.sans_type import SANSFacility
+from sans.common.enums import SANSFacility
 from sans.test_helper.test_director import TestDirector
 from sans.state.data import get_data_builder
 from sans.state.mask import get_mask_builder

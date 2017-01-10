@@ -8,7 +8,7 @@ from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, Algorit
 
 from sans.state.state_base import create_deserialized_sans_state_from_property_manager
 from sans.algorithm_detail.batch_execution import (single_reduction_for_batch)
-from sans.common.sans_type import (OutputMode, convert_output_mode_to_string, convert_string_to_output_mode)
+from sans.common.enums import (OutputMode)
 
 
 class SANSBatchReduction(DataProcessorAlgorithm):
@@ -31,9 +31,9 @@ class SANSBatchReduction(DataProcessorAlgorithm):
                                  "Depending on your concrete reduction, this could provide a significant"
                                  " performance boost")
 
-        allowed_detectors = StringListValidator([convert_output_mode_to_string(OutputMode.PublishToADS),
-                                                 convert_output_mode_to_string(OutputMode.SaveToFile),
-                                                 convert_output_mode_to_string(OutputMode.Both)])
+        allowed_detectors = StringListValidator([OutputMode.to_string(OutputMode.PublishToADS),
+                                                 OutputMode.to_string(OutputMode.SaveToFile),
+                                                 OutputMode.to_string(OutputMode.Both)])
         self.declareProperty("OutputMode", "PublishToADS", validator=allowed_detectors, direction=Direction.Input,
                              doc="There are two output modes available./n"
                                  "PublishToADS: publishes the workspaces to the ADS. /n"
@@ -66,7 +66,7 @@ class SANSBatchReduction(DataProcessorAlgorithm):
 
     def _get_output_mode(self):
         output_mode_as_string = self.getProperty("OutputMode").value
-        return convert_string_to_output_mode(output_mode_as_string)
+        return OutputMode.from_string(output_mode_as_string)
 
     def _get_states(self):
         # The property manager contains a collection of states

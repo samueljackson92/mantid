@@ -3,9 +3,9 @@ import mantid
 
 from sans.test_helper.test_director import TestDirector
 from sans.state.normalize_to_monitor import get_normalize_to_monitor_builder
-from sans.common.sans_type import (RebinType, RangeStepType)
+from sans.common.enums import (RebinType, RangeStepType)
 from sans.common.general_functions import (create_unmanaged_algorithm)
-from sans.common.constants import SANSConstants
+from sans.common.constants import EMPTY_NAME
 
 
 def get_expected_for_spectrum_1_case(monitor_workspace, selected_detector):
@@ -42,12 +42,12 @@ class SANSNormalizeToMonitorTest(unittest.TestCase):
     def _get_monitor_workspace(data=None):
         create_name = "CreateSampleWorkspace"
         name = "test_workspace"
-        create_options = {SANSConstants.output_workspace: name,
+        create_options = {"OutputWorkspace": name,
                           "NumBanks": 0,
                           "NumMonitors": 8}
         create_alg = create_unmanaged_algorithm(create_name, **create_options)
         create_alg.execute()
-        ws = create_alg.getProperty(SANSConstants.output_workspace).value
+        ws = create_alg.getProperty("OutputWorkspace").value
         ws = SANSNormalizeToMonitorTest._prepare_workspace(ws, data=data)
         return ws
 
@@ -92,12 +92,12 @@ class SANSNormalizeToMonitorTest(unittest.TestCase):
         """
         # Rebin the workspace
         rebin_name = "Rebin"
-        rebin_options = {SANSConstants.input_workspace: workspace,
-                         SANSConstants.output_workspace: SANSConstants.dummy,
+        rebin_options = {"InputWorkspace": workspace,
+                         "OutputWorkspace": EMPTY_NAME,
                          "Params": "5000,5000,25000"}
         rebin_alg = create_unmanaged_algorithm(rebin_name, **rebin_options)
         rebin_alg.execute()
-        rebinned = rebin_alg.getProperty(SANSConstants.output_workspace).value
+        rebinned = rebin_alg.getProperty("OutputWorkspace").value
 
         # Now set specified monitors to specified values
         if data is not None:
@@ -111,12 +111,12 @@ class SANSNormalizeToMonitorTest(unittest.TestCase):
     @staticmethod
     def _run_test(workspace, state):
         normalize_name = "SANSNormalizeToMonitor"
-        normalize_options = {SANSConstants.input_workspace: workspace,
-                             SANSConstants.output_workspace: SANSConstants.dummy,
+        normalize_options = {"InputWorkspace": workspace,
+                             "OutputWorkspace": EMPTY_NAME,
                              "SANSState": state}
         normalize_alg = create_unmanaged_algorithm(normalize_name, **normalize_options)
         normalize_alg.execute()
-        return normalize_alg.getProperty(SANSConstants.output_workspace).value
+        return normalize_alg.getProperty("OutputWorkspace").value
 
     def _do_assert(self, workspace, expected_monitor_spectrum, expected_lambda, expected_signal):
         # Check the units

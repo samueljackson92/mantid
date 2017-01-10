@@ -5,8 +5,8 @@
 from mantid.kernel import (Direction, StringListValidator)
 from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, AlgorithmFactory, PropertyMode, Progress)
 
-from sans.common.constants import SANSConstants
-from sans.common.sans_type import DetectorType, convert_detector_type_to_string, convert_string_to_detector_type
+from sans.common.constants import EMPTY_NAME
+from sans.common.enums import DetectorType
 from sans.common.general_functions import (create_unmanaged_algorithm, append_to_sans_file_tag)
 
 
@@ -22,7 +22,7 @@ class SANSCrop(DataProcessorAlgorithm):
         # INPUT
         # ----------
         # Workspace which is to be cropped
-        self.declareProperty(MatrixWorkspaceProperty(SANSConstants.input_workspace, '',
+        self.declareProperty(MatrixWorkspaceProperty("InputWorkspace", '',
                                                      optional=PropertyMode.Mandatory, direction=Direction.Input),
                              doc='The input workspace')
 
@@ -31,13 +31,13 @@ class SANSCrop(DataProcessorAlgorithm):
         self.declareProperty("Component", "LAB", validator=allowed_detectors, direction=Direction.Input,
                              doc="The component of the instrument to which we want to crop.")
 
-        self.declareProperty(MatrixWorkspaceProperty(SANSConstants.output_workspace, '',
+        self.declareProperty(MatrixWorkspaceProperty("OutputWorkspace", '',
                                                      optional=PropertyMode.Mandatory, direction=Direction.Output),
                              doc='The cropped output workspace')
 
     def PyExec(self):
         # Get the correct SANS move strategy from the SANSMaskFactory
-        workspace = self.getProperty(SANSConstants.input_workspace).value
+        workspace = self.getProperty("InputWorkspace").value
 
         # Component to crop
         component = self._get_component(workspace)
@@ -47,17 +47,17 @@ class SANSCrop(DataProcessorAlgorithm):
 
         # Crop to the component
         crop_name = "CropToComponent"
-        crop_options = {SANSConstants.input_workspace: workspace,
-                        SANSConstants.output_workspace: SANSConstants.dummy,
+        crop_options = {"InputWorkspace": workspace,
+                        "OutputWorkspace": EMPTY_NAME,
                         "ComponentNames": component,
                         "OrderByDetId": True}
         crop_alg = create_unmanaged_algorithm(crop_name, **crop_options)
         crop_alg.execute()
-        output_workspace = crop_alg.getProperty(SANSConstants.output_workspace).value
+        output_workspace = crop_alg.getProperty("OutputWorkspace").value
 
         # Change the file tag and set the output
         append_to_sans_file_tag(output_workspace, "_cropped")
-        self.setProperty(SANSConstants.output_workspace, output_workspace)
+        self.setProperty("OutputWorkspace", output_workspace)
         progress.report("Finished cropping")
 
     def _get_component(self, workspace):

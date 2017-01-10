@@ -8,8 +8,8 @@ from mantid.api import AnalysisDataService
 
 from sans.user_file.user_file_state_director import UserFileStateDirectorISIS
 from sans.state.data import get_data_builder
-from sans.common.sans_type import SANSFacility, ISISReductionMode
-from sans.common.constants import SANSConstants
+from sans.common.enums import (SANSFacility, ISISReductionMode)
+from sans.common.constants import EMPTY_NAME
 from sans.common.general_functions import create_unmanaged_algorithm
 
 
@@ -34,10 +34,10 @@ class SANSBatchReductionTest(unittest.TestCase):
         # Load the reference file
         load_name = "LoadNexusProcessed"
         load_options = {"Filename": reference_file_name,
-                        SANSConstants.output_workspace: SANSConstants.dummy}
+                        "OutputWorkspace": EMPTY_NAME}
         load_alg = create_unmanaged_algorithm(load_name, **load_options)
         load_alg.execute()
-        reference_workspace = load_alg.getProperty(SANSConstants.output_workspace).value
+        reference_workspace = load_alg.getProperty("OutputWorkspace").value
 
         # Compare reference file with the output_workspace
         # We need to disable the instrument comparison, it takes way too long

@@ -8,10 +8,9 @@ import mantid
 from mantid.api import AlgorithmManager
 
 from sans.state.data import get_data_builder
-from sans.common.sans_type import (DetectorType, DetectorType, convert_detector_type_to_string, DataType,
-                                   convert_reduction_data_type_to_string, SANSFacility)
+from sans.common.enums import (DetectorType, DataType, SANSFacility)
 from sans.user_file.user_file_state_director import UserFileStateDirectorISIS
-from sans.common.constants import SANSConstants
+from sans.common.constants import EMPTY_NAME
 from sans.common.general_functions import create_unmanaged_algorithm
 
 
@@ -68,10 +67,10 @@ class SANSReductionCoreTest(unittest.TestCase):
         if direct:
             reduction_core_alg.setProperty("DirectWorkspace", direct)
 
-        reduction_core_alg.setProperty("Component", convert_detector_type_to_string(detector_type))
-        reduction_core_alg.setProperty("DataType", convert_reduction_data_type_to_string(component))
+        reduction_core_alg.setProperty("Component", DetectorType.to_string(detector_type))
+        reduction_core_alg.setProperty("DataType", DataType.to_string(component))
 
-        reduction_core_alg.setProperty(SANSConstants.output_workspace, SANSConstants.dummy)
+        reduction_core_alg.setProperty("OutputWorkspace", EMPTY_NAME)
 
         # Act
         reduction_core_alg.execute()
@@ -82,10 +81,10 @@ class SANSReductionCoreTest(unittest.TestCase):
         # Load the reference file
         load_name = "LoadNexusProcessed"
         load_options = {"Filename": reference_file_name,
-                        SANSConstants.output_workspace: SANSConstants.dummy}
+                        "OutputWorkspace": EMPTY_NAME}
         load_alg = create_unmanaged_algorithm(load_name, **load_options)
         load_alg.execute()
-        reference_workspace = load_alg.getProperty(SANSConstants.output_workspace).value
+        reference_workspace = load_alg.getProperty("OutputWorkspace").value
 
         # Save the workspace out and reload it again. This makes equalizes it with the reference workspace
         f_name = os.path.join(mantid.config.getString('defaultsave.directory'),
@@ -97,10 +96,10 @@ class SANSReductionCoreTest(unittest.TestCase):
         save_alg = create_unmanaged_algorithm(save_name, **save_options)
         save_alg.execute()
         load_alg.setProperty("Filename", f_name)
-        load_alg.setProperty(SANSConstants.output_workspace, SANSConstants.dummy)
+        load_alg.setProperty("OutputWorkspace", EMPTY_NAME)
         load_alg.execute()
 
-        ws = load_alg.getProperty(SANSConstants.output_workspace).value
+        ws = load_alg.getProperty("OutputWorkspace").value
 
         # Compare reference file with the output_workspace
         # We need to disable the instrument comparison, it takes way too long
@@ -149,7 +148,7 @@ class SANSReductionCoreTest(unittest.TestCase):
         # Act
         reduction_core_alg = self._run_reduction_core(state, workspace, workspace_monitor,
                                                       transmission_workspace, direct_workspace)
-        output_workspace = reduction_core_alg.getProperty(SANSConstants.output_workspace).value
+        output_workspace = reduction_core_alg.getProperty("OutputWorkspace").value
 
         # Evaluate it up to a defined point
         reference_file_name = "SANS2D_ws_D20_reference.nxs"

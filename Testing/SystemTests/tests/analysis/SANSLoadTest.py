@@ -8,7 +8,7 @@ from mantid.api import (AnalysisDataService, AlgorithmManager)
 
 from sans.algorithm_detail.load_data import SANSLoadDataFactory
 from sans.common.log_tagger import has_tag
-from sans.common.constants import SANSConstants
+from sans.common.constants import (CALIBRATION_WORKSPACE_TAG, SANS_FILE_TAG)
 
 # Not clear why the names in the module are not found by Pylint, but it seems to get confused. Hence this check
 # needs to be disabled here.
@@ -175,8 +175,8 @@ class SANSLoadTest(unittest.TestCase):
         sample_workspace = load_alg.getProperty("SampleScatterWorkspace").value
         if sample_workspace is None:
             sample_workspace = load_alg.getProperty("SampleScatterWorkspace_1").value
-        has_calibration_tag = has_tag(SANSConstants.Calibration.calibration_workspace_tag, sample_workspace)
-        has_file_tag = has_tag(SANSConstants.sans_file_tag, sample_workspace)
+        has_calibration_tag = has_tag(CALIBRATION_WORKSPACE_TAG, sample_workspace)
+        has_file_tag = has_tag(SANS_FILE_TAG, sample_workspace)
         return has_calibration_tag and has_file_tag
 
     @staticmethod

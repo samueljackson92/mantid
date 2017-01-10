@@ -8,7 +8,7 @@ from mantid.api import AlgorithmManager, AnalysisDataService
 from mantid.kernel import (DateAndTime)
 from sans.common.constants import SANS_FILE_TAG
 from sans.common.log_tagger import (get_tag, has_tag, set_tag)
-from sans.common.sans_type import (DetectorType, RangeStepType)
+from sans.common.enums import (DetectorType, RangeStepType)
 
 
 # -------------------------------------------

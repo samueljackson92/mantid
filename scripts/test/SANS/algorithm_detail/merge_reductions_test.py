@@ -7,10 +7,10 @@ from sans.algorithm_detail.bundles import OutputPartsBundle
 from sans.state.reduction_mode import StateReductionMode
 from sans.test_helper.test_director import TestDirector
 
-from sans.common.sans_type import (ISISReductionMode, ReductionDimensionality, FitModeForMerge)
+from sans.common.enums import (ISISReductionMode, ReductionDimensionality, FitModeForMerge)
 from sans.common.general_functions import create_unmanaged_algorithm
-from sans.common.constants import SANSConstants
-from sans.common.sans_type import (DataType, ISISReductionMode)
+from sans.common.constants import EMPTY_NAME
+from sans.common.enums import (DataType, ISISReductionMode)
 
 
 class MergeReductionsTest(unittest.TestCase):
@@ -21,7 +21,7 @@ class MergeReductionsTest(unittest.TestCase):
                           'DataY': data_y,
                           'NSpec': 1,
                           'UnitX': 'MomentumTransfer',
-                          SANSConstants.output_workspace: SANSConstants.dummy}
+                          "OutputWorkspace": EMPTY_NAME}
         create_alg = create_unmanaged_algorithm(create_name, **create_options)
         create_alg.execute()
         return create_alg.getProperty('OutputWorkspace').value

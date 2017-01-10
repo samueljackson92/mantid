@@ -5,7 +5,7 @@ import re
 from math import copysign
 
 
-from sans.common.sans_type import (ISISReductionMode, DetectorType, RangeStepType, FitType, DataType)
+from sans.common.enums import (ISISReductionMode, DetectorType, RangeStepType, FitType, DataType)
 from sans.user_file.user_file_common import (DetectorId, BackId, range_entry, back_single_monitor_entry,
                                              single_entry_with_detector, mask_angle_entry, LimitsId,
                                              simple_range, complex_range, MaskId, mask_block, mask_block_cross,

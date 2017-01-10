@@ -1,5 +1,5 @@
 from csv import reader
-from sans.common.sans_type import BatchReductionEntry
+from sans.common.enums import BatchReductionEntry
 
 
 class BatchCsvParser(object):

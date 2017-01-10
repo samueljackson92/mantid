@@ -1,6 +1,6 @@
 from abc import (ABCMeta, abstractmethod)
-from sans.common.constants import SANSConstants
-from sans.common.sans_type import (SANSInstrument, convert_detector_type_to_string)
+from sans.common.constants import EMPTY_NAME
+from sans.common.enums import (SANSInstrument, DetectorType)
 from sans.common.general_functions import create_unmanaged_algorithm
 from sans.common.file_information import (find_full_file_path, get_instrument_paths_for_sans_file)
 from sans.algorithm_detail.xml_shapes import (add_cylinder, add_outside_cylinder, create_phi_mask, create_line_mask)
@@ -27,8 +27,8 @@ def mask_bins(mask_info, workspace, detector_type):
     bin_mask_general_start = mask_info.bin_mask_general_start
     bin_mask_general_stop = mask_info.bin_mask_general_stop
     # Mask the bins with the detector-specific setting
-    bin_mask_start = mask_info.detectors[convert_detector_type_to_string(detector_type)].bin_mask_start
-    bin_mask_stop = mask_info.detectors[convert_detector_type_to_string(detector_type)].bin_mask_stop
+    bin_mask_start = mask_info.detectors[DetectorType.to_string(detector_type)].bin_mask_start
+    bin_mask_stop = mask_info.detectors[DetectorType.to_string(detector_type)].bin_mask_stop
 
     # Combine the settings and run the binning
     start_mask = []
@@ -42,15 +42,15 @@ def mask_bins(mask_info, workspace, detector_type):
         stop_mask.extend(bin_mask_stop)
 
     mask_name = "MaskBins"
-    mask_options = {SANSConstants.input_workspace: workspace}
+    mask_options = {"InputWorkspace": workspace}
     mask_alg = create_unmanaged_algorithm(mask_name, **mask_options)
     for start, stop in zip(start_mask, stop_mask):
-        mask_alg.setProperty(SANSConstants.input_workspace, workspace)
-        mask_alg.setProperty(SANSConstants.output_workspace, SANSConstants.dummy)
+        mask_alg.setProperty("InputWorkspace", workspace)
+        mask_alg.setProperty("OutputWorkspace", EMPTY_NAME)
         mask_alg.setProperty("XMin", start)
         mask_alg.setProperty("XMax", stop)
         mask_alg.execute()
-        workspace = mask_alg.getProperty(SANSConstants.output_workspace).value
+        workspace = mask_alg.getProperty("OutputWorkspace").value
     return workspace
 
 
@@ -79,13 +79,13 @@ def mask_cylinder(mask_info, workspace):
     # Mask the cylinder shape if there is anything to mask, else don't do anything
     if xml:
         mask_name = "MaskDetectorsInShape"
-        mask_options = {SANSConstants.workspace: workspace}
+        mask_options = {"Workspace": workspace}
         mask_alg = create_unmanaged_algorithm(mask_name, **mask_options)
         for shape in xml:
-            mask_alg.setProperty(SANSConstants.workspace, workspace)
+            mask_alg.setProperty("Workspace", workspace)
             mask_alg.setProperty("ShapeXML", shape)
             mask_alg.execute()
-            workspace = mask_alg.getProperty(SANSConstants.workspace).value
+            workspace = mask_alg.getProperty("Workspace").value
     return workspace
 
 
@@ -112,7 +112,7 @@ def mask_with_mask_files(mask_info, workspace):
         # Mask loader
         load_name = "LoadMask"
         load_options = {"Instrument": idf_path,
-                        SANSConstants.output_workspace: "dummy"}
+                        "OutputWorkspace": "dummy"}
         load_alg = create_unmanaged_algorithm(load_name, **load_options)
 
         # Masker
@@ -125,13 +125,13 @@ def mask_with_mask_files(mask_info, workspace):
             # Get the detector ids which need to be masked
             load_alg.setProperty("InputFile", mask_file)
             load_alg.execute()
-            masking_workspace = load_alg.getProperty(SANSConstants.output_workspace).value
+            masking_workspace = load_alg.getProperty("OutputWorkspace").value
             detector_list = list(yield_masked_det_ids(masking_workspace))
             # Mask the detector ids on the original workspace
-            mask_alg.setProperty(SANSConstants.workspace, workspace)
+            mask_alg.setProperty("Workspace", workspace)
             mask_alg.setProperty("DetectorList", detector_list)
             mask_alg.execute()
-            workspace = mask_alg.getProperty(SANSConstants.workspace).value
+            workspace = mask_alg.getProperty("Workspace").value
     return workspace
 
 
@@ -175,7 +175,7 @@ def mask_spectra(mask_info, workspace, spectra_block, detector_type):
             total_spectra.extend(range(start, stop + 1))
 
     # Detector specific masks
-    detector = mask_info.detectors[convert_detector_type_to_string(detector_type)]
+    detector = mask_info.detectors[DetectorType.to_string(detector_type)]
 
     # ---------------------------
     # Horizontal single spectrum
@@ -275,11 +275,11 @@ def mask_angle(mask_info, workspace):
 
         if phi_mask:
             mask_name = "MaskDetectorsInShape"
-            mask_options = {SANSConstants.workspace: workspace,
+            mask_options = {"Workspace": workspace,
                             "ShapeXML": phi_mask}
             mask_alg = create_unmanaged_algorithm(mask_name, **mask_options)
             mask_alg.execute()
-            workspace = mask_alg.getProperty(SANSConstants.workspace).value
+            workspace = mask_alg.getProperty("Workspace").value
     return workspace
 
 

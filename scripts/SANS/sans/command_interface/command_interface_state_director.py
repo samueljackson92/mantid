@@ -1,12 +1,13 @@
 from copy import deepcopy
-from sans.common.sans_type import (sans_type, ReductionDimensionality, DetectorType, DataType)
+from sans.common.enums import (serializable_enum, ReductionDimensionality, DetectorType, DataType)
 from sans.user_file.user_file_state_director import UserFileStateDirectorISIS
 from sans.state.data import get_data_builder
 from sans.user_file.user_file_parser import (UserFileParser)
 from sans.user_file.user_file_reader import (UserFileReader)
-from sans.user_file.user_file_common import (MonId, monitor_spectrum, OtherId, SampleId, GravityId, SetId, position_entry,
-                                           fit_general, FitId, monitor_file, mask_angle_entry, LimitsId, range_entry,
-                                           simple_range, DetectorId, event_binning_string_values, det_fit_range)
+from sans.user_file.user_file_common import (MonId, monitor_spectrum, OtherId, SampleId, GravityId, SetId,
+                                             position_entry, fit_general, FitId, monitor_file, mask_angle_entry,
+                                             LimitsId, range_entry, simple_range, DetectorId,
+                                             event_binning_string_values, det_fit_range)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -14,22 +15,23 @@ from sans.user_file.user_file_common import (MonId, monitor_spectrum, OtherId, S
 # ----------------------------------------------------------------------------------------------------------------------
 
 # ------------------
-# IDs for commands. We use here sans_type since enum is not available in the current Python configuration.
+# IDs for commands. We use here serializable_enum since enum is not available in the current Python configuration.
 # ------------------
-@sans_type("sample_scatter", "sample_transmission", "sample_direct", "can_scatter", "can_transmission", "can_direct")
+@serializable_enum("sample_scatter", "sample_transmission", "sample_direct", "can_scatter", "can_transmission",
+                   "can_direct")
 class DataCommandId(object):
     pass
 
 
-@sans_type("clean", "reduction_dimensionality", "compatibility_mode",  # Null Parameter commands
-           "user_file", "mask", "sample_offset", "detector", "event_slices",  # Single parameter commands
-           "flood_file", "wavelength_correction_file",  # Single parameter commands
-           "incident_spectrum", "gravity",  # Double parameter commands
-           "centre",   # Three parameter commands
-           "trans_fit", "phi_limit", "mask_radius", "wavelength_limit", "qxy_limit",  # Four parameter commands
-           "wavrange_settings",  # Five parameter commands
-           "front_detector_rescale"  # Six parameter commands
-           )
+@serializable_enum("clean", "reduction_dimensionality", "compatibility_mode",  # Null Parameter commands
+                   "user_file", "mask", "sample_offset", "detector", "event_slices",  # Single parameter commands
+                   "flood_file", "wavelength_correction_file",  # Single parameter commands
+                   "incident_spectrum", "gravity",  # Double parameter commands
+                   "centre",   # Three parameter commands
+                   "trans_fit", "phi_limit", "mask_radius", "wavelength_limit", "qxy_limit",  # Four parameter commands
+                   "wavrange_settings",  # Five parameter commands
+                   "front_detector_rescale"  # Six parameter commands
+                   )
 class NParameterCommandId(object):
     pass
 

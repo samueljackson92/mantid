@@ -2,8 +2,8 @@ import unittest
 import mantid
 
 from sans.common.general_functions import (create_unmanaged_algorithm)
-from sans.common.constants import SANSConstants
-from sans.common.sans_type import (SANSFacility, SampleShape, ReductionDimensionality, RangeStepType)
+from sans.common.constants import EMPTY_NAME
+from sans.common.enums import (SANSFacility, SampleShape, ReductionDimensionality, RangeStepType)
 from sans.test_helper.test_director import TestDirector
 from sans.state.convert_to_q import get_convert_to_q_builder
 from sans.state.data import get_data_builder
@@ -65,8 +65,8 @@ class SANSConvertToQTest(unittest.TestCase):
     def _do_run_convert_to_q(state, data_workspace, wavelength_adjustment_workspace=None,
                              pixel_adjustment_workspace=None, wavelength_and_pixel_adjustment_workspace=None):
         convert_name = "SANSConvertToQ"
-        convert_options = {SANSConstants.input_workspace: data_workspace,
-                           SANSConstants.output_workspace: SANSConstants.dummy,
+        convert_options = {"InputWorkspace": data_workspace,
+                           "OutputWorkspace": EMPTY_NAME,
                            "SANSState": state,
                            "OutputParts": True}
         if wavelength_adjustment_workspace:
@@ -78,7 +78,7 @@ class SANSConvertToQTest(unittest.TestCase):
                                         wavelength_and_pixel_adjustment_workspace})
         convert_alg = create_unmanaged_algorithm(convert_name, **convert_options)
         convert_alg.execute()
-        data_workspace = convert_alg.getProperty(SANSConstants.output_workspace).value
+        data_workspace = convert_alg.getProperty("OutputWorkspace").value
         sum_of_counts = convert_alg.getProperty("SumOfCounts").value
         sum_of_norms = convert_alg.getProperty("SumOfNormFactors").value
         return data_workspace, sum_of_counts, sum_of_norms

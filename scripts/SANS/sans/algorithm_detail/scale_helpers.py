@@ -1,8 +1,8 @@
 import math
 from abc import (ABCMeta, abstractmethod)
-from sans.common.sans_type import (SANSInstrument, SampleShape, convert_int_to_shape, DataType)
+from sans.common.enums import (SANSInstrument, SampleShape, convert_int_to_shape, DataType)
 from sans.common.general_functions import create_unmanaged_algorithm
-from sans.common.constants import SANSConstants
+from sans.common.constants import EMPTY_NAME
 
 
 class DivideByVolume(object):
@@ -34,13 +34,13 @@ class DivideByVolumeISIS(DivideByVolume):
         volume = self._get_volume(workspace, scale_info)
         inverse_volume = 1./volume
         divide_name = "Scale"
-        divide_options = {SANSConstants.input_workspace: workspace,
-                          SANSConstants.output_workspace: SANSConstants.dummy,
+        divide_options = {"InputWorkspace": workspace,
+                          "OutputWorkspace": EMPTY_NAME,
                           "Factor": inverse_volume,
                           "Operation": "Multiply"}
         divide_alg = create_unmanaged_algorithm(divide_name, **divide_options)
         divide_alg.execute()
-        return divide_alg.getProperty(SANSConstants.output_workspace).value
+        return divide_alg.getProperty("OutputWorkspace").value
 
     def _get_volume(self, workspace, scale_info):
         # Get the geometry information from the workspace
@@ -73,7 +73,8 @@ class DivideByVolumeISIS(DivideByVolume):
             volume = thickness * math.pi
             volume *= math.pow(width, 2) / 4.0
         else:
-            raise NotImplementedError('DivideByVolumeISIS: The shape {0} is not in the list of supported shapes'.format(shape))
+            raise NotImplementedError('DivideByVolumeISIS: The shape {0} is not in the list of '
+                                      'supported shapes'.format(shape))
         return volume
 
 
@@ -107,13 +108,13 @@ class MultiplyByAbsoluteScale(object):
     @staticmethod
     def do_scale(workspace, scale_factor):
         scale_name = "Scale"
-        scale_options = {SANSConstants.input_workspace: workspace,
-                         SANSConstants.output_workspace: SANSConstants.dummy,
+        scale_options = {"InputWorkspace": workspace,
+                         "OutputWorkspace": EMPTY_NAME,
                          "Factor": scale_factor,
                          "Operation": "Multiply"}
         scale_alg = create_unmanaged_algorithm(scale_name, **scale_options)
         scale_alg.execute()
-        return scale_alg.getProperty(SANSConstants.output_workspace).value
+        return scale_alg.getProperty("OutputWorkspace").value
 
     @abstractmethod
     def multiply_by_absolute_scale(self, workspace, scale_info):
@@ -149,7 +150,8 @@ class MultiplyByAbsoluteScaleFactory(object):
         data = state.data
         instrument = data.instrument
 
-        is_isis_instrument = instrument is SANSInstrument.LARMOR or instrument is SANSInstrument.SANS2D or SANSInstrument.LOQ
+        is_isis_instrument = instrument is SANSInstrument.LARMOR or instrument is SANSInstrument.SANS2D or \
+                             SANSInstrument.LOQ
         if instrument is SANSInstrument.LOQ:
             multiplier = MultiplyByAbsoluteScaleLOQ()
         elif is_isis_instrument:

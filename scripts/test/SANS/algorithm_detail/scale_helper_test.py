@@ -6,7 +6,7 @@ from sans.algorithm_detail.scale_helpers import (DivideByVolumeFactory, DivideBy
                                                  MultiplyByAbsoluteScaleFactory, MultiplyByAbsoluteScaleLOQ,
                                                  MultiplyByAbsoluteScaleISIS)
 from sans.common.general_functions import create_unmanaged_algorithm
-from sans.common.sans_type import (SampleShape, SANSFacility, DataType)
+from sans.common.enums import (SampleShape, SANSFacility, DataType)
 from sans.state.scale import get_scale_builder
 from sans.state.data import get_data_builder
 

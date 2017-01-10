@@ -1,7 +1,7 @@
 import unittest
 import mantid
 
-from sans.common.sans_type import (ISISReductionMode, DetectorType, RangeStepType, FitType, DataType)
+from sans.common.enums import (ISISReductionMode, DetectorType, RangeStepType, FitType, DataType)
 from sans.user_file.user_file_parser import (DetParser, LimitParser, MaskParser, SampleParser, SetParser, TransParser,
                                              TubeCalibFileParser, QResolutionParser, FitParser, GravityParser,
                                              MaskFileParser, MonParser, PrintParser, BackParser, SANS2DParser, LOQParser,

@@ -45,10 +45,12 @@ cache.
 
 from abc import (ABCMeta, abstractmethod)
 from mantid.api import (AnalysisDataService)
-from sans.common.file_information import (SANSFileInformationFactory, SANSFileType, get_extension_for_file_type,
+from sans.common.file_information import (SANSFileInformationFactory, FileType, get_extension_for_file_type,
                                               find_full_file_path)
-from sans.common.constants import (SANSConstants)
-from sans.common.sans_type import (SANSInstrument, SANSDataType, convert_from_data_type_to_string)
+from sans.common.constants import (EMPTY_NAME, SANS_SUFFIX, TRANS_SUFFIX, MONITOR_SUFFIX, CALIBRATION_WORKSPACE_TAG,
+                                   SANS_FILE_TAG, OUTPUT_WORKSPACE_GROUP, OUTPUT_MONITOR_WORKSPACE,
+                                   OUTPUT_MONITOR_WORKSPACE_GROUP)
+from sans.common.enums import (SANSInstrument, SANSDataType)
 from sans.common.general_functions import (create_unmanaged_algorithm)
 from sans.common.log_tagger import (set_tag, has_tag, get_tag)
 from sans.state.data import (StateData)
@@ -127,9 +129,9 @@ def get_expected_file_tags(file_information, is_transmission, period):
     """
     suffix_file_type = get_extension_for_file_type(file_information)
     if is_transmission:
-        suffix_data = SANSConstants.trans_suffix
+        suffix_data = TRANS_SUFFIX
     else:
-        suffix_data = SANSConstants.sans_suffix
+        suffix_data = SANS_SUFFIX
     file_path = file_information.get_file_name()
 
     # Three possibilities:
@@ -166,6 +168,7 @@ def is_data_transmission_and_event_mode(file_infos):
             break
     return is_bad_file_setting
 
+
 # ----------------------------------------------------------------------------------------------------------------------
 # Caching workspaces
 # ----------------------------------------------------------------------------------------------------------------------
@@ -178,7 +181,7 @@ def add_workspaces_to_analysis_data_service(workspaces, workspace_names, is_moni
     :param is_monitor: if the workspace is a monitor or not
     """
     if is_monitor:
-        workspace_names = [workspace_name + SANSConstants.monitor_suffix for workspace_name in workspace_names]
+        workspace_names = [workspace_name + MONITOR_SUFFIX for workspace_name in workspace_names]
     if len(workspaces) != len(workspace_names):
         raise RuntimeError("SANSLoad: There is a mismatch between the generated names and the length of"
                            " the WorkspaceGroup. The workspace has {0} entries and there are {1} "
@@ -233,8 +236,8 @@ def has_loaded_correctly_from_ads(file_information, workspaces, period):
 
 def is_calibration_correct(workspace, calibration_file):
     is_correct = True
-    if has_tag(SANSConstants.Calibration.calibration_workspace_tag, workspace):
-        is_correct = calibration_file == get_tag(SANSConstants.Calibration.calibration_workspace_tag, workspace)
+    if has_tag(CALIBRATION_WORKSPACE_TAG, workspace):
+        is_correct = calibration_file == get_tag(CALIBRATION_WORKSPACE_TAG, workspace)
     return is_correct
 
 
@@ -250,8 +253,8 @@ def get_workspaces_from_ads_if_exist(file_tags, full_calibration_file_path, work
     for workspace_name in AnalysisDataService.getObjectNames():
         workspace = AnalysisDataService.retrieve(workspace_name)
         try:
-            if has_tag(SANSConstants.sans_file_tag, workspace):
-                file_tag = get_tag(SANSConstants.sans_file_tag, workspace)
+            if has_tag(SANS_FILE_TAG, workspace):
+                file_tag = get_tag(SANS_FILE_TAG, workspace)
                 if file_tag in file_tags and is_calibration_correct(workspace, full_calibration_file_path):
                     workspaces.append(workspace)
         except RuntimeError:
@@ -280,7 +283,7 @@ def use_cached_workspaces_from_ads(file_information,  is_transmission,  period, 
     get_workspaces_from_ads_if_exist(file_tags, full_calibration_file_path, workspaces)
 
     if not is_transmission:
-        file_tags_monitors = [file_tag + SANSConstants.monitor_suffix for file_tag in file_tags]
+        file_tags_monitors = [file_tag + MONITOR_SUFFIX for file_tag in file_tags]
         get_workspaces_from_ads_if_exist(file_tags_monitors, full_calibration_file_path, workspace_monitors)
 
     # Check if all required workspaces could be found on the ADS. For now, we allow only full loading, ie we don't
@@ -313,10 +316,10 @@ def tag_workspaces_with_file_names(workspaces, file_information, is_transmission
         raise RuntimeError("Issue while tagging the loaded data. The number of tags does not match the number "
                            "of workspaces.")
     for file_tag, workspace in zip(file_tags, workspaces):
-        if not has_tag(SANSConstants.sans_file_tag, workspace):
+        if not has_tag(SANS_FILE_TAG, workspace):
             if is_monitor:
-                file_tag += SANSConstants.monitor_suffix
-            set_tag(SANSConstants.sans_file_tag, file_tag, workspace)
+                file_tag += MONITOR_SUFFIX
+            set_tag(SANS_FILE_TAG, file_tag, workspace)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -353,12 +356,12 @@ def run_added_loader(loader, file_information, is_transmission, period):
     def extract_histogram_data(load_alg, num_periods, selected_period):
         ws_collection = []
         if num_periods == 1:
-            ws_collection.append(load_alg.getProperty(SANSConstants.output_workspace).value)
+            ws_collection.append(load_alg.getProperty("OutputWorkspace").value)
         elif num_periods > 1 and selected_period is not StateData.ALL_PERIODS:
-            ws_collection.append(load_alg.getProperty(SANSConstants.output_workspace).value)
+            ws_collection.append(load_alg.getProperty("OutputWorkspace").value)
         else:
             for index in range(1, num_periods + 1):
-                ws_collection.append(load_alg.getProperty(SANSConstants.output_workspace_group + str(index)).value)
+                ws_collection.append(load_alg.getProperty(OUTPUT_WORKSPACE_GROUP + str(index)).value)
         return ws_collection
 
     def extract_event_data(load_alg, num_periods, selected_period):
@@ -369,21 +372,19 @@ def run_added_loader(loader, file_information, is_transmission, period):
             offset = num_periods
             load_alg.setProperty("EntryNumber", selected_period)
             load_alg.execute()
-            ws_collection.append(load_alg.getProperty(SANSConstants.output_workspace).value)
+            ws_collection.append(load_alg.getProperty("OutputWorkspace").value)
 
             # Second get the added monitor data
             load_alg.setProperty("EntryNumber", selected_period + offset)
             load_alg.execute()
-            ws_monitor_collection.append(load_alg.getProperty(SANSConstants.output_workspace).value)
+            ws_monitor_collection.append(load_alg.getProperty("OutputWorkspace").value)
         else:
             load_alg.execute()
             workspace_indices = range(1, number_of_periods + 1)
             monitor_indices = range(number_of_periods + 1, number_of_periods*2 + 1)
             for workspace_index, monitor_index in zip(workspace_indices, monitor_indices):
-                ws_collection.append(load_alg.getProperty(SANSConstants.output_workspace_group +
-                                                          str(workspace_index)).value)
-                ws_monitor_collection.append(load_alg.getProperty(SANSConstants.output_workspace_group +
-                                             str(monitor_index)).value)
+                ws_collection.append(load_alg.getProperty(OUTPUT_WORKSPACE_GROUP + str(workspace_index)).value)
+                ws_monitor_collection.append(load_alg.getProperty(OUTPUT_WORKSPACE_GROUP + str(monitor_index)).value)
         return ws_collection, ws_monitor_collection
 
     workspaces = []
@@ -409,7 +410,7 @@ def run_added_loader(loader, file_information, is_transmission, period):
                                "MonitorWorkspace": "dummy2"}
             extract_alg = create_unmanaged_algorithm(extract_name, **extract_options)
             for workspace in workspace_collection:
-                extract_alg.setProperty(SANSConstants.input_workspace, workspace)
+                extract_alg.setProperty("InputWorkspace", workspace)
                 extract_alg.execute()
                 workspaces.append(extract_alg.getProperty("DetectorWorkspace").value)
                 workspace_monitors.append(extract_alg.getProperty("MonitorWorkspace").value)
@@ -430,8 +431,8 @@ def loader_for_added_isis_nexus(file_information, is_transmission, period):
     """
     _ = is_transmission
     loader_name = "LoadNexusProcessed"
-    loader_options = {SANSConstants.file_name: file_information.get_file_name(),
-                      SANSConstants.output_workspace: SANSConstants.dummy,
+    loader_options = {"Filename": file_information.get_file_name(),
+                      "OutputWorkspace": EMPTY_NAME,
                       "LoadHistory": True,
                       "FastMultiPeriod": True}
     if period != StateData.ALL_PERIODS:
@@ -461,11 +462,11 @@ def extract_multi_period_event_workspace(loader, index, output_workspace_propert
     workspace_of_interest = group_workspace[group_workspace_index]
 
     clone_name = "CloneWorkspace"
-    clone_options = {SANSConstants.input_workspace: workspace_of_interest,
-                     SANSConstants.output_workspace: SANSConstants.dummy}
+    clone_options = {"InputWorkspace": workspace_of_interest,
+                     "OutputWorkspace": EMPTY_NAME}
     clone_alg = create_unmanaged_algorithm(clone_name, **clone_options)
     clone_alg.execute()
-    return clone_alg.getProperty(SANSConstants.output_workspace).value
+    return clone_alg.getProperty("OutputWorkspace").value
 
 
 def loader_for_isis_nexus(file_information, is_transmission, period):
@@ -478,8 +479,8 @@ def loader_for_isis_nexus(file_information, is_transmission, period):
     :param period: the period to load.
     :return: the name of the load algorithm and the selected load options.
     """
-    loader_options = {SANSConstants.file_name: file_information.get_file_name(),
-                      SANSConstants.output_workspace: SANSConstants.dummy}
+    loader_options = {"Filename": file_information.get_file_name(),
+                      "OutputWorkspace": EMPTY_NAME}
     if file_information.is_event_mode():
         loader_name = "LoadEventNexus"
         # Note that currently we don't have a way to only load one monitor
@@ -516,8 +517,8 @@ def loader_for_raw(file_information, is_transmission, period):
     :return: the name of the load algorithm and the selected load options.
     """
     loader_name = "LoadRaw"
-    loader_options = {SANSConstants.file_name: file_information.get_file_name(),
-                      SANSConstants.output_workspace: SANSConstants.dummy}
+    loader_options = {"Filename": file_information.get_file_name(),
+                      "OutputWorkspace": EMPTY_NAME}
     loader_options.update({"LoadMonitors": "Separate"})
     if period != StateData.ALL_PERIODS:
         loader_options.update({"PeriodList": period})
@@ -526,15 +527,15 @@ def loader_for_raw(file_information, is_transmission, period):
 
     # Add the sample details to the loaded workspace
     sample_name = "LoadSampleDetailsFromRaw"
-    sample_options = {SANSConstants.file_name: file_information.get_file_name()}
+    sample_options = {"Filename": file_information.get_file_name()}
     sample_alg = create_unmanaged_algorithm(sample_name, **sample_options)
 
     for workspace in workspaces:
-        sample_alg.setProperty(SANSConstants.input_workspace, workspace)
+        sample_alg.setProperty("InputWorkspace", workspace)
         sample_alg.execute()
 
     for monitor_workspace in monitor_workspaces:
-        sample_alg.setProperty(SANSConstants.input_workspace, monitor_workspace)
+        sample_alg.setProperty("InputWorkspace", monitor_workspace)
         sample_alg.execute()
 
     return workspaces, monitor_workspaces
@@ -567,37 +568,36 @@ def run_loader(loader, file_information, is_transmission, period):
     # the group workspace is a weak pointer, which invalidates our handle as soon as the group workspace goes
     # out of scope. All of this makes sense for the ADS, but is a pain otherwise.
     if number_of_periods == 1:
-        workspaces.append(loader.getProperty(SANSConstants.output_workspace).value)
+        workspaces.append(loader.getProperty("OutputWorkspace").value)
     elif number_of_periods > 1 and period is not StateData.ALL_PERIODS:
         if file_information.is_event_mode():
-            workspaces.append(extract_multi_period_event_workspace(loader, period, SANSConstants.output_workspace))
+            workspaces.append(extract_multi_period_event_workspace(loader, period, "OutputWorkspace"))
         else:
-            workspaces.append(loader.getProperty(SANSConstants.output_workspace).value)
+            workspaces.append(loader.getProperty("OutputWorkspace").value)
     else:
         for index in range(1, number_of_periods + 1):
             if file_information.is_event_mode():
-                workspaces.append(extract_multi_period_event_workspace(loader, index, SANSConstants.output_workspace))
+                workspaces.append(extract_multi_period_event_workspace(loader, index, "OutputWorkspace"))
             else:
-                workspaces.append(loader.getProperty(SANSConstants.output_workspace_group + str(index)).value)
+                workspaces.append(loader.getProperty(OUTPUT_WORKSPACE_GROUP + str(index)).value)
 
     workspace_monitors = []
     if not is_transmission:
         if number_of_periods == 1:
-            workspace_monitors.append(loader.getProperty(SANSConstants.output_monitor_workspace).value)
+            workspace_monitors.append(loader.getProperty(OUTPUT_MONITOR_WORKSPACE).value)
         elif number_of_periods > 1 and period is not StateData.ALL_PERIODS:
             if file_information.is_event_mode():
                 workspace_monitors.append(extract_multi_period_event_workspace(loader, period,
-                                                                               SANSConstants.output_monitor_workspace))
+                                                                               OUTPUT_MONITOR_WORKSPACE))
             else:
-                workspace_monitors.append(loader.getProperty(SANSConstants.output_monitor_workspace).value)
+                workspace_monitors.append(loader.getProperty(OUTPUT_MONITOR_WORKSPACE).value)
         else:
             for index in range(1, number_of_periods + 1):
                 if file_information.is_event_mode():
                     workspace_monitors.append(
-                        extract_multi_period_event_workspace(loader, index, SANSConstants.output_monitor_workspace))
+                        extract_multi_period_event_workspace(loader, index, OUTPUT_MONITOR_WORKSPACE))
                 else:
-                    workspace_monitors.append(loader.getProperty(SANSConstants.output_monitor_workspace_group +
-                                                                 str(index)).value)
+                    workspace_monitors.append(loader.getProperty(OUTPUT_MONITOR_WORKSPACE_GROUP + str(index)).value)
     if workspaces:
         tag_workspaces_with_file_names(workspaces, file_information, is_transmission, period, is_monitor=False)
     if workspace_monitors:
@@ -612,11 +612,11 @@ def get_loader_strategy(file_information):
     :param file_information: a SANSFileInformation object.
     :return: a handle to the correct loading function/strategy.
     """
-    if file_information.get_type() == SANSFileType.ISISNexus:
+    if file_information.get_type() == FileType.ISISNexus:
         loader = loader_for_isis_nexus
-    elif file_information.get_type() == SANSFileType.ISISRaw:
+    elif file_information.get_type() == FileType.ISISRaw:
         loader = loader_for_raw
-    elif file_information.get_type() == SANSFileType.ISISNexusAdded:
+    elif file_information.get_type() == FileType.ISISNexusAdded:
         loader = loader_for_added_isis_nexus
     else:
         raise RuntimeError("SANSLoad: Cannot load SANS file of type {0}".format(str(file_information.get_type())))
@@ -709,7 +709,7 @@ class SANSLoadDataISIS(SANSLoadData):
 
         for key, value in file_infos.items():
             # Loading
-            report_message = "Loading {0}".format(convert_from_data_type_to_string(key))
+            report_message = "Loading {0}".format(SANSDataType.to_string(key))
             progress.report(report_message)
 
             workspace_pack, workspace_monitors_pack = load_isis(key, value, period_infos[key],

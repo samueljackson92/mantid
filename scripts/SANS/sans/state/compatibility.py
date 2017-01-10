@@ -9,7 +9,7 @@
 import copy
 from sans.state.state_base import (StateBase, rename_descriptor_names, BoolParameter, StringParameter)
 from sans.state.automatic_setters import (automatic_setters)
-from sans.common.sans_type import SANSInstrument
+from sans.common.enums import SANSInstrument
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -48,5 +48,5 @@ def get_compatibility_builder(data_info):
     if instrument is SANSInstrument.LARMOR or instrument is SANSInstrument.LOQ or instrument is SANSInstrument.SANS2D:
         return StateCompatibilityBuilder()
     else:
-        raise NotImplementedError("StateAdjustmentBuilder: Could not find any valid adjustment builder for the "
+        raise NotImplementedError("StateCompatibilityBuilder: Could not find any valid compatibility builder for the "
                                   "specified StateData object {0}".format(str(data_info)))

@@ -3,8 +3,8 @@ import mantid
 import math
 
 from sans.common.general_functions import (create_unmanaged_algorithm)
-from sans.common.constants import SANSConstants
-from sans.common.sans_type import (SANSFacility, SampleShape)
+from sans.common.constants import EMPTY_NAME
+from sans.common.enums import (SANSFacility, SampleShape)
 from sans.test_helper.test_director import TestDirector
 from sans.state.scale import get_scale_builder
 from sans.state.data import get_data_builder
@@ -54,13 +54,13 @@ class SANSScaleTest(unittest.TestCase):
         serialized_state = state.property_manager
         scale_name = "SANSScale"
         scale_options = {"SANSState": serialized_state,
-                         SANSConstants.input_workspace: workspace,
-                         SANSConstants.output_workspace: SANSConstants.dummy}
+                         "InputWorkspace": workspace,
+                         "OutputWorkspace": EMPTY_NAME}
         scale_alg = create_unmanaged_algorithm(scale_name, **scale_options)
 
         # Act
         scale_alg.execute()
-        output_workspace = scale_alg.getProperty(SANSConstants.output_workspace).value
+        output_workspace = scale_alg.getProperty("OutputWorkspace").value
 
         # Assert
         # We have a LOQ data set, hence we need to divide by pi

@@ -10,7 +10,7 @@ from math import sqrt
 from sans.algorithm_detail.q_resolution_calculator import (QResolutionCalculatorFactory, NullQResolutionCalculator,
                                                            QResolutionCalculatorISIS, get_aperture_diameters,
                                                            load_sigma_moderator_workspace, create_q_resolution_workspace)
-from sans.common.sans_type import SANSInstrument
+from sans.common.enums import SANSInstrument
 
 
 class MockContainer:

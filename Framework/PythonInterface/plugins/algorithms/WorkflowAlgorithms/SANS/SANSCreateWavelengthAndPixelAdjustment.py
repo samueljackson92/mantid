@@ -11,8 +11,8 @@ from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, Algorit
                         FileProperty, FileAction, Progress, WorkspaceUnitValidator)
 
 from sans.state.state_base import create_deserialized_sans_state_from_property_manager
-from sans.common.sans_type import (RangeStepType, convert_detector_type_to_string, DetectorType)
-from sans.common.constants import SANSConstants
+from sans.common.enums import (RangeStepType, DetectorType)
+from sans.common.constants import EMPTY_NAME
 from sans.common.general_functions import create_unmanaged_algorithm
 
 
@@ -39,9 +39,9 @@ class SANSCreateWavelengthAndPixelAdjustment(DataProcessorAlgorithm):
                                                      optional=PropertyMode.Mandatory, direction=Direction.Input,
                                                      validator=workspace_validator),
                              doc='The monitor normalization workspace in wavelength units.')
-        allowed_detector_types = StringListValidator([convert_detector_type_to_string(DetectorType.Hab),
-                                                      convert_detector_type_to_string(DetectorType.Lab)])
-        self.declareProperty("Component", convert_detector_type_to_string(DetectorType.Lab),
+        allowed_detector_types = StringListValidator([DetectorType.to_string(DetectorType.HAB),
+                                                      DetectorType.to_string(DetectorType.LAB)])
+        self.declareProperty("Component", DetectorType.to_string(DetectorType.LAB),
                              validator=allowed_detector_types, direction=Direction.Input,
                              doc="The component of the instrument which is currently being investigated.")
 
@@ -114,22 +114,22 @@ class SANSCreateWavelengthAndPixelAdjustment(DataProcessorAlgorithm):
         for workspace in wavelength_adjustment_workspaces:
             # First we need to change the binning such that is matches the binning of the main data workspace
             rebin_name = "Rebin"
-            rebin_options = {SANSConstants.input_workspace: workspace,
+            rebin_options = {"InputWorkspace": workspace,
                              "Params": rebin_string,
-                             SANSConstants.output_workspace: SANSConstants.dummy}
+                             "OutputWorkspace": EMPTY_NAME}
             rebin_alg = create_unmanaged_algorithm(rebin_name, **rebin_options)
             rebin_alg.execute()
-            rebinned_workspace = rebin_alg.getProperty(SANSConstants.output_workspace).value
+            rebinned_workspace = rebin_alg.getProperty("OutputWorkspace").value
             if wavelength_adjustment_workspace is None:
                 wavelength_adjustment_workspace = rebinned_workspace
             else:
                 multiply_name = "Multiply"
                 multiply_options = {"LHSWorkspace": rebinned_workspace,
                                     "RHSWorkspace": wavelength_adjustment_workspace,
-                                    SANSConstants.output_workspace: SANSConstants.dummy}
+                                    "OutputWorkspace": EMPTY_NAME}
                 multiply_alg = create_unmanaged_algorithm(multiply_name, **multiply_options)
                 multiply_alg.execute()
-                wavelength_adjustment_workspace = multiply_alg.getProperty(SANSConstants.output_workspace).value
+                wavelength_adjustment_workspace = multiply_alg.getProperty("OutputWorkspace").value
         return wavelength_adjustment_workspace
 
     def _load_wavelength_correction_file(self, file_name):
@@ -137,19 +137,19 @@ class SANSCreateWavelengthAndPixelAdjustment(DataProcessorAlgorithm):
         if file_name:
             load_name = "LoadRKH"
             load_option = {"Filename": file_name,
-                           SANSConstants.output_workspace: SANSConstants.dummy,
+                           "OutputWorkspace": EMPTY_NAME,
                            "FirstColumnValue": "Wavelength"}
             load_alg = create_unmanaged_algorithm(load_name, **load_option)
             load_alg.execute()
-            output_workspace = load_alg.getProperty(SANSConstants.output_workspace).value
+            output_workspace = load_alg.getProperty("OutputWorkspace").value
             # We require HistogramData and not PointData
             if not output_workspace.isHistogramData():
                 convert_name = "ConvertToHistogram"
-                convert_options = {SANSConstants.input_workspace: output_workspace,
-                                   SANSConstants.output_workspace: SANSConstants.dummy}
+                convert_options = {"InputWorkspace": output_workspace,
+                                   "OutputWorkspace": EMPTY_NAME}
                 convert_alg = create_unmanaged_algorithm(convert_name, **convert_options)
                 convert_alg.execute()
-                output_workspace = convert_alg.getProperty(SANSConstants.output_workspace).value
+                output_workspace = convert_alg.getProperty("OutputWorkspace").value
             correction_workspace = output_workspace
         return correction_workspace
 
@@ -164,20 +164,20 @@ class SANSCreateWavelengthAndPixelAdjustment(DataProcessorAlgorithm):
 
         if pixel_adjustment_file:
             load_name = "LoadRKH"
-            load_options = {SANSConstants.file_name: pixel_adjustment_file,
-                            SANSConstants.output_workspace: SANSConstants.dummy,
+            load_options = {"Filename": pixel_adjustment_file,
+                            "OutputWorkspace": EMPTY_NAME,
                             "FirstColumnValue": "SpectrumNumber"}
             load_alg = create_unmanaged_algorithm(load_name, **load_options)
             load_alg.execute()
-            output_workspace = load_alg.getProperty(SANSConstants.output_workspace).value
+            output_workspace = load_alg.getProperty("OutputWorkspace").value
 
             crop_name = "SANSCrop"
-            crop_options = {SANSConstants.input_workspace: output_workspace,
-                            SANSConstants.output_workspace: SANSConstants.dummy,
+            crop_options = {"InputWorkspace": output_workspace,
+                            "OutputWorkspace": EMPTY_NAME,
                             "Component": component}
             crop_alg = create_unmanaged_algorithm(crop_name, **crop_options)
             crop_alg.execute()
-            pixel_adjustment_workspace = crop_alg.getProperty(SANSConstants.output_workspace).value
+            pixel_adjustment_workspace = crop_alg.getProperty("OutputWorkspace").value
         else:
             pixel_adjustment_workspace = None
         return pixel_adjustment_workspace
