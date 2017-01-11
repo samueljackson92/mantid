@@ -203,9 +203,9 @@ def convert_bank_name_to_detector_type_isis(detector_name):
     detector_name = detector_name.strip()
     if detector_name == "REAR-DETECTOR" or detector_name == "MAIN-DETECTOR-BANK" or detector_name == "DETECTORBENCH" \
             or detector_name == "REAR" or detector_name == "MAIN":
-        detector_type = DetectorType.Lab
+        detector_type = DetectorType.LAB
     elif detector_name == "FRONT-DETECTOR" or detector_name == "HAB" or detector_name == "FRONT":
-        detector_type = DetectorType.Hab
+        detector_type = DetectorType.HAB
     else:
         raise RuntimeError("There is not detector type conversion for a detector with the "
                            "name {0}".format(detector_name))

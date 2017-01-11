@@ -123,7 +123,7 @@ class SANSCalculateTransmission(DataProcessorAlgorithm):
         trans_name = "CalculateTransmission"
         trans_options = {"SampleRunWorkspace": transmission_workspace,
                          "DirectRunWorkspace": direct_workspace,
-                         "OutputWorkspace": dummy,
+                         "OutputWorkspace": EMPTY_NAME,
                          "IncidentBeamMonitor": incident_monitor_detector_id,
                          "RebinParams": rebin_params,
                          "OutputUnfittedData": True}
@@ -268,7 +268,7 @@ class SANSCalculateTransmission(DataProcessorAlgorithm):
 
         convert_name = "ConvertToWavelength"
         convert_options = {"InputWorkspace": workspace,
-                           "OutputWorkspace": dummy,
+                           "OutputWorkspace": EMPTY_NAME,
                            "WavelengthLow": wavelength_low,
                            "WavelengthHigh": wavelength_high,
                            "WavelengthStep": wavelength_step,

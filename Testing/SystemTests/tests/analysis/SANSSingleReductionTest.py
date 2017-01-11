@@ -7,9 +7,8 @@ import mantid
 from mantid.api import AlgorithmManager
 from sans.user_file.user_file_state_director import UserFileStateDirectorISIS
 from sans.state.data import get_data_builder
-from sans.common.sans_type import (SANSFacility, ISISReductionMode, ReductionDimensionality, RangeStepType,
-                                   FitModeForMerge)
-from sans.common.constants import SANSConstants
+from sans.common.enums import (SANSFacility, ISISReductionMode, ReductionDimensionality, RangeStepType, FitModeForMerge)
+from sans.common.constants import EMPTY_NAME
 from sans.common.general_functions import create_unmanaged_algorithm
 
 
@@ -28,15 +27,15 @@ class SANSSingleReductionTest(unittest.TestCase):
         load_alg.setProperty("UseCached", False)
         load_alg.setProperty("MoveWorkspace", False)
 
-        load_alg.setProperty("SampleScatterWorkspace", SANSConstants.dummy)
-        load_alg.setProperty("SampleScatterMonitorWorkspace", SANSConstants.dummy)
-        load_alg.setProperty("SampleTransmissionWorkspace", SANSConstants.dummy)
-        load_alg.setProperty("SampleDirectWorkspace", SANSConstants.dummy)
+        load_alg.setProperty("SampleScatterWorkspace", EMPTY_NAME)
+        load_alg.setProperty("SampleScatterMonitorWorkspace", EMPTY_NAME)
+        load_alg.setProperty("SampleTransmissionWorkspace", EMPTY_NAME)
+        load_alg.setProperty("SampleDirectWorkspace", EMPTY_NAME)
 
-        load_alg.setProperty("CanScatterWorkspace", SANSConstants.dummy)
-        load_alg.setProperty("CanScatterMonitorWorkspace", SANSConstants.dummy)
-        load_alg.setProperty("CanTransmissionWorkspace", SANSConstants.dummy)
-        load_alg.setProperty("CanDirectWorkspace", SANSConstants.dummy)
+        load_alg.setProperty("CanScatterWorkspace", EMPTY_NAME)
+        load_alg.setProperty("CanScatterMonitorWorkspace", EMPTY_NAME)
+        load_alg.setProperty("CanTransmissionWorkspace", EMPTY_NAME)
+        load_alg.setProperty("CanDirectWorkspace", EMPTY_NAME)
 
         # Act
         load_alg.execute()
@@ -96,10 +95,10 @@ class SANSSingleReductionTest(unittest.TestCase):
         # Load the reference file
         load_name = "LoadNexusProcessed"
         load_options = {"Filename": reference_file_name,
-                        SANSConstants.output_workspace: SANSConstants.dummy}
+                        "OutputWorkspace": EMPTY_NAME}
         load_alg = create_unmanaged_algorithm(load_name, **load_options)
         load_alg.execute()
-        reference_workspace = load_alg.getProperty(SANSConstants.output_workspace).value
+        reference_workspace = load_alg.getProperty("OutputWorkspace").value
 
         # Compare reference file with the output_workspace
         # We need to disable the instrument comparison, it takes way too long
@@ -141,7 +140,17 @@ class SANSSingleReductionTest(unittest.TestCase):
         user_file_director = UserFileStateDirectorISIS(data_info)
         user_file_director.set_user_file("USER_SANS2D_154E_2p4_4m_M3_Xpress_8mm_SampleChanger.txt")
         # Set the reduction mode to LAB
-        user_file_director.set_reduction_builder_reduction_mode(ISISReductionMode.Lab)
+        user_file_director.set_reduction_builder_reduction_mode(ISISReductionMode.LAB)
+
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # COMPATIBILITY BEGIN -- Remove when appropriate
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # Since we are dealing with event based data but we want to compare it with histogram data from the
+        # old reduction system we need to enable the compatibility mode
+        user_file_director.set_compatibility_builder_use_compatibility_mode(True)
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # COMPATIBILITY END
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         state = user_file_director.construct()
 
         # Load the sample workspaces
@@ -149,7 +158,7 @@ class SANSSingleReductionTest(unittest.TestCase):
         can_transmission, can_direct = self._load_workspace(state)
 
         # Act
-        output_settings = {"OutputWorkspaceLAB": SANSConstants.dummy}
+        output_settings = {"OutputWorkspaceLAB": EMPTY_NAME}
         single_reduction_alg = self._run_single_reduction(state, sample_scatter=sample,
                                                           sample_transmission=transmission_workspace,
                                                           sample_direct=direct_workspace,
@@ -183,7 +192,17 @@ class SANSSingleReductionTest(unittest.TestCase):
         user_file_director = UserFileStateDirectorISIS(data_info)
         user_file_director.set_user_file("USER_SANS2D_154E_2p4_4m_M3_Xpress_8mm_SampleChanger.txt")
         # Set the reduction mode to LAB
-        user_file_director.set_reduction_builder_reduction_mode(ISISReductionMode.Hab)
+        user_file_director.set_reduction_builder_reduction_mode(ISISReductionMode.HAB)
+
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # COMPATIBILITY BEGIN -- Remove when appropriate
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # Since we are dealing with event based data but we want to compare it with histogram data from the
+        # old reduction system we need to enable the compatibility mode
+        user_file_director.set_compatibility_builder_use_compatibility_mode(True)
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # COMPATIBILITY END
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         state = user_file_director.construct()
 
         # Load the sample workspaces
@@ -191,7 +210,7 @@ class SANSSingleReductionTest(unittest.TestCase):
         can_transmission, can_direct = self._load_workspace(state)
 
         # Act
-        output_settings = {"OutputWorkspaceHAB": SANSConstants.dummy}
+        output_settings = {"OutputWorkspaceHAB": EMPTY_NAME}
         single_reduction_alg = self._run_single_reduction(state, sample_scatter=sample,
                                                           sample_transmission=transmission_workspace,
                                                           sample_direct=direct_workspace,
@@ -229,6 +248,15 @@ class SANSSingleReductionTest(unittest.TestCase):
         user_file_director.set_reduction_builder_merge_fit_mode(FitModeForMerge.Both)
         user_file_director.set_reduction_builder_merge_scale(1.0)
         user_file_director.set_reduction_builder_merge_shift(0.0)
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # COMPATIBILITY BEGIN -- Remove when appropriate
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # Since we are dealing with event based data but we want to compare it with histogram data from the
+        # old reduction system we need to enable the compatibility mode
+        user_file_director.set_compatibility_builder_use_compatibility_mode(True)
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # COMPATIBILITY END
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         state = user_file_director.construct()
 
         # Load the sample workspaces
@@ -236,7 +264,7 @@ class SANSSingleReductionTest(unittest.TestCase):
         can, can_monitor, can_transmission, can_direct = self._load_workspace(state)
 
         # Act
-        output_settings = {"OutputWorkspaceMerged": SANSConstants.dummy}
+        output_settings = {"OutputWorkspaceMerged": EMPTY_NAME}
         single_reduction_alg = self._run_single_reduction(state, sample_scatter=sample,
                                                           sample_transmission=transmission_workspace,
                                                           sample_direct=direct_workspace,
@@ -278,9 +306,18 @@ class SANSSingleReductionTest(unittest.TestCase):
         user_file_director = UserFileStateDirectorISIS(data_info)
         user_file_director.set_user_file("USER_SANS2D_154E_2p4_4m_M3_Xpress_8mm_SampleChanger.txt")
         # Set the reduction mode to LAB
-        user_file_director.set_reduction_builder_reduction_mode(ISISReductionMode.Lab)
+        user_file_director.set_reduction_builder_reduction_mode(ISISReductionMode.LAB)
         user_file_director.set_reduction_builder_reduction_dimensionality(ReductionDimensionality.TwoDim)
         user_file_director.set_convert_to_q_builder_reduction_dimensionality(ReductionDimensionality.TwoDim)
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # COMPATIBILITY BEGIN -- Remove when appropriate
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # Since we are dealing with event based data but we want to compare it with histogram data from the
+        # old reduction system we need to enable the compatibility mode
+        user_file_director.set_compatibility_builder_use_compatibility_mode(True)
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # COMPATIBILITY END
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         state = user_file_director.construct()
 
         # Load the sample workspaces
@@ -288,7 +325,7 @@ class SANSSingleReductionTest(unittest.TestCase):
         can_transmission, can_direct = self._load_workspace(state)
 
         # Act
-        output_settings = {"OutputWorkspaceLAB": SANSConstants.dummy}
+        output_settings = {"OutputWorkspaceLAB": EMPTY_NAME}
         single_reduction_alg = self._run_single_reduction(state, sample_scatter=sample,
                                                           sample_transmission=transmission_workspace,
                                                           sample_direct=direct_workspace,

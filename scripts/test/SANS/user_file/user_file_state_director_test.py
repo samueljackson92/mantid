@@ -6,7 +6,7 @@ import mantid
 from sans.user_file.user_file_state_director import UserFileStateDirectorISIS
 from sans.common.enums import (SANSFacility, ISISReductionMode, RangeStepType, RebinType, DataType, FitType,
                                DetectorType)
-from sans.common.configurations import SANSConfigurations
+from sans.common.configurations import Configurations
 from sans.state.data import get_data_builder
 
 from user_file_test_helper import create_user_file, sample_user_file
@@ -60,7 +60,7 @@ class UserFileStateDirectorISISTest(unittest.TestCase):
 
     def _assert_reduction(self, state):
         reduction = state.reduction
-        self.assertTrue(reduction.reduction_mode is ISISReductionMode.Lab)
+        self.assertTrue(reduction.reduction_mode is ISISReductionMode.LAB)
 
     def _assert_scale(self, state):
         scale = state.scale
@@ -130,9 +130,9 @@ class UserFileStateDirectorISISTest(unittest.TestCase):
         self.assertTrue(calculate_transmission.wavelength_step_type is RangeStepType.Lin)
         self.assertFalse(calculate_transmission.use_full_wavelength_range)
         self.assertTrue(calculate_transmission.wavelength_full_range_low ==
-                        SANSConfigurations.SANS2D.wavelength_full_range_low)
+                        Configurations.SANS2D.wavelength_full_range_low)
         self.assertTrue(calculate_transmission.wavelength_full_range_high ==
-                        SANSConfigurations.SANS2D.wavelength_full_range_high)
+                        Configurations.SANS2D.wavelength_full_range_high)
         self.assertTrue(calculate_transmission.background_TOF_general_start == 3500)
         self.assertTrue(calculate_transmission.background_TOF_general_stop == 4500)
         self.assertTrue(calculate_transmission.background_TOF_monitor_start["1"] == 35000)
@@ -157,10 +157,10 @@ class UserFileStateDirectorISISTest(unittest.TestCase):
         self.assertTrue(wavelength_and_pixel_adjustment.wavelength_step == 0.125)
         self.assertTrue(wavelength_and_pixel_adjustment.wavelength_step_type is RangeStepType.Lin)
         self.assertTrue(wavelength_and_pixel_adjustment.adjustment_files[
-                        DetectorType.to_string(DetectorType.Lab)].wavelength_adjustment_file ==
+                        DetectorType.to_string(DetectorType.LAB)].wavelength_adjustment_file ==
                         "DIRECTM1_15785_12m_31Oct12_v12.dat")
         self.assertTrue(wavelength_and_pixel_adjustment.adjustment_files[
-                        DetectorType.to_string(DetectorType.Hab)].wavelength_adjustment_file ==
+                        DetectorType.to_string(DetectorType.HAB)].wavelength_adjustment_file ==
                         "DIRECTM1_15785_12m_31Oct12_v12.dat")
 
         # Assert wide angle correction

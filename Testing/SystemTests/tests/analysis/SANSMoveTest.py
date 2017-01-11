@@ -230,7 +230,7 @@ class SANSMoveTest(unittest.TestCase):
         workspace = load_workspace(file_name)
         state = SANSMoveTest._get_simple_state(sample_scatter=file_name,
                                                lab_z_translation_correction=lab_z_translation_correction)
-        beam_coordinates = [26., 98.]
+        beam_coordinates = [0.1076, -0.0835]
 
         # Act
         # The component input is not relevant for SANS2D's initial move. All detectors are moved
@@ -263,7 +263,7 @@ class SANSMoveTest(unittest.TestCase):
         total_y = 0.
         total_z = initial_z_position + z_correction
         expected_position = V3D(total_x - beam_coordinates[0], total_y - beam_coordinates[1], total_z)
-        expected_rotation = Quat(1., 0., 0., 0.)
+        expected_rotation = Quat(0.9968998362876025, 0., 0.07868110579898738, 0.)
         self.compare_expected_position(expected_position, expected_rotation,
                                        component_to_investigate, state.move, workspace)
 
@@ -363,7 +363,7 @@ class SANSMoveTest(unittest.TestCase):
         total_y = 0.
         total_z = initial_z_position + z_correction
         expected_position = V3D(total_x - 26., total_y - 98., total_z)
-        expected_rotation = Quat(1., 0., 0., 0.)
+        expected_rotation = Quat(0.9968998362876025, 0., 0.07868110579898738, 0.)
         self.compare_expected_position(expected_position, expected_rotation,
                                        component_to_investigate, state.move, workspace)
 
@@ -386,7 +386,7 @@ class SANSMoveTest(unittest.TestCase):
 
         # Assert for initial move for low angle bank
         # These values are on the workspace and in the sample logs,
-        component_to_investigate = DetectorType.to_string(DetectorType.HAB)
+        component_to_investigate = DetectorType.to_string(DetectorType.LAB)
         initial_z_position = 23.281
         rear_det_z = 11.9989755859
         offset = 4.
@@ -414,7 +414,7 @@ class SANSMoveRunnerTest(stresstesting.MantidStressTest):
             self._success = True
 
     def requiredMemoryMB(self):
-        return 2000
+        return 1000
 
     def validate(self):
         return self._success

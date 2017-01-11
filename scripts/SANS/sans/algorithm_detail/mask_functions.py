@@ -58,9 +58,9 @@ def get_geometry_information(ipf_path, detector_type):
                                      number_of_pixels_override=number_of_pixels_override)
 
     # Determine the prefix for the detector
-    if detector_type is DetectorType.Hab:
+    if detector_type is DetectorType.HAB:
         prefix = "low-angle-detector-"
-    elif detector_type is DetectorType.Lab:
+    elif detector_type is DetectorType.LAB:
         prefix = "high-angle-detector-"
     else:
         raise RuntimeError("MaskingParser: Tyring to get information for unknown "

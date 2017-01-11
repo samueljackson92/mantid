@@ -55,7 +55,7 @@ class CommandInterfaceStateDirectorTest(unittest.TestCase):
         self._assert_raises_nothing(command_interface.add_command, command)
 
         # Detector
-        command = NParameterCommand(command_id=NParameterCommandId.detector, values=[ISISReductionMode.Hab])
+        command = NParameterCommand(command_id=NParameterCommandId.detector, values=[ISISReductionMode.HAB])
         self._assert_raises_nothing(command_interface.add_command, command)
 
         # Gravity
@@ -63,7 +63,7 @@ class CommandInterfaceStateDirectorTest(unittest.TestCase):
         self._assert_raises_nothing(command_interface.add_command, command)
 
         # Set centre
-        command = NParameterCommand(command_id=NParameterCommandId.centre, values=[12.4, 23.54, DetectorType.Hab])
+        command = NParameterCommand(command_id=NParameterCommandId.centre, values=[12.4, 23.54, DetectorType.HAB])
         self._assert_raises_nothing(command_interface.add_command, command)
 
         # # Trans fit
@@ -81,7 +81,7 @@ class CommandInterfaceStateDirectorTest(unittest.TestCase):
         self._assert_raises_nothing(command_interface.add_command, command)
 
         # Flood file
-        command = NParameterCommand(command_id=NParameterCommandId.flood_file, values=["test", DetectorType.Lab])
+        command = NParameterCommand(command_id=NParameterCommandId.flood_file, values=["test", DetectorType.LAB])
         self._assert_raises_nothing(command_interface.add_command, command)
 
         # Phi limits
@@ -90,7 +90,7 @@ class CommandInterfaceStateDirectorTest(unittest.TestCase):
 
         # Wavelength correction file
         command = NParameterCommand(command_id=NParameterCommandId.wavelength_correction_file,
-                                    values=["test", DetectorType.Hab])
+                                    values=["test", DetectorType.HAB])
         self._assert_raises_nothing(command_interface.add_command, command)
 
         # Radius mask
@@ -127,7 +127,7 @@ class CommandInterfaceStateDirectorTest(unittest.TestCase):
         self.assertTrue(state.move.sample_offset == 23.6/1000.)
         self.assertTrue(state.data.sample_scatter == "SANS2D00022024")
         self.assertTrue(state.data.sample_scatter_period == 3)
-        self.assertTrue(state.reduction.reduction_mode is ISISReductionMode.Hab)
+        self.assertTrue(state.reduction.reduction_mode is ISISReductionMode.HAB)
         self.assertTrue(state.convert_to_q.use_gravity)
         self.assertTrue(state.convert_to_q.gravity_extra_length == 12.4)
         self.assertTrue(state.move.detectors[DetectorType.to_string(DetectorType.HAB)].sample_centre_pos1 == 12.4/1000.)

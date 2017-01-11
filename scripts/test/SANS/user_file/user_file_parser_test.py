@@ -54,10 +54,10 @@ class DetParserTest(unittest.TestCase):
 
     def test_that_reduction_mode_is_parsed_correctly(self):
         # The dict below has the string to parse as the key and the expected result as a value
-        valid_settings = {"DET/HAB": {DetectorId.reduction_mode: ISISReductionMode.Hab},
-                          "dEt/ frONT ": {DetectorId.reduction_mode: ISISReductionMode.Hab},
-                          "dET/REAR": {DetectorId.reduction_mode: ISISReductionMode.Lab},
-                          "dEt/MAIn   ": {DetectorId.reduction_mode: ISISReductionMode.Lab},
+        valid_settings = {"DET/HAB": {DetectorId.reduction_mode: ISISReductionMode.HAB},
+                          "dEt/ frONT ": {DetectorId.reduction_mode: ISISReductionMode.HAB},
+                          "dET/REAR": {DetectorId.reduction_mode: ISISReductionMode.LAB},
+                          "dEt/MAIn   ": {DetectorId.reduction_mode: ISISReductionMode.LAB},
                           " dEt/ BOtH": {DetectorId.reduction_mode: ISISReductionMode.All},
                           "DeT /merge ": {DetectorId.reduction_mode: ISISReductionMode.Merged},
                           " DEt / MERGED": {DetectorId.reduction_mode: ISISReductionMode.Merged}}
@@ -86,40 +86,40 @@ class DetParserTest(unittest.TestCase):
 
     def test_that_detector_setting_is_parsed_correctly(self):
         valid_settings = {"Det/CORR/REAR/X 123": {DetectorId.correction_x: single_entry_with_detector(entry=123,
-                                                                    detector_type=DetectorType.Lab)},  # noqa
+                                                                    detector_type=DetectorType.LAB)},  # noqa
                           "DEt/CORR/ frOnt/X +95.7": {DetectorId.correction_x:
                                                           single_entry_with_detector(entry=95.7,
-                                                                                     detector_type=DetectorType.Hab)},
+                                                                                     detector_type=DetectorType.HAB)},
                           "DeT/ CORR / ReAR/ y 12.3": {DetectorId.correction_y:
                                                            single_entry_with_detector(entry=12.3,
-                                                                                      detector_type=DetectorType.Lab)},
+                                                                                      detector_type=DetectorType.LAB)},
                           " DET/CoRR/fROnt/Y -957": {DetectorId.correction_y:
                                                          single_entry_with_detector(entry=-957,
-                                                                                    detector_type=DetectorType.Hab)},
+                                                                                    detector_type=DetectorType.HAB)},
                           "DeT/ CORR /reAR/Z 12.3": {DetectorId.correction_z:
                                                          single_entry_with_detector(entry=12.3,
-                                                                                    detector_type=DetectorType.Lab)},
+                                                                                    detector_type=DetectorType.LAB)},
                           " DET/CoRR/FRONT/ Z -957": {DetectorId.correction_z:
                                                           single_entry_with_detector(entry=-957,
-                                                                                     detector_type=DetectorType.Hab)},
+                                                                                     detector_type=DetectorType.HAB)},
                           "DeT/ CORR /reAR/SIDE 12.3": {DetectorId.correction_translation:
                                                             single_entry_with_detector(entry=12.3,
-                                                                                       detector_type=DetectorType.Lab)},
+                                                                                       detector_type=DetectorType.LAB)},
                           " DET/CoRR/FRONT/ SidE -957": {DetectorId.correction_translation:
                                                              single_entry_with_detector(entry=-957,
-                                                                                    detector_type=DetectorType.Hab)},
+                                                                                    detector_type=DetectorType.HAB)},
                           "DeT/ CORR /reAR/ROt 12.3": {DetectorId.correction_rotation:
                                                            single_entry_with_detector(entry=12.3,
-                                                                                      detector_type=DetectorType.Lab)},
+                                                                                      detector_type=DetectorType.LAB)},
                           " DET/CoRR/FRONT/ROT -957": {DetectorId.correction_rotation:
                                                            single_entry_with_detector(entry=-957,
-                                                                                      detector_type=DetectorType.Hab)},
+                                                                                      detector_type=DetectorType.HAB)},
                           "DeT/ CORR /reAR/Radius 12.3": {DetectorId.correction_radius:
                                                               single_entry_with_detector(entry=12.3,
-                                                                                     detector_type=DetectorType.Lab)},
+                                                                                     detector_type=DetectorType.LAB)},
                           " DET/CoRR/FRONT/RADIUS 957": {DetectorId.correction_radius:
                                                              single_entry_with_detector(entry=957,
-                                                                                     detector_type=DetectorType.Hab)}}
+                                                                                     detector_type=DetectorType.HAB)}}
 
         invalid_settings = {"Det/CORR/REAR/X ": RuntimeError,
                             "DEt/CORR/ frOnt/X 12 23": RuntimeError,
@@ -153,13 +153,11 @@ class LimitParserTest(unittest.TestCase):
 
     def test_that_event_time_limit_is_parsed_correctly(self):
         valid_settings = {"L  / EVEnTStime 0,-10,32,434,34523,35": {LimitsId.events_binning:
-                                                                    rebin_string_values(value=[0, -10, 32,
-                                                                                               434, 34523, 35])}}
+                                                                    "0.0,-10.0,32.0,434.0,34523.0,35.0"}}
 
         invalid_settings = {"L  / EEnTStime 0,-10,32,434,34523,35": RuntimeError,
                             "L/EVENTSTIME 123g, sdf": RuntimeError,
                             "L  /EvEnTStime": RuntimeError}
-
         limit_parser = LimitParser()
         do_test(limit_parser, valid_settings, invalid_settings, self.assertTrue, self.assertRaises)
 
@@ -300,9 +298,9 @@ class MaskParserTest(unittest.TestCase):
                           "MASK/T 23 35": {MaskId.time: range_entry_with_detector(start=23, stop=35,
                                                                                   detector_type=None)},
                           "MASK/REAR/T 13 35": {MaskId.time_detector: range_entry_with_detector(start=13, stop=35,
-                                                detector_type=DetectorType.Lab)},
+                                                detector_type=DetectorType.LAB)},
                           "MASK/FRONT/TIME 33 35": {MaskId.time_detector: range_entry_with_detector(start=33, stop=35,
-                                                    detector_type=DetectorType.Hab)}
+                                                    detector_type=DetectorType.HAB)}
                           }
 
         invalid_settings = {"MASK/TIME 12 34 4 ": RuntimeError,
@@ -345,17 +343,17 @@ class MaskParserTest(unittest.TestCase):
 
     def test_that_single_vertical_strip_mask_is_parsed_correctly(self):
         valid_settings = {"MASK V 12  ": {MaskId.vertical_single_strip_mask: single_entry_with_detector(entry=12,
-                                          detector_type=DetectorType.Lab)},
+                                          detector_type=DetectorType.LAB)},
                           "MASK / Rear V  12  ": {MaskId.vertical_single_strip_mask: single_entry_with_detector(
-                                                  entry=12, detector_type=DetectorType.Lab)},
+                                                  entry=12, detector_type=DetectorType.LAB)},
                           "MASK/mAin V234": {MaskId.vertical_single_strip_mask: single_entry_with_detector(entry=234,
-                                             detector_type=DetectorType.Lab)},
+                                             detector_type=DetectorType.LAB)},
                           "MASK / LaB V  234": {MaskId.vertical_single_strip_mask: single_entry_with_detector(entry=234,
-                                                detector_type=DetectorType.Lab)},
+                                                detector_type=DetectorType.LAB)},
                           "MASK /frOnt V  12  ": {MaskId.vertical_single_strip_mask: single_entry_with_detector(
-                                                  entry=12, detector_type=DetectorType.Hab)},
+                                                  entry=12, detector_type=DetectorType.HAB)},
                           "MASK/HAB V234": {MaskId.vertical_single_strip_mask:  single_entry_with_detector(entry=234,
-                                            detector_type=DetectorType.Hab)}}
+                                            detector_type=DetectorType.HAB)}}
 
         invalid_settings = {"MASK B 12  ": RuntimeError,
                             "MASK V 12 23 ": RuntimeError,
@@ -365,19 +363,19 @@ class MaskParserTest(unittest.TestCase):
 
     def test_that_range_vertical_strip_mask_is_parsed_correctly(self):
         valid_settings = {"MASK V  12 >  V23  ": {MaskId.vertical_range_strip_mask: range_entry_with_detector(start=12,
-                                                  stop=23, detector_type=DetectorType.Lab)},
+                                                  stop=23, detector_type=DetectorType.LAB)},
                           "MASK V123>V234": {MaskId.vertical_range_strip_mask: range_entry_with_detector(start=123,
-                                             stop=234, detector_type=DetectorType.Lab)},
+                                             stop=234, detector_type=DetectorType.LAB)},
                           "MASK / Rear V123>V234": {MaskId.vertical_range_strip_mask:  range_entry_with_detector(
-                                                    start=123, stop=234, detector_type=DetectorType.Lab)},
+                                                    start=123, stop=234, detector_type=DetectorType.LAB)},
                           "MASK/mAin  V123>V234": {MaskId.vertical_range_strip_mask: range_entry_with_detector(
-                                                   start=123, stop=234, detector_type=DetectorType.Lab)},
+                                                   start=123, stop=234, detector_type=DetectorType.LAB)},
                           "MASK / LaB V123>V234": {MaskId.vertical_range_strip_mask: range_entry_with_detector(
-                                                   start=123, stop=234, detector_type=DetectorType.Lab)},
+                                                   start=123, stop=234, detector_type=DetectorType.LAB)},
                           "MASK/frOnt V123>V234": {MaskId.vertical_range_strip_mask: range_entry_with_detector(
-                                                   start=123, stop=234, detector_type=DetectorType.Hab)},
+                                                   start=123, stop=234, detector_type=DetectorType.HAB)},
                           "MASK/HAB V123>V234": {MaskId.vertical_range_strip_mask: range_entry_with_detector(
-                                                 start=123, stop=234, detector_type=DetectorType.Hab)}}
+                                                 start=123, stop=234, detector_type=DetectorType.HAB)}}
 
         invalid_settings = {"MASK V 12> V123.5  ": RuntimeError,
                             "MASK V 12 23 ": RuntimeError,
@@ -387,17 +385,17 @@ class MaskParserTest(unittest.TestCase):
 
     def test_that_single_horizontal_strip_mask_is_parsed_correctly(self):
         valid_settings = {"MASK H 12  ": {MaskId.horizontal_single_strip_mask: single_entry_with_detector(entry=12,
-                                          detector_type=DetectorType.Lab)},
+                                          detector_type=DetectorType.LAB)},
                           "MASK / Rear H  12  ": {MaskId.horizontal_single_strip_mask: single_entry_with_detector(
-                                                  entry=12, detector_type=DetectorType.Lab)},
+                                                  entry=12, detector_type=DetectorType.LAB)},
                           "MASK/mAin H234": {MaskId.horizontal_single_strip_mask: single_entry_with_detector(entry=234,
-                                             detector_type=DetectorType.Lab)},
+                                             detector_type=DetectorType.LAB)},
                           "MASK / LaB H  234": {MaskId.horizontal_single_strip_mask: single_entry_with_detector(
-                                                entry=234, detector_type=DetectorType.Lab)},
+                                                entry=234, detector_type=DetectorType.LAB)},
                           "MASK /frOnt H  12  ": {MaskId.horizontal_single_strip_mask: single_entry_with_detector(
-                                                  entry=12, detector_type=DetectorType.Hab)},
+                                                  entry=12, detector_type=DetectorType.HAB)},
                           "MASK/HAB H234": {MaskId.horizontal_single_strip_mask: single_entry_with_detector(entry=234,
-                                            detector_type=DetectorType.Hab)}}
+                                            detector_type=DetectorType.HAB)}}
 
         invalid_settings = {"MASK H/12  ": RuntimeError,
                             "MASK H 12 23 ": RuntimeError,
@@ -407,19 +405,19 @@ class MaskParserTest(unittest.TestCase):
 
     def test_that_range_horizontal_strip_mask_is_parsed_correctly(self):
         valid_settings = {"MASK H  12 >  H23  ": {MaskId.horizontal_range_strip_mask: range_entry_with_detector(
-                                                  start=12, stop=23, detector_type=DetectorType.Lab)},
+                                                  start=12, stop=23, detector_type=DetectorType.LAB)},
                           "MASK H123>H234": {MaskId.horizontal_range_strip_mask: range_entry_with_detector(
-                                             start=123, stop=234, detector_type=DetectorType.Lab)},
+                                             start=123, stop=234, detector_type=DetectorType.LAB)},
                           "MASK / Rear H123>H234": {MaskId.horizontal_range_strip_mask: range_entry_with_detector(
-                                                    start=123, stop=234, detector_type=DetectorType.Lab)},
+                                                    start=123, stop=234, detector_type=DetectorType.LAB)},
                           "MASK/mAin H123>H234": {MaskId.horizontal_range_strip_mask: range_entry_with_detector(
-                                                  start=123, stop=234, detector_type=DetectorType.Lab)},
+                                                  start=123, stop=234, detector_type=DetectorType.LAB)},
                           "MASK / LaB H123>H234": {MaskId.horizontal_range_strip_mask: range_entry_with_detector(
-                                                   start=123, stop=234, detector_type=DetectorType.Lab)},
+                                                   start=123, stop=234, detector_type=DetectorType.LAB)},
                           "MASK/frOnt H123>H234": {MaskId.horizontal_range_strip_mask: range_entry_with_detector(
-                                                   start=123, stop=234, detector_type=DetectorType.Hab)},
+                                                   start=123, stop=234, detector_type=DetectorType.HAB)},
                           "MASK/HAB H123>H234": {MaskId.horizontal_range_strip_mask:  range_entry_with_detector(
-                                                 start=123, stop=234, detector_type=DetectorType.Hab)}}
+                                                 start=123, stop=234, detector_type=DetectorType.HAB)}}
 
         invalid_settings = {"MASK H 12> H123.5  ": RuntimeError,
                             "MASK H 12 23 ": RuntimeError,
@@ -430,17 +428,17 @@ class MaskParserTest(unittest.TestCase):
     def test_that_block_mask_is_parsed_correctly(self):
         valid_settings = {"MASK H12>H23 + V14>V15 ": {MaskId.block: mask_block(horizontal1=12, horizontal2=23,
                                                                                vertical1=14, vertical2=15,
-                                                                               detector_type=DetectorType.Lab)},
+                                                                               detector_type=DetectorType.LAB)},
                           "MASK/ HAB H12>H23 + V14>V15 ": {MaskId.block: mask_block(horizontal1=12, horizontal2=23,
                                                                                     vertical1=14, vertical2=15,
-                                                                                    detector_type=DetectorType.Hab)},
+                                                                                    detector_type=DetectorType.HAB)},
                           "MASK/ HAB V12>V23 + H14>H15 ": {MaskId.block: mask_block(horizontal1=14, horizontal2=15,
                                                                                     vertical1=12, vertical2=23,
-                                                                                    detector_type=DetectorType.Hab)},
+                                                                                    detector_type=DetectorType.HAB)},
                           "MASK  V12 + H 14": {MaskId.block_cross: mask_block_cross(horizontal=14, vertical=12,
-                                                                                    detector_type=DetectorType.Lab)},
+                                                                                    detector_type=DetectorType.LAB)},
                           "MASK/HAB H12 + V 14": {MaskId.block_cross: mask_block_cross(horizontal=12, vertical=14,
-                                                                                       detector_type=DetectorType.Hab)}}
+                                                                                       detector_type=DetectorType.HAB)}}
 
         invalid_settings = {"MASK H12>H23 + V14 + V15 ": RuntimeError,
                             "MASK H12 + H15 ": RuntimeError,
@@ -491,15 +489,15 @@ class SetParserTest(unittest.TestCase):
 
     def test_that_centre_is_parsed_correctly(self):
         valid_settings = {"SET centre 23 45": {SetId.centre: position_entry(pos1=23, pos2=45,
-                                                                            detector_type=DetectorType.Lab)},
+                                                                            detector_type=DetectorType.LAB)},
                           "SET centre /main 23 45": {SetId.centre: position_entry(pos1=23, pos2=45,
-                                                                                  detector_type=DetectorType.Lab)},
+                                                                                  detector_type=DetectorType.LAB)},
                           "SET centre / lAb 23 45": {SetId.centre: position_entry(pos1=23, pos2=45,
-                                                                                  detector_type=DetectorType.Lab)},
+                                                                                  detector_type=DetectorType.LAB)},
                           "SET centre / hAb 23 45": {SetId.centre: position_entry(pos1=23, pos2=45,
-                                                                                  detector_type=DetectorType.Hab)},
+                                                                                  detector_type=DetectorType.HAB)},
                           "SET centre /FRONT 23 45": {SetId.centre: position_entry(pos1=23, pos2=45,
-                                                      detector_type=DetectorType.Hab)}}
+                                                      detector_type=DetectorType.HAB)}}
 
         invalid_settings = {"SET centre 23": RuntimeError,
                             "SEt centre 34 34 34": RuntimeError,
@@ -775,28 +773,28 @@ class MonParserTest(unittest.TestCase):
 
     def test_that_direct_files_are_parsed_correctly(self):
         valid_settings = {"MON/DIRECT= C:\path1\Path2\file.ext ": {MonId.direct: [monitor_file(
-                          file_path="C:/path1/Path2/file.ext", detector_type=DetectorType.Hab),
-                          monitor_file(file_path="C:/path1/Path2/file.ext", detector_type=DetectorType.Lab)]},
+                          file_path="C:/path1/Path2/file.ext", detector_type=DetectorType.HAB),
+                          monitor_file(file_path="C:/path1/Path2/file.ext", detector_type=DetectorType.LAB)]},
                           "MON/ direct  = filE.Ext ": {MonId.direct: [monitor_file(file_path="filE.Ext",
-                                                       detector_type=DetectorType.Hab), monitor_file(
-                                                       file_path="filE.Ext", detector_type=DetectorType.Lab)
+                                                       detector_type=DetectorType.HAB), monitor_file(
+                                                       file_path="filE.Ext", detector_type=DetectorType.LAB)
                                                        ]},
                           "MON/DIRECT= \path1\Path2\file.ext ": {MonId.direct: [monitor_file(
                                                                  file_path="/path1/Path2/file.ext",
-                                                                 detector_type=DetectorType.Hab),
+                                                                 detector_type=DetectorType.HAB),
                                                                  monitor_file(file_path="/path1/Path2/file.ext",
-                                                                              detector_type=DetectorType.Lab)]},
+                                                                              detector_type=DetectorType.LAB)]},
                           "MON/DIRECT= /path1/Path2/file.ext ": {MonId.direct: [monitor_file(
                                                                                 file_path="/path1/Path2/file.ext",
-                                                                                detector_type=DetectorType.Hab),
+                                                                                detector_type=DetectorType.HAB),
                                                                  monitor_file(file_path="/path1/Path2/file.ext",
-                                                                              detector_type=DetectorType.Lab)]},
+                                                                              detector_type=DetectorType.LAB)]},
                           "MON/DIRECT/ rear= /path1/Path2/file.ext ": {MonId.direct: [monitor_file(
                                                                        file_path="/path1/Path2/file.ext",
-                                                                       detector_type=DetectorType.Lab)]},
+                                                                       detector_type=DetectorType.LAB)]},
                           "MON/DIRECT/ frONT= path1/Path2/file.ext ": {MonId.direct: [monitor_file(
                                                                        file_path="path1/Path2/file.ext",
-                                                                       detector_type=DetectorType.Hab)]}
+                                                                       detector_type=DetectorType.HAB)]}
                           }
 
         invalid_settings = {"MON/DIRECT= /path1/ Path2/file.ext ": RuntimeError,
@@ -809,21 +807,21 @@ class MonParserTest(unittest.TestCase):
     def test_that_flat_files_are_parsed_correctly(self):
         valid_settings = {"MON/FLat  = C:\path1\Path2\file.ext ": {MonId.flat: monitor_file(
                                                                    file_path="C:/path1/Path2/file.ext",
-                                                                   detector_type=DetectorType.Lab)},
+                                                                   detector_type=DetectorType.LAB)},
                           "MON/ flAt  = filE.Ext ": {MonId.flat: monitor_file(file_path="filE.Ext",
-                                                     detector_type=DetectorType.Lab)},
+                                                     detector_type=DetectorType.LAB)},
                           "MON/flAT= \path1\Path2\file.ext ": {MonId.flat: monitor_file(
                                                                file_path="/path1/Path2/file.ext",
-                                                               detector_type=DetectorType.Lab)},
+                                                               detector_type=DetectorType.LAB)},
                           "MON/FLat= /path1/Path2/file.ext ": {MonId.flat: monitor_file(
                                                                file_path="/path1/Path2/file.ext",
-                                                               detector_type=DetectorType.Lab)},
+                                                               detector_type=DetectorType.LAB)},
                           "MON/FLat/ rear= /path1/Path2/file.ext ": {MonId.flat: monitor_file(
                                                                      file_path="/path1/Path2/file.ext",
-                                                                     detector_type=DetectorType.Lab)},
+                                                                     detector_type=DetectorType.LAB)},
                           "MON/FLat/ frONT= path1/Path2/file.ext ": {MonId.flat: monitor_file(
                                                                      file_path="path1/Path2/file.ext",
-                                                                     detector_type=DetectorType.Hab)}}
+                                                                     detector_type=DetectorType.HAB)}}
 
         invalid_settings = {"MON/DIRECT= /path1/ Path2/file.ext ": RuntimeError,
                             "MON/DIRECT /path1/Path2/file.ext ": RuntimeError,
@@ -948,7 +946,7 @@ class UserFileParserTest(unittest.TestCase):
         # DetParser
         result = user_file_parser.parse_line(" DET/CoRR/FRONT/ SidE -957")
         assert_valid_result(result, {DetectorId.correction_translation: single_entry_with_detector(entry=-957,
-                                     detector_type=DetectorType.Hab)}, self.assertTrue)
+                                     detector_type=DetectorType.HAB)}, self.assertTrue)
 
         # LimitParser
         result = user_file_parser.parse_line("l/Q/WCUT 234.4")

@@ -28,12 +28,12 @@ class SANSReductionCoreTest(unittest.TestCase):
         load_alg.setProperty("PublishToCache", False)
         load_alg.setProperty("UseCached", False)
         load_alg.setProperty("MoveWorkspace", False)
-        load_alg.setProperty("SampleScatterWorkspace", "dummy")
-        load_alg.setProperty("SampleScatterMonitorWorkspace", "dummy")
+        load_alg.setProperty("SampleScatterWorkspace", EMPTY_NAME)
+        load_alg.setProperty("SampleScatterMonitorWorkspace", EMPTY_NAME)
         if state.data.sample_transmission:
-            load_alg.setProperty("SampleTransmissionWorkspace", "dummy")
+            load_alg.setProperty("SampleTransmissionWorkspace", EMPTY_NAME)
         if state.data.sample_direct:
-            load_alg.setProperty("SampleDirectWorkspace", "dummy")
+            load_alg.setProperty("SampleDirectWorkspace", EMPTY_NAME)
 
         # Act
         load_alg.execute()
@@ -51,7 +51,7 @@ class SANSReductionCoreTest(unittest.TestCase):
         return sample_scatter, sample_scatter_monitor_workspace, transmission_workspace, direct_workspace
 
     def _run_reduction_core(self, state, workspace, monitor, transmission=None, direct=None,
-                            detector_type=DetectorType.Lab, component=DataType.Sample):
+                            detector_type=DetectorType.LAB, component=DataType.Sample):
         reduction_core_alg = AlgorithmManager.createUnmanaged("SANSReductionCore")
         reduction_core_alg.setChild(True)
         reduction_core_alg.initialize()
@@ -105,6 +105,13 @@ class SANSReductionCoreTest(unittest.TestCase):
         # We need to disable the instrument comparison, it takes way too long
         # We need to disable the sample -- Not clear why yet
         # operation how many entries can be found in the sample logs
+        # from mantid.api import AnalysisDataService
+        # from mantid.simpleapi import SaveNexus
+        # AnalysisDataService.add("Original", ws)
+        # AnalysisDataService.add("Reference", reference_workspace)
+        # SaveNexus(Filename="C:/Sandbox/original.nxs", InputWorkspace="Original")
+        # SaveNexus(Filename="C:/Sandbox/reference.nxs", InputWorkspace="Reference")
+
         compare_name = "CompareWorkspaces"
         compare_options = {"Workspace1": ws,
                            "Workspace2": reference_workspace,
@@ -135,11 +142,23 @@ class SANSReductionCoreTest(unittest.TestCase):
         data_builder.set_sample_transmission("SANS2D00034505")
         data_builder.set_sample_direct("SANS2D00034461")
         data_builder.set_calibration("TUBE_SANS2D_BOTH_31681_25Sept15.nxs")
-        data_info = data_builder.build()
+        data_state = data_builder.build()
 
         # Get the rest of the state from the user file
-        user_file_director = UserFileStateDirectorISIS(data_info)
+        user_file_director = UserFileStateDirectorISIS(data_state)
         user_file_director.set_user_file("USER_SANS2D_154E_2p4_4m_M3_Xpress_8mm_SampleChanger.txt")
+
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # COMPATIBILITY BEGIN -- Remove when appropriate
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # Since we are dealing with event based data but we want to compare it with histogram data from the
+        # old reduction system we need to enable the compatibility mode
+        user_file_director.set_compatibility_builder_use_compatibility_mode(True)
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # COMPATIBILITY END
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+        # Construct the final state
         state = user_file_director.construct()
 
         # Load the sample workspaces

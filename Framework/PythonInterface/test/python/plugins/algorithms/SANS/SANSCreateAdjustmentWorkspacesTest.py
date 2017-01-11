@@ -121,9 +121,9 @@ class SANSCreateAdjustmentWorkspacesTest(unittest.TestCase):
         else:
             adjustment_options.update({"DataType": DataType.to_string(DataType.Can)})
         if is_lab:
-            adjustment_options.update({"Component": DetectorType.to_string(DetectorType.Lab)})
+            adjustment_options.update({"Component": DetectorType.to_string(DetectorType.LAB)})
         else:
-            adjustment_options.update({"Component": DetectorType.to_string(DetectorType.Hab)})
+            adjustment_options.update({"Component": DetectorType.to_string(DetectorType.HAB)})
 
         adjustment_alg = create_unmanaged_algorithm(adjustment_name, **adjustment_options)
         adjustment_alg.execute()

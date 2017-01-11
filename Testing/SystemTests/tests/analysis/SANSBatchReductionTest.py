@@ -80,14 +80,23 @@ class SANSBatchReductionTest(unittest.TestCase):
         user_file_director = UserFileStateDirectorISIS(data_info)
         user_file_director.set_user_file("USER_SANS2D_154E_2p4_4m_M3_Xpress_8mm_SampleChanger.txt")
         # Set the reduction mode to LAB
-        user_file_director.set_reduction_builder_reduction_mode(ISISReductionMode.Lab)
+        user_file_director.set_reduction_builder_reduction_mode(ISISReductionMode.LAB)
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # COMPATIBILITY BEGIN -- Remove when appropriate
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # Since we are dealing with event based data but we want to compare it with histogram data from the
+        # old reduction system we need to enable the compatibility mode
+        user_file_director.set_compatibility_builder_use_compatibility_mode(True)
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # COMPATIBILITY END
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         state = user_file_director.construct()
 
         # Act
         states = {"1": state.property_manager}
         self._run_batch_reduction(states, use_optimizations=False)
 
-        workspace_name = "34484rear_1D1.75_16.5"
+        workspace_name = "34484rear_1D_1.75_16.5"
         output_workspace = AnalysisDataService.retrieve(workspace_name)
 
         # Evaluate it up to a defined point

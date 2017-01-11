@@ -356,9 +356,9 @@ class DetParser(UserFileComponentParser):
     def _extract_reduction_mode(self, line):
         line_capital = line.upper()
         if line_capital in self._HAB:
-            return {DetectorId.reduction_mode: ISISReductionMode.Hab}
+            return {DetectorId.reduction_mode: ISISReductionMode.HAB}
         elif line_capital in self._LAB:
-            return {DetectorId.reduction_mode: ISISReductionMode.Lab}
+            return {DetectorId.reduction_mode: ISISReductionMode.LAB}
         elif line_capital in self._BOTH:
             return {DetectorId.reduction_mode: ISISReductionMode.All}
         elif line_capital in self._MERGE:
@@ -370,11 +370,11 @@ class DetParser(UserFileComponentParser):
         if self._correction_HAB_pattern.match(line) is not None:
             qualifier = re.sub(self._correction_hab, "", line)
             qualifier = qualifier.strip()
-            return self._extract_detector_setting(qualifier, DetectorType.Hab)
+            return self._extract_detector_setting(qualifier, DetectorType.HAB)
         elif self._correction_LAB_pattern.match(line) is not None:
             qualifier = re.sub(self._correction_lab, "", line)
             qualifier = qualifier.strip()
-            return self._extract_detector_setting(qualifier, DetectorType.Lab)
+            return self._extract_detector_setting(qualifier, DetectorType.LAB)
         else:
             raise RuntimeError("DetParser: Could not extract line: {0}".format(line))
 
@@ -863,7 +863,7 @@ class MaskParser(UserFileComponentParser):
         # 3. Va + Hb
         # 4. Ha + Vb
         # Record and remove detector type
-        detector_type = DetectorType.Hab if re.search(self._hab, line) is not None else DetectorType.Lab
+        detector_type = DetectorType.HAB if re.search(self._hab, line) is not None else DetectorType.LAB
         block_string = re.sub(self._detector, "", line)
         is_true_block = ">" in block_string
         two_blocks = block_string.split("+")
@@ -923,7 +923,7 @@ class MaskParser(UserFileComponentParser):
         has_lab = re.search(self._lab, line)
         if has_hab is not None or has_lab is not None:
             key = MaskId.time_detector
-            detector_type = DetectorType.Hab if has_hab is not None else DetectorType.Lab
+            detector_type = DetectorType.HAB if has_hab is not None else DetectorType.LAB
             regex_string = "\s*(" + self._hab + ")\s*/\s*" if has_hab else "\s*(" + self._lab + ")\s*/\s*"
             min_and_max_time_range = re.sub(regex_string, "", line)
         else:
@@ -952,7 +952,7 @@ class MaskParser(UserFileComponentParser):
         return {MaskId.spectrum_range_mask: range_entry(start=spectrum_range[0], stop=spectrum_range[1])}
 
     def _extract_vertical_single_strip_mask(self, line):
-        detector_type = DetectorType.Hab if re.search(self._hab, line) is not None else DetectorType.Lab
+        detector_type = DetectorType.HAB if re.search(self._hab, line) is not None else DetectorType.LAB
         single_vertical_strip_string = re.sub(self._detector, "", line)
         single_vertical_strip_string = re.sub(self._v, "", single_vertical_strip_string)
         single_vertical_strip = convert_string_to_integer(single_vertical_strip_string)
@@ -960,7 +960,7 @@ class MaskParser(UserFileComponentParser):
                                                                               detector_type=detector_type)}
 
     def _extract_vertical_range_strip_mask(self, line):
-        detector_type = DetectorType.Hab if re.search(self._hab, line) is not None else DetectorType.Lab
+        detector_type = DetectorType.HAB if re.search(self._hab, line) is not None else DetectorType.LAB
         range_vertical_strip_string = re.sub(self._detector, "", line)
         range_vertical_strip_string = re.sub(self._v, "", range_vertical_strip_string)
         range_vertical_strip_string = re.sub(self._range, " ", range_vertical_strip_string)
@@ -970,7 +970,7 @@ class MaskParser(UserFileComponentParser):
                                                                             detector_type=detector_type)}
 
     def _extract_horizontal_single_strip_mask(self, line):
-        detector_type = DetectorType.Hab if re.search(self._hab, line) is not None else DetectorType.Lab
+        detector_type = DetectorType.HAB if re.search(self._hab, line) is not None else DetectorType.LAB
         single_horizontal_strip_string = re.sub(self._detector, "", line)
         single_horizontal_strip_string = re.sub(self._h, "", single_horizontal_strip_string)
         single_horizontal_strip = convert_string_to_integer(single_horizontal_strip_string)
@@ -978,7 +978,7 @@ class MaskParser(UserFileComponentParser):
                                                                                 detector_type=detector_type)}
 
     def _extract_horizontal_range_strip_mask(self, line):
-        detector_type = DetectorType.Hab if re.search(self._hab, line) is not None else DetectorType.Lab
+        detector_type = DetectorType.HAB if re.search(self._hab, line) is not None else DetectorType.LAB
         range_horizontal_strip_string = re.sub(self._detector, "", line)
         range_horizontal_strip_string = re.sub(self._h, "", range_horizontal_strip_string)
         range_horizontal_strip_string = re.sub(self._range, " ", range_horizontal_strip_string)
@@ -1110,7 +1110,7 @@ class SetParser(UserFileComponentParser):
         return {SetId.scales: set_scales_entry(s=scales[0], a=scales[1], b=scales[2], c=scales[3], d=scales[4])}
 
     def _extract_centre(self, line):
-        detector_type = DetectorType.Hab if re.search(self._hab, line) is not None else DetectorType.Lab
+        detector_type = DetectorType.HAB if re.search(self._hab, line) is not None else DetectorType.LAB
         centre_string = re.sub(self._centre, "", line)
         centre_string = re.sub(self._hab_or_lab, "", centre_string)
         centre = extract_float_range(centre_string)
@@ -1877,16 +1877,16 @@ class MonParser(UserFileComponentParser):
         file_path = self._extract_file_path(line, original_line, self._direct)
         output = []
         if is_hab:
-            output.append(monitor_file(file_path=file_path, detector_type=DetectorType.Hab))
+            output.append(monitor_file(file_path=file_path, detector_type=DetectorType.HAB))
         if is_lab:
-            output.append(monitor_file(file_path=file_path, detector_type=DetectorType.Lab))
+            output.append(monitor_file(file_path=file_path, detector_type=DetectorType.LAB))
         return {MonId.direct: output}
 
     def _extract_flat(self, line, original_line):
         # If we have a HAB specified then select HAB
         # If we have LAB specified then select LAB
         # If nothing is specified then select LAB
-        detector_type = DetectorType.Hab if re.search(self._hab, line, re.IGNORECASE) else DetectorType.Lab
+        detector_type = DetectorType.HAB if re.search(self._hab, line, re.IGNORECASE) else DetectorType.LAB
         file_path = self._extract_file_path(line, original_line, self._flat)
         return {MonId.flat: monitor_file(file_path=file_path, detector_type=detector_type)}
 

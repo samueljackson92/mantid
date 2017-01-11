@@ -176,13 +176,13 @@ def get_component_to_reduce(reduction_setting_bundle):
     # Get the reduction mode
     reduction_mode = reduction_setting_bundle.reduction_mode
 
-    if reduction_mode is ISISReductionMode.Lab:
+    if reduction_mode is ISISReductionMode.LAB:
         reduction_mode_setting = DetectorType.to_string(DetectorType.LAB)
-    elif reduction_mode is ISISReductionMode.Hab:
+    elif reduction_mode is ISISReductionMode.HAB:
         reduction_mode_setting = DetectorType.to_string(DetectorType.HAB)
     else:
         raise RuntimeError("SingleExecution: An unknown reduction mode was selected: {}. "
-                           "Currently only Hab and Lab are supported.".format(reduction_mode))
+                           "Currently only HAB and LAB are supported.".format(reduction_mode))
     return reduction_mode_setting
 
 

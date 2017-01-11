@@ -1,6 +1,5 @@
 from mantid.kernel import logger
 
-from sans.common.constants import
 from sans.common.enums import (DetectorType, FitModeForMerge, RebinType, DataType)
 from sans.common.file_information import find_full_file_path
 from sans.common.general_functions import (get_ranges_for_rebin_setting, get_ranges_for_rebin_array,
@@ -557,7 +556,7 @@ class UserFileStateDirectorISIS(object):
             if q_range_max_shift:
                 self._reduction_builder.set_merge_range_max(q_range_max_shift)
         else:
-            self._reduction_builder.set_merge_fit_mode(FitModeForMerge.NoFit)
+            self._reduction_builder.set_merge_fit_mode(FitModeForMerge.None)
 
         # ------------------------
         # Reduction Dimensionality

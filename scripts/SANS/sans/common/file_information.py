@@ -563,6 +563,19 @@ def get_date_for_raw(file_name):
     return get_raw_measurement_time(date, time)
 
 
+def get_instrument(instrument_name):
+    instrument_name = instrument_name.upper()
+    if instrument_name == "SANS2D":
+        instrument = SANSInstrument.SANS2D
+    elif instrument_name == "LARMOR":
+        instrument = SANSInstrument.LARMOR
+    elif instrument_name == "LOQ":
+        instrument = SANSInstrument.LOQ
+    else:
+        instrument = SANSInstrument.NoInstrument
+    return instrument
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 # SANS file Information
 # ----------------------------------------------------------------------------------------------------------------------

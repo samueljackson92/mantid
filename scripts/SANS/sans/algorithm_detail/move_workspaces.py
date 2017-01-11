@@ -657,7 +657,7 @@ class SANSMoveFactory(object):
         # Get selection
         run_number = workspace.getRunNumber()
         instrument = workspace.getInstrument()
-        instrument_type = SANSInstrument.to_string(instrument.getName())
+        instrument_type = SANSInstrument.from_string(instrument.getName())
         if SANSMoveLOQ.is_correct(instrument_type, run_number):
             mover = SANSMoveLOQ()
         elif SANSMoveSANS2D.is_correct(instrument_type, run_number):

@@ -64,17 +64,17 @@ class SANSCrop(DataProcessorAlgorithm):
         comp = self.getProperty("Component").value
         is_hab = comp == "HAB"
         if is_hab:
-            component = DetectorType.Hab
+            component = DetectorType.HAB
         else:
-            component = DetectorType.Lab
+            component = DetectorType.LAB
 
         # TODO: Make this nicer
         instrument = workspace.getInstrument()
         instrument_name = instrument.getName()
         if instrument_name == "SANS2D":
-            component = "front-detector" if component is DetectorType.Hab else "rear-detector"
+            component = "front-detector" if component is DetectorType.HAB else "rear-detector"
         elif instrument_name == "LOQ":
-            component = "main-detector-bank" if component is DetectorType.Hab else "HAB"
+            component = "main-detector-bank" if component is DetectorType.HAB else "HAB"
         elif instrument_name == "LARMOR":
             component = "DetectorBench"
         else:

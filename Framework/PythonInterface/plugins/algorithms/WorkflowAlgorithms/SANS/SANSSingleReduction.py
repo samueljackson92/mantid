@@ -258,9 +258,9 @@ class SANSSingleReduction(DataProcessorAlgorithm):
             add_workspace_name(output_workspace, state, reduction_mode)
             if reduction_mode is ReductionMode.Merged:
                 self.setProperty("OutputWorkspaceMerged", output_workspace)
-            elif reduction_mode is ISISReductionMode.Lab:
+            elif reduction_mode is ISISReductionMode.LAB:
                 self.setProperty("OutputWorkspaceLAB", output_workspace)
-            elif reduction_mode is ISISReductionMode.Hab:
+            elif reduction_mode is ISISReductionMode.HAB:
                 self.setProperty("OutputWorkspaceHAB", output_workspace)
             else:
                 raise RuntimeError("SANSSingleReduction: Cannot set the output workspace. The selected reduction "

@@ -330,7 +330,7 @@ def Detector(det_name):
     """
     print_message('Detector("' + det_name + '")')
     detector_type = convert_bank_name_to_detector_type_isis(det_name)
-    reduction_mode = ISISReductionMode.Hab if detector_type is DetectorType.hab else ISISReductionMode.Lab
+    reduction_mode = ISISReductionMode.HAB if detector_type is DetectorType.hab else ISISReductionMode.LAB
     detector_command = NParameterCommand(command_id=NParameterCommandId.detector, values=[reduction_mode])
     director.add_command(detector_command)
 
@@ -341,6 +341,7 @@ def SetEventSlices(input_str):
     """
     event_slices_command = NParameterCommand(command_id=NParameterCommandId.event_slices, values=input_str)
     director.add_command(event_slices_command)
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Double valued commands
@@ -633,9 +634,9 @@ def WavRangeReduction(wav_start=None, wav_end=None, full_trans_wav=None, name_su
     if combineDet is None:
         reduction_mode = None
     elif combineDet == 'rear':
-        reduction_mode = ISISReductionMode.Lab
+        reduction_mode = ISISReductionMode.LAB
     elif combineDet == "front":
-        reduction_mode = ISISReductionMode.Hab
+        reduction_mode = ISISReductionMode.HAB
     elif combineDet == "merged":
         reduction_mode = ISISReductionMode.Merged
     elif combineDet == "both":

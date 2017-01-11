@@ -14,7 +14,7 @@ from sans.common.constants import (CALIBRATION_WORKSPACE_TAG, SANS_FILE_TAG)
 # needs to be disabled here.
 # pylint: disable=no-name-in-module
 from sans.test_helper.test_director import TestDirector
-from sans.common.sans_type import SANSFacility
+from sans.common.enums import SANSFacility
 from sans.state.data import get_data_builder
 
 
