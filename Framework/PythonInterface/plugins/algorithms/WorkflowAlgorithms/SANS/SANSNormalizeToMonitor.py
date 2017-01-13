@@ -150,22 +150,25 @@ class SANSNormalizeToMonitor(DataProcessorAlgorithm):
         background_tof_monitor_stop = normalize_to_monitor_state.background_TOF_monitor_stop
 
         if incident_monitor_spectrum_as_string in background_tof_monitor_start.keys() and \
-                        incident_monitor_spectrum_as_string in background_tof_monitor_stop.keys():
+           incident_monitor_spectrum_as_string in background_tof_monitor_stop.keys():
             start_tof = background_tof_monitor_start[incident_monitor_spectrum_as_string]
             stop_tof = background_tof_monitor_stop[incident_monitor_spectrum_as_string]
         else:
             start_tof = normalize_to_monitor_state.background_TOF_general_start
             stop_tof = normalize_to_monitor_state.background_TOF_general_stop
 
-        flat_name = "CalculateFlatBackground"
-        flat_options = {"InputWorkspace": workspace,
-                        "OutputWorkspace": EMPTY_NAME,
-                        "StartX": start_tof,
-                        "EndX": stop_tof,
-                        "Mode": "Mean"}
-        flat_alg = create_unmanaged_algorithm(flat_name, **flat_options)
-        flat_alg.execute()
-        return flat_alg.getProperty("OutputWorkspace").value
+        # Only if a TOF range was set, do we have to perform a correction
+        if start_tof and stop_tof:
+            flat_name = "CalculateFlatBackground"
+            flat_options = {"InputWorkspace": workspace,
+                            "OutputWorkspace": EMPTY_NAME,
+                            "StartX": start_tof,
+                            "EndX": stop_tof,
+                            "Mode": "Mean"}
+            flat_alg = create_unmanaged_algorithm(flat_name, **flat_options)
+            flat_alg.execute()
+            workspace = flat_alg.getProperty("OutputWorkspace").value
+        return workspace
 
     def _convert_to_wavelength(self, workspace, normalize_to_monitor_state):
         """
@@ -180,7 +183,6 @@ class SANSNormalizeToMonitor(DataProcessorAlgorithm):
         wavelength_step = normalize_to_monitor_state.wavelength_step
         wavelength_step_type = normalize_to_monitor_state.wavelength_step_type
         wavelength_rebin_mode = normalize_to_monitor_state.rebin_type
-
         convert_name = "ConvertToWavelength"
         convert_options = {"InputWorkspace": workspace,
                            "OutputWorkspace": EMPTY_NAME,

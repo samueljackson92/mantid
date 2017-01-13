@@ -12,7 +12,7 @@ from sans.user_file.user_file_common import (DetectorId, BackId, range_entry, ba
                                              mask_line, range_entry_with_detector, SampleId, SetId, set_scales_entry,
                                              position_entry, TransId, TubeCalibrationFileId, QResolutionId, FitId,
                                              fit_general, MonId, monitor_length, monitor_file, GravityId,
-                                             monitor_spectrum, PrintId, det_fit_range)
+                                             monitor_spectrum, PrintId, det_fit_range, q_rebin_values)
 
 
 # -----------------------------------------------------------------
@@ -191,25 +191,26 @@ class LimitParserTest(unittest.TestCase):
         do_test(limit_parser, valid_settings, invalid_settings, self.assertTrue, self.assertRaises)
 
     def test_that_q_limits_are_parsed_correctly(self):
-        valid_settings = {"L/Q 12 34": {LimitsId.q: simple_range(start=12, stop=34, step=None, step_type=None)},
-                          "L/Q 12 34 2.7": {LimitsId.q: simple_range(start=12, stop=34, step=2.7,
-                                                                     step_type=RangeStepType.Lin)},
-                          "L/Q -12 34.6 2.7/LOG": {LimitsId.q: simple_range(start=-12, stop=34.6, step=2.7,
-                                                                            step_type=RangeStepType.Log)},
-                          "L/q -12 3.6 2 /LIN": {LimitsId.q: simple_range(start=-12, stop=3.6, step=2,
-                                                                          step_type=RangeStepType.Lin)},
-                          "L/q -12 ,  0.4  ,23 ,-34.8, 3.6": {LimitsId.q: complex_range(start=-12, step1=0.4,
-                                                              mid=23, step2=34.8, stop=3.6,
-                                                              step_type1=RangeStepType.Lin,
-                                                              step_type2=RangeStepType.Log)},
-                          "L/q -12  , 0.4 , 23 ,-34.8 ,3.6 /LIn": {LimitsId.q: complex_range(start=-12, step1=0.4,
-                                                                   mid=23, step2=34.8, stop=3.6,
-                                                                   step_type1=RangeStepType.Lin,
-                                                                   step_type2=RangeStepType.Lin)},
-                          "L/q -12  , 0.4 , 23  ,34.8 ,3.6  /Log": {LimitsId.q: complex_range(start=-12,
-                                                                    step1=0.4, mid=23, step2=34.8, stop=3.6,
-                                                                    step_type1=RangeStepType.Log,
-                                                                    step_type2=RangeStepType.Log)}
+        valid_settings = {"L/Q 12 34": {LimitsId.q: q_rebin_values(min=12., max=34., rebin_string="12.0,34.0")},
+                          "L/Q 12 34 2.7": {LimitsId.q: q_rebin_values(min=12., max=34., rebin_string="12.0,2.7,34.0")},
+                          "L/Q -12 34.6 2.7/LOG": {LimitsId.q: q_rebin_values(min=-12., max=34.6,
+                                                                              rebin_string="-12.0,-2.7,34.6")},
+                          "L/q -12 3.6 2 /LIN": {LimitsId.q: q_rebin_values(min=-12., max=3.6,
+                                                                            rebin_string="-12.0,2.0,3.6")},
+                          "L/q -12 ,  0.4  ,23 ,-34.8, 3.6": {LimitsId.q: q_rebin_values(min=-12., max=3.6,
+                                                              rebin_string="-12.0,0.4,23.0,-34.8,3.6")},  # noqa
+                          "L/q -12  , 0.4 , 23 ,-34.8 ,3.6 /LIn": {LimitsId.q: q_rebin_values(min=-12., max=3.6,
+                                                                   rebin_string="-12.0,0.4,23.0,34.8,3.6")},
+                          "L/q -12  , 0.4 , 23  ,34.8 ,3.6  /Log": {LimitsId.q: q_rebin_values(min=-12., max=3.6,
+                                                                    rebin_string="-12.0,-0.4,23.0,-34.8,3.6")},
+                          "L/q -12  , 0.4 , 23  ,34.8 ,3.6, .123, 5.6  /Log": {LimitsId.q: q_rebin_values(min=-12.,
+                                                                                                          max=5.6,
+                                                                    rebin_string="-12.0,-0.4,23.0,-34.8,3.6,"
+                                                                                 "-0.123,5.6")},
+                          "L/q -12  , 0.4 , 23  ,34.8 ,3.6, -.123, 5.6": {LimitsId.q: q_rebin_values(min=-12.,
+                                                                                                     max=5.6,
+                                                                          rebin_string="-12.0,0.4,23.0,34.8,3.6,"
+                                                                                       "-0.123,5.6")}
                           }
 
         invalid_settings = {"L/Q 12 2 3 4": RuntimeError,
@@ -218,7 +219,6 @@ class LimitParserTest(unittest.TestCase):
                             "L/Q 12 2 /LIN": RuntimeError,
                             "L/Q ": RuntimeError,
                             "L/Q a 1 2 3 4 /LIN": RuntimeError}
-
         limit_parser = LimitParser()
         do_test(limit_parser, valid_settings, invalid_settings, self.assertTrue, self.assertRaises)
 
@@ -497,10 +497,13 @@ class SetParserTest(unittest.TestCase):
                           "SET centre / hAb 23 45": {SetId.centre: position_entry(pos1=23, pos2=45,
                                                                                   detector_type=DetectorType.HAB)},
                           "SET centre /FRONT 23 45": {SetId.centre: position_entry(pos1=23, pos2=45,
-                                                      detector_type=DetectorType.HAB)}}
+                                                      detector_type=DetectorType.Hab)},
+                          "SET centre /FRONT 23 45 55 67": {SetId.centre: position_entry(pos1=23, pos2=45,
+                                                            detector_type=DetectorType.Hab)},
+                          }
 
         invalid_settings = {"SET centre 23": RuntimeError,
-                            "SEt centre 34 34 34": RuntimeError,
+                            "SEt centre 34 34 23 ": RuntimeError,
                             "SEt centre/MAIN/ 34 34": RuntimeError,
                             "SEt centre/MAIN": RuntimeError}
 

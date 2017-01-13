@@ -41,6 +41,9 @@ class StateNormalizeToMonitor(StateBase):
         self.background_TOF_monitor_start = {}
         self.background_TOF_monitor_stop = {}
 
+        # Default rebin type is a standard Rebin
+        self.rebin_type = RebinType.Rebin
+
     def validate(self):
         is_invalid = {}
         # -----------------

@@ -19,6 +19,8 @@ simple_range = namedtuple('simple_range', 'start, stop, step, step_type')
 complex_range = namedtuple('complex_steps', 'start, step1, mid, step2, stop, step_type1, step_type2')
 rebin_string_values = namedtuple('rebin_string_values', 'value')
 event_binning_string_values = namedtuple('event_binning_string_values', 'value')
+q_rebin_values = namedtuple('q_rebin_values', 'min, max, rebin_string')
+
 
 # Mask
 mask_line = namedtuple('mask_line', 'width, angle, x, y')

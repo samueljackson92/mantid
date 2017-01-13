@@ -595,6 +595,40 @@ def SetFrontDetRescaleShift(scale=1.0, shift=0.0, fitScale=False, fitShift=False
     director.add_command(front_command)
 
 
+def SetDetectorOffsets(bank, x, y, z, rot, radius, side, xtilt=0.0, ytilt=0.0):
+    """
+        Adjust detector position away from position defined in IDF. On SANS2D the detector
+        banks can be moved around. This method allows fine adjustments of detector bank position
+        in the same way as the DET/CORR userfile command works. Hence please see
+        http://www.mantidproject.org/SANS_User_File_Commands#DET for details.
+
+        The comment below is not true any longer:
+            Note, for now, this command will only have an effect on runs loaded
+            after this command have been executed (because it is when runs are loaded
+            that components are moved away from the positions set in the IDF)
+
+
+        @param bank: Must be either 'front' or 'rear' (not case sensitive)
+        @param x: shift in mm
+        @param y: shift in mm
+        @param z: shift in mm
+        @param rot: shift in degrees
+        @param radius: shift in mm
+        @param side: shift in mm
+        @param xtilt: xtilt in degrees
+        @param ytilt: ytilt in degrees
+    """
+    print_message("SetDetectorOffsets(" + str(bank) + ', ' + str(x)
+                  + ',' + str(y) + ',' + str(z) + ',' + str(rot)
+                  + ',' + str(radius) + ',' + str(side) + ',' + str(xtilt) + ',' + str(ytilt) + ')')
+    detector_type = convert_bank_name_to_detector_type_isis(bank)
+    detector_offsets = NParameterCommand(command_id=NParameterCommandId.detector_offsets, values=[detector_type,
+                                                                                                  x, y, z,
+                                                                                                  rot, radius, side,
+                                                                                                  xtilt, ytilt])
+    director.add_command(detector_offsets)
+
+
 # --------------------------------------------
 # Commands which actually kick off a reduction
 # --------------------------------------------
@@ -786,49 +820,6 @@ def PlotResult(workspace, canvas=None):
 #
 #
 
-
-
-
-#
-# # pylint: disable = too-many-arguments
-# def SetDetectorOffsets(bank, x, y, z, rot, radius, side, xtilt=0.0, ytilt=0.0):
-#     # 10/03/15 RKH added 2 more parameters - xtilt & ytilt
-#     """
-#         Adjust detector position away from position defined in IDF. On SANS2D the detector
-#         banks can be moved around. This method allows fine adjustments of detector bank position
-#         in the same way as the DET/CORR userfile command works. Hence please see
-#         http://www.mantidproject.org/SANS_User_File_Commands#DET for details.
-#
-#         Note, for now, this command will only have an effect on runs loaded
-#         after this command have been executed (because it is when runs are loaded
-#         that components are moved away from the positions set in the IDF)
-#
-#         @param bank: Must be either 'front' or 'rear' (not case sensitive)
-#         @param x: shift in mm
-#         @param y: shift in mm
-#         @param z: shift in mm
-#         @param rot: shift in degrees
-#         @param radius: shift in mm
-#         @param side: shift in mm
-#         @param side: xtilt in degrees
-#         @param side: ytilt in degrees
-#     """
-#     _printMessage("SetDetectorOffsets(" + str(bank) + ', ' + str(x)
-#                   + ',' + str(y) + ',' + str(z) + ',' + str(rot)
-#                   + ',' + str(radius) + ',' + str(side) + ',' + str(xtilt) + ',' + str(ytilt) + ')')
-#
-#     detector = ReductionSingleton().instrument.getDetector(bank)
-#     detector.x_corr = x
-#     detector.y_corr = y
-#     detector.z_corr = z
-#     detector.rot_corr = rot
-#     detector.radius_corr = radius
-#     detector.side_corr = side
-#     # 10/03/15 RKH add 2 more
-#     detector.x_tilt = xtilt
-#     detector.y_tilt = ytilt
-#
-#
 
 
 

@@ -446,7 +446,7 @@ class UserFileStateDirectorISIS(object):
                 self._move_builder.set_LAB_side_correction(tilt_correction.entry)
             else:
                 raise RuntimeError("UserFileStateDirector: An unknown detector {0} was used for the"
-                                   " titlt correction.".format(tilt_correction.detector_type))
+                                   " tilt correction.".format(tilt_correction.detector_type))
 
         # ---------------------------
         # Sample offset
@@ -966,19 +966,9 @@ class UserFileStateDirectorISIS(object):
             limits_q = user_file_items[LimitsId.q]
             check_if_contains_only_one_element(limits_q, LimitsId.q)
             limits_q = limits_q[-1]
-            # Now we have to check if we have a simple pattern or a more complex pattern at hand
-            is_complex = isinstance(limits_q, complex_range)
-            self._convert_to_q_builder.set_q_min(limits_q.start)
-            self._convert_to_q_builder.set_q_max(limits_q.stop)
-            if is_complex:
-                self._convert_to_q_builder.set_q_step(limits_q.step1)
-                self._convert_to_q_builder.set_q_step_type(limits_q.step_type1)
-                self._convert_to_q_builder.set_q_mid(limits_q.mid)
-                self._convert_to_q_builder.set_q_step2(limits_q.step2)
-                self._convert_to_q_builder.set_q_step_type2(limits_q.step_type2)
-            else:
-                self._convert_to_q_builder.set_q_step(limits_q.step)
-                self._convert_to_q_builder.set_q_step_type(limits_q.step_type)
+            self._convert_to_q_builder.set_q_min(limits_q.min)
+            self._convert_to_q_builder.set_q_max(limits_q.max)
+            self._convert_to_q_builder.set_q_1d_rebin_string(limits_q.rebin_string)
 
         # Get the 2D q values
         if LimitsId.qxy in user_file_items:

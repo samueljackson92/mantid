@@ -5,7 +5,7 @@ from sans.command_interface.ISISCommandInterface import (SANS2D, MaskFile, Assig
                                                          UseCompatibilityMode)
 
 
-class SANS2DLimitEventsTimeV2Test(stresstesting.MantidStressTest):
+class SANS2DLimitEventsTimeTest_V2(stresstesting.MantidStressTest):
     def runTest(self):
         UseCompatibilityMode()
         SANS2D()

@@ -2729,7 +2729,6 @@ class ConvertToQISIS(ReductionStep):
             sanslog.warning("LCol: %s" % str(self._q_resolution_collimation_length))
             sanslog.warning("DR : %s" % str(self._q_resolution_delta_r))
             sanslog.warning("Exists: %s" % str(qResolution is not None))
-
         try:
             if self._Q_alg == 'Q1D':
                 Q1D(DetBankWorkspace=workspace,

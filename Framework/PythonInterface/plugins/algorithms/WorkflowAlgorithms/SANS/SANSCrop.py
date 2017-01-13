@@ -50,7 +50,7 @@ class SANSCrop(DataProcessorAlgorithm):
         crop_options = {"InputWorkspace": workspace,
                         "OutputWorkspace": EMPTY_NAME,
                         "ComponentNames": component,
-                        "OrderByDetId": True}
+                        "OrderByDetId": False}
         crop_alg = create_unmanaged_algorithm(crop_name, **crop_options)
         crop_alg.execute()
         output_workspace = crop_alg.getProperty("OutputWorkspace").value

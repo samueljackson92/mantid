@@ -100,7 +100,7 @@ class SANSConvertToQ(DataProcessorAlgorithm):
         output_parts = True
 
         # Extract relevant settings
-        q_binning = self._get_q1d_binning(convert_to_q)
+        q_binning = convert_to_q.q_1d_rebin_string
         use_gravity = convert_to_q.use_gravity
         gravity_extra_length = convert_to_q.gravity_extra_length
         radius_cutoff = convert_to_q.radius_cutoff / 1000.  # Q1D2 expects the radius cutoff to be in mm
@@ -185,36 +185,6 @@ class SANSConvertToQ(DataProcessorAlgorithm):
         sum_of_counts_workspace, sum_of_norms_workspace = self._get_partial_output(output_parts, qxy_alg, do_clean=True)
 
         return reduced_workspace, sum_of_counts_workspace, sum_of_norms_workspace
-
-    def _get_q1d_binning(self, convert_to_q):
-        """
-        Get the binning for the Q1D algorithm.
-
-        The binning can be of a simple form with start, step, stop or of a complex form with start, step1, mid,
-        step2, stop
-        @param convert_to_q: a SANSStateConvertToQ object.
-        @return: a binning string.
-        """
-        # Check if the binning is complex or simple binning
-        # complex binning is start, step, mid, step2, stop
-        # simple binning is start, step, stop
-        is_complex_binning = convert_to_q.q_mid is not None and convert_to_q.q_step2 is not None and\
-                             convert_to_q.q_step_type2 is not None
-
-        start = convert_to_q.q_min
-        stop = convert_to_q.q_max
-        prefix = -1 if convert_to_q.q_step_type is RangeStepType.Log else 1
-        step = convert_to_q.q_step
-        step *= prefix
-        if is_complex_binning:
-            step2 = convert_to_q.q_step2
-            prefix2 = -1 if convert_to_q.q_step_type2 is RangeStepType.Log else 1
-            step2 *= prefix2
-            mid = convert_to_q.q_mid
-            binning = "{0},{1},{2},{3},{4}".format(start, step, mid, step2, stop)
-        else:
-            binning = "{0},{1},{2}".format(start, step, stop)
-        return binning
 
     def _get_partial_output(self, output_parts, alg, do_clean=False):
         if output_parts:

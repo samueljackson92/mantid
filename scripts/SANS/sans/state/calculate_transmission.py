@@ -117,6 +117,9 @@ class StateCalculateTransmission(StateBase):
                     DataType.to_string(DataType.Can): StateTransmissionFit()}
         self.use_full_wavelength_range = False
 
+        # Default rebin type is a standard Rebin
+        self.rebin_type = RebinType.Rebin
+
     def validate(self):  # noqa
         is_invalid = {}
         # -----------------
@@ -166,7 +169,7 @@ class StateCalculateTransmission(StateBase):
         # Wavelength rebin
         # -----------------
         if one_is_none([self.wavelength_low, self.wavelength_high, self.wavelength_step, self.wavelength_step_type,
-                        self.rebin_type]):
+                        self.wavelength_step_type, self.rebin_type]):
             entry = validation_message("A wavelength entry has not been set.",
                                        "Make sure that all entries are set.",
                                        {"wavelength_low": self.wavelength_low,

@@ -12,7 +12,8 @@ from sans.user_file.user_file_common import (DetectorId, BackId, range_entry, ba
                                              mask_line, range_entry_with_detector, SampleId, SetId, set_scales_entry,
                                              position_entry, TransId, TubeCalibrationFileId, QResolutionId, FitId,
                                              fit_general, MonId, monitor_length, monitor_file, GravityId,
-                                             monitor_spectrum, PrintId, rebin_string_values, det_fit_range)
+                                             monitor_spectrum, PrintId, rebin_string_values, det_fit_range,
+                                             q_rebin_values)
 
 
 # -----------------------------------------------------------------
@@ -456,6 +457,7 @@ class LimitParser(UserFileComponentParser):
 
         L/Q/ q1 q2 [dq[/LIN]]  or  L/Q q1 q2 [dq[/LOG]]
         L/Q q1,dq1,q3,dq2,q2 [/LIN]]  or  L/Q q1,dq1,q3,dq2,q2 [/LOG]]
+        but apparently also L/Q q1, dq1, q2, dq2, q3, dq3, ... [/LOG | /LIN] is allowed
 
         L/Q/RCut c
         L/Q/WCut c
@@ -487,6 +489,10 @@ class LimitParser(UserFileComponentParser):
         self._complex_range = "\\s*" + float_number + self._comma + float_number + self._comma + float_number + \
                               self._comma + float_number + self._comma + float_number +\
                               "(\\s*" + self._lin_or_log + ")?"
+        # The complex pattern is normally a rebin string, such as
+
+        self._complex_range_2 = "\\s*" + float_number + "(" + self._comma + float_number + ")*\\s*" +\
+                                "(\\s*" + self._lin_or_log + ")?"
 
         # Angle limits
         self._phi_no_mirror = "\\s*/\\s*NOMIRROR\\s*"
@@ -508,6 +514,8 @@ class LimitParser(UserFileComponentParser):
         self._q_simple_pattern = re.compile(start_string + self._q + space_string +
                                             self._simple_range + end_string)
         self._q_complex_pattern = re.compile(start_string + self._q + space_string + self._complex_range + end_string)
+        self._q_complex_pattern_2 = re.compile(start_string + self._q + space_string + self._complex_range_2 +
+                                               end_string)
 
         # Qxy limits
         self._qxy = "\\s*QXY\\s*"
@@ -575,7 +583,8 @@ class LimitParser(UserFileComponentParser):
         return does_pattern_match(self._radius_pattern, line)
 
     def _is_q_limit(self, line):
-        return does_pattern_match(self._q_simple_pattern, line) or does_pattern_match(self._q_complex_pattern, line)
+        return does_pattern_match(self._q_simple_pattern, line) or does_pattern_match(self._q_complex_pattern, line) or \
+               self._does_match_complex_pattern2(line)
 
     def _is_qxy_limit(self, line):
         return does_pattern_match(self._qxy_simple_pattern, line) or does_pattern_match(self._qxy_complex_pattern, line)
@@ -583,6 +592,16 @@ class LimitParser(UserFileComponentParser):
     def _is_wavelength_limit(self, line):
         return does_pattern_match(self._wavelength_simple_pattern, line) or\
                does_pattern_match(self._wavelength_complex_pattern, line)
+
+    def _does_match_complex_pattern2(self, line):
+        pattern_matches = does_pattern_match(self._q_complex_pattern_2, line)
+        if pattern_matches:
+            # We have to make sure that there is an odd number of elements
+            range_with_steps_string = re.sub(self._q, "", line)
+            range_with_steps_string = re.sub(self._lin_or_log, "", range_with_steps_string)
+            range_with_steps = extract_float_list(range_with_steps_string, ",")
+            pattern_matches = len(range_with_steps) > 5 and (len(range_with_steps) % 2 == 1)
+        return pattern_matches
 
     def _extract_angle_limit(self, line):
         use_mirror = re.search(self._phi_no_mirror, line) is None
@@ -621,9 +640,27 @@ class LimitParser(UserFileComponentParser):
     def _extract_q_limit(self, line):
         q_range = re.sub(self._q, "", line)
         if does_pattern_match(self._q_simple_pattern, line):
-            output = self._extract_simple_pattern(q_range, LimitsId.q)
+            simple_output = self._extract_simple_pattern(q_range, LimitsId.q)
+            simple_output = simple_output[LimitsId.q]
+            prefix = -1.0 if simple_output.step_type is RangeStepType.Log else 1.0
+            q_limit_output = [simple_output.start]
+            if simple_output.step:
+                q_limit_output.append(prefix*simple_output.step)
+            q_limit_output.append(simple_output.stop)
+        elif does_pattern_match(self._q_complex_pattern, line):
+            complex_output = self._extract_complex_pattern(q_range, LimitsId.q)
+            complex_output = complex_output[LimitsId.q]
+            prefix1 = -1.0 if complex_output.step_type1 is RangeStepType.Log else 1.0
+            prefix2 = -1.0 if complex_output.step_type2 is RangeStepType.Log else 1.0
+            q_limit_output = [complex_output.start, prefix1*complex_output.step1, complex_output.mid,
+                              prefix2*complex_output.step2, complex_output.stop]
         else:
-            output = self._extract_complex_pattern(q_range, LimitsId.q)
+            q_limit_output = self._extract_complex_pattern2(q_range)
+
+        # The output is a q_rebin_values object with q_min, q_max and the rebin string.
+        rebinning_string = ",".join([str(element) for element in q_limit_output])
+        q_rebin = q_rebin_values(min=q_limit_output[0], max=q_limit_output[-1], rebin_string=rebinning_string)
+        output = {LimitsId.q: q_rebin}
         return output
 
     def _extract_qxy_limit(self, line):
@@ -695,6 +732,20 @@ class LimitParser(UserFileComponentParser):
                                    stop=range_with_steps[4],
                                    step_type1=step_type1,
                                    step_type2=step_type2)}
+
+    def _extract_complex_pattern2(self, complex_range_input):
+        # Get the step type
+        step_type = self._get_step_type(complex_range_input, default=None)
+
+        # Remove the step type
+        range_with_steps_string = re.sub(self._lin_or_log, "", complex_range_input)
+        range_with_steps = extract_float_list(range_with_steps_string, ",")
+
+        if step_type is not None:
+            prefix = -1.0 if step_type is RangeStepType.Log else 1.0
+            for index in range(1, len(range_with_steps), 2):
+                range_with_steps[index] *= prefix
+        return range_with_steps
 
     def _get_step_type(self, range_string, default=RangeStepType.Lin):
         range_type = default
@@ -1062,6 +1113,11 @@ class SetParser(UserFileComponentParser):
     The SetParser handles the following structure for
         SET CENTRE[/MAIN] x y
         SET CENTRE/HAB x y
+
+        An undocumented feature is:
+        SET CENTRE[/MAIN|/HAB] x y [d1 d2]
+        where d1 and d2 are pixel sizes. This is not used in the old parser, but user files have it nontheless.
+
         SET SCALES s a b c d
     """
     Type = "SET"
@@ -1079,9 +1135,11 @@ class SetParser(UserFileComponentParser):
         self._centre = "\\s*CENTRE\\s*"
         self._hab = "\\s*(HAB|FRONT)\\s*"
         self._lab = "\\s*(LAB|REAR|MAIN)\\s*"
-        self._hab_or_lab = "\\s*((/" + self._hab + "|/" + self._lab + "))\\s*"
+        self._hab_or_lab = "\\s*(/" + self._hab + "|/" + self._lab + ")\\s*"
         self._centre_pattern = re.compile(start_string + self._centre + "\\s*(" + self._hab_or_lab + space_string +
-                                          ")?\\s*" + float_number + space_string + float_number + end_string)
+                                          ")?\\s*" + float_number + space_string + float_number +
+                                          "\\s*(" + space_string + float_number + space_string + float_number +
+                                          ")?\\s*" + end_string)
 
     def parse_line(self, line):
         # Get the settings, ie remove command
@@ -1113,7 +1171,8 @@ class SetParser(UserFileComponentParser):
         detector_type = DetectorType.HAB if re.search(self._hab, line) is not None else DetectorType.LAB
         centre_string = re.sub(self._centre, "", line)
         centre_string = re.sub(self._hab_or_lab, "", centre_string)
-        centre = extract_float_range(centre_string)
+        centre_string = ' '.join(centre_string.split())
+        centre = extract_float_list(centre_string, separator=" ")
         return {SetId.centre: position_entry(pos1=centre[0], pos2=centre[1], detector_type=detector_type)}
 
     @staticmethod

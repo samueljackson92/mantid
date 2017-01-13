@@ -4,10 +4,10 @@ from sans.user_file.user_file_state_director import UserFileStateDirectorISIS
 from sans.state.data import get_data_builder
 from sans.user_file.user_file_parser import (UserFileParser)
 from sans.user_file.user_file_reader import (UserFileReader)
-from sans.user_file.user_file_common import (MonId, monitor_spectrum, OtherId, SampleId, GravityId, SetId,
-                                             position_entry, fit_general, FitId, monitor_file, mask_angle_entry,
-                                             LimitsId, range_entry, simple_range, DetectorId,
-                                             event_binning_string_values, det_fit_range)
+from sans.user_file.user_file_common import (MonId, monitor_spectrum, OtherId, SampleId, GravityId, SetId, position_entry,
+                                             fit_general, FitId, monitor_file, mask_angle_entry, LimitsId, range_entry,
+                                             simple_range, DetectorId, event_binning_string_values, det_fit_range,
+                                             single_entry_with_detector)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -30,8 +30,9 @@ class DataCommandId(object):
                    "centre",   # Three parameter commands
                    "trans_fit", "phi_limit", "mask_radius", "wavelength_limit", "qxy_limit",  # Four parameter commands
                    "wavrange_settings",  # Five parameter commands
-                   "front_detector_rescale"  # Six parameter commands
-                   )
+                   "front_detector_rescale",  # Six parameter commands
+                   "detector_offsets"  # Nine parameter commands
+           )
 class NParameterCommandId(object):
     pass
 
@@ -245,7 +246,8 @@ class CommandInterfaceStateDirector(object):
                             NParameterCommandId.wavelength_limit: self._process_wavelength_limit,
                             NParameterCommandId.qxy_limit: self._process_qxy_limit,
                             NParameterCommandId.wavrange_settings: self._process_wavrange,
-                            NParameterCommandId.compatibility_mode: self._process_compatibility_mode
+                            NParameterCommandId.compatibility_mode: self._process_compatibility_mode,
+                            NParameterCommandId.detector_offsets: self._process_detector_offsets
                             }
 
     def add_to_processed_state_settings(self, new_state_settings):
@@ -426,14 +428,14 @@ class CommandInterfaceStateDirector(object):
         # something is wrong
         if LimitsId.wavelength in self._processed_state_settings:
             last_entry = self._processed_state_settings[LimitsId.wavelength][-1]
-            copied_range = deepcopy(last_entry)
 
-            if wavelength_low:
-                copied_range.start = wavelength_low
-            if wavelength_high:
-                copied_range.stop = wavelength_high
+            new_wavelength_low = wavelength_low if wavelength_low else last_entry.start
+            new_wavelength_high = wavelength_high if wavelength_high else last_entry.stop
+            new_range = simple_range(start=new_wavelength_low, stop=new_wavelength_high, step=last_entry.step,
+                                     step_type=last_entry.step_type)
+
             if wavelength_low or wavelength_high:
-                copied_entry = {LimitsId.wavelength: copied_range}
+                copied_entry = {LimitsId.wavelength: new_range}
                 self.add_to_processed_state_settings(copied_entry)
         else:
             raise RuntimeError("CommandInterfaceStateDirector: Setting the lower and upper wavelength bounds is not"
@@ -458,4 +460,29 @@ class CommandInterfaceStateDirector(object):
     def _process_compatibility_mode(self, command):
         use_compatibility_mode = command.values[0]
         new_state_entries = {OtherId.use_compatibility_mode: use_compatibility_mode}
+        self.add_to_processed_state_settings(new_state_entries)
+
+    def _process_detector_offsets(self, command):
+        detector_type = command.values[0]
+        x = command.values[1]
+        y = command.values[2]
+        z = command.values[3]
+        rotation = command.values[4]
+        side = command.values[4]
+        x_tilt = command.values[4]
+        y_tilt = command.values[4]
+
+        # Set the offsets
+        new_state_entries = {DetectorId.correction_x: single_entry_with_detector(entry=x, detector_type=detector_type),
+                             DetectorId.correction_y: single_entry_with_detector(entry=y, detector_type=detector_type),
+                             DetectorId.correction_z: single_entry_with_detector(entry=z, detector_type=detector_type),
+                             DetectorId.correction_rotation:
+                                 single_entry_with_detector(entry=rotation, detector_type=detector_type),
+                             DetectorId.correction_translation:
+                                 single_entry_with_detector(entry=side, detector_type=detector_type),
+                             DetectorId.correction_x_tilt:
+                                 single_entry_with_detector(entry=x_tilt, detector_type=detector_type),
+                             DetectorId.correction_y_tilt:
+                                 single_entry_with_detector(entry=y_tilt, detector_type=detector_type),
+                             }
         self.add_to_processed_state_settings(new_state_entries)
