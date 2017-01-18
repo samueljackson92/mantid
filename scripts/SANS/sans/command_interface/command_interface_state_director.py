@@ -419,7 +419,7 @@ class CommandInterfaceStateDirector(object):
         full_wavelength_range = command.values[2]
         # TODO add output workspace name suffix
         output_workspace_name_suffix = command.values[3]
-        reduction_mode = command.values[3]
+        reduction_mode = command.values[4]
 
         # Update the lower and the upper wavelength values. Note that this is considered an incomplete setting, since
         # not step or step type have been specified. This means we need to update one of the processed commands, which
@@ -468,9 +468,10 @@ class CommandInterfaceStateDirector(object):
         y = command.values[2]
         z = command.values[3]
         rotation = command.values[4]
-        side = command.values[4]
-        x_tilt = command.values[4]
-        y_tilt = command.values[4]
+        radius = command.values[5]
+        side = command.values[6]
+        x_tilt = command.values[7]
+        y_tilt = command.values[8]
 
         # Set the offsets
         new_state_entries = {DetectorId.correction_x: single_entry_with_detector(entry=x, detector_type=detector_type),
@@ -478,6 +479,8 @@ class CommandInterfaceStateDirector(object):
                              DetectorId.correction_z: single_entry_with_detector(entry=z, detector_type=detector_type),
                              DetectorId.correction_rotation:
                                  single_entry_with_detector(entry=rotation, detector_type=detector_type),
+                             DetectorId.correction_radius:
+                                 single_entry_with_detector(entry=radius, detector_type=detector_type),
                              DetectorId.correction_translation:
                                  single_entry_with_detector(entry=side, detector_type=detector_type),
                              DetectorId.correction_x_tilt:

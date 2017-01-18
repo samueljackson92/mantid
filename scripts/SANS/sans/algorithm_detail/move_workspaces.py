@@ -12,7 +12,7 @@ from sans.common.general_functions import (create_unmanaged_algorithm, get_singl
 # -------------------------------------------------
 # Free functions
 # -------------------------------------------------
-def move_component(workspace, offsets, component_to_move):
+def move_component(workspace, offsets, component_to_move, is_relative=True):
     """
     Move an individual component on a workspace
 
@@ -20,12 +20,13 @@ def move_component(workspace, offsets, component_to_move):
     :param offsets: a Coordinate vs. Value map of offsets.
     :param component_to_move: the name of a component on the instrument. This component must be name which exist.
                               on the instrument.
+    :param is_relative: if the move is relative of not.
     :return:
     """
     move_name = "MoveInstrumentComponent"
     move_options = {"Workspace": workspace,
                     "ComponentName": component_to_move,
-                    "RelativePosition": True}
+                    "RelativePosition": is_relative}
     for key, value in offsets.items():
         if key is CanonicalCoordinates.X:
             move_options.update({"X": value})
@@ -340,6 +341,7 @@ class SANSMoveSANS2D(SANSMove):
     @staticmethod
     def _move_high_angle_bank(move_info, workspace, coordinates):
         # Get FRONT_DET_X, FRONT_DET_Z, FRONT_DET_ROT, REAR_DET_X
+
         hab_detector_x_tag = "Front_Det_X"
         hab_detector_z_tag = "Front_Det_Z"
         hab_detector_rotation_tag = "Front_Det_ROT"
@@ -404,7 +406,9 @@ class SANSMoveSANS2D(SANSMove):
         offset = {CanonicalCoordinates.X: x_shift,
                   CanonicalCoordinates.Y: y_shift,
                   CanonicalCoordinates.Z: z_shift}
+
         move_component(workspace, offset, detector_name)
+
 
     @staticmethod
     def _move_low_angle_bank(move_info, workspace, coordinates):

@@ -7,11 +7,17 @@ from sans.command_interface.command_interface_functions import (print_message, w
 from sans.command_interface.command_interface_state_director import (CommandInterfaceStateDirector, DataCommand,
                                                                      DataCommandId, NParameterCommand, NParameterCommandId,
                                                                      FitData)
+from sans.command_interface.batch_csv_file_parser import BatchCsvParser
 from sans.common.constants import ALL_PERIODS
 from sans.common.file_information import (find_sans_file, find_full_file_path)
 from sans.common.enums import (RebinType, DetectorType, FitType, RangeStepType, ReductionDimensionality,
-                               ISISReductionMode, SANSFacility)
+                               ISISReductionMode, SANSFacility, SaveType, BatchReductionEntry)
 from sans.common.general_functions import (convert_bank_name_to_detector_type_isis, create_unmanaged_algorithm)
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Globals
+# ----------------------------------------------------------------------------------------------------------------------
+DefaultTrans = 'True'
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -116,12 +122,12 @@ def TransWorkspace(sample, can=None):
 
 def createColetteScript(inputdata, format, reduced, centreit, plotresults, csvfile='', savepath=''):
     _, _, _, _, _, _, _ = inputdata, format, reduced, centreit, plotresults, csvfile, savepath
-    raise NotImplementedError("The TransWorkspace command is not implemented in SANS v2.")
+    raise NotImplementedError("The creatColleteScript command is not implemented in SANS v2.")
 
 
 def FindBeamCentre(rlow, rupp, MaxIter=10, xstart=None, ystart=None, tolerance=1.251e-4,  find_direction=None):
     _, _, _, _, _, _, _ = rlow, rupp, MaxIter, xstart, ystart, tolerance, find_direction
-    raise NotImplementedError("The TransWorkspace command is not implemented in SANS v2.")
+    raise NotImplementedError("The FindBeamCentre command is not implemented in SANS v2.")
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -330,7 +336,7 @@ def Detector(det_name):
     """
     print_message('Detector("' + det_name + '")')
     detector_type = convert_bank_name_to_detector_type_isis(det_name)
-    reduction_mode = ISISReductionMode.HAB if detector_type is DetectorType.hab else ISISReductionMode.LAB
+    reduction_mode = ISISReductionMode.HAB if detector_type is DetectorType.HAB else ISISReductionMode.LAB
     detector_command = NParameterCommand(command_id=NParameterCommandId.detector, values=[reduction_mode])
     director.add_command(detector_command)
 
@@ -378,6 +384,7 @@ def Gravity(flag, extra_length=0.0):
     @param extra_length: the extra length in meter.
     @return:
     """
+    extra_length = float(extra_length)
     print_message('Gravity(' + str(flag) + ', ' + str(extra_length) + ')')
     gravity_command = NParameterCommand(command_id=NParameterCommandId.gravity, values=[flag, extra_length])
     director.add_command(gravity_command)
@@ -677,7 +684,7 @@ def WavRangeReduction(wav_start=None, wav_end=None, full_trans_wav=None, name_su
         reduction_mode = ISISReductionMode.All
     else:
         raise RuntimeError("WavRangeReduction: The combineDet input parameter was given a value of {0}. rear, front,"
-                           " both, merged and no input are allowd".format(combineDet))
+                           " both, merged and no input are allowed".format(combineDet))
 
     wavelength_command = NParameterCommand(command_id=NParameterCommandId.wavrange_settings,
                                            values=[wav_start, wav_end, full_trans_wav, name_suffix, reduction_mode])
@@ -728,24 +735,56 @@ def PlotResult(workspace, canvas=None):
         print_message('Plot functions are not available, is this being run from outside Mantidplot?')
 
 
-# def BatchReduce(filename, format, plotresults=False, saveAlgs={'SaveRKH': 'txt'}, verbose=False,  # noqa
-#                 centreit=False, reducer=None, combineDet=None, save_as_zero_error_free=False):  # noqa
-#     """
-#         @param filename: the CSV file with the list of runs to analyse
-#         @param format: type of file to load, nxs for Nexus, etc.
-#         @param plotresults: if true and this function is run from Mantidplot a graph will be created for the results of each reduction
-#         @param saveAlgs: this named algorithm will be passed the name of the results workspace and filename (default = 'SaveRKH').
-#             Pass a tuple of strings to save to multiple file formats
-#         @param verbose: set to true to write more information to the log (default=False)
-#         @param centreit: do centre finding (default=False)
-#         @param reducer: if to use the command line (default) or GUI reducer object
-#         @param combineDet: that will be forward to WavRangeReduction (rear, front, both, merged, None)
-#         @param save_as_zero_error_free: Should the reduced workspaces contain zero errors or not
-#         @return final_setings: A dictionary with some values of the Reduction - Right Now:(scale, shift)
-#     """
-#
-#
-#
+def BatchReduce(filename, format, plotresults=False, saveAlgs={'SaveRKH': 'txt'}, verbose=False,  # noqa
+                centreit=False, reducer=None, combineDet=None, save_as_zero_error_free=False):  # noqa
+    """
+        @param filename: the CSV file with the list of runs to analyse
+        @param format: type of file to load, nxs for Nexus, etc.
+        @param plotresults: if true and this function is run from Mantidplot a graph will be created for the results of each reduction
+        @param saveAlgs: this named algorithm will be passed the name of the results workspace and filename (default = 'SaveRKH').
+            Pass a tuple of strings to save to multiple file formats
+        @param verbose: set to true to write more information to the log (default=False)
+        @param centreit: do centre finding (default=False)
+        @param reducer: if to use the command line (default) or GUI reducer object
+        @param combineDet: that will be forward to WavRangeReduction (rear, front, both, merged, None)
+        @param save_as_zero_error_free: Should the reduced workspaces contain zero errors or not
+        @return final_setings: A dictionary with some values of the Reduction - Right Now:(scale, shift)
+    """
+    _ = reducer
+    _ = verbose
+
+    if centreit:
+        raise RuntimeError("The beam centre finder is currently not supported.")
+    if plotresults:
+        raise RuntimeError("Plotting the results is currenlty not supported.")
+
+    # Set up the save algorithms
+    save_algs = []
+    for key, _ in saveAlgs.items():
+        if key == "SaveRKH":
+            save_algs.append(SaveType.RKH)
+        elif key == "SaveNexus":
+            save_algs.append(SaveType.Nexus)
+        elif key == "SaveNistQxy":
+            save_algs.append(SaveType.NistQxy)
+        elif key == "SaveCanSAS":
+            save_algs.append(SaveType.CanSAS)
+        elif key == "SaveCSV":
+            save_algs.append(SaveType.CSV)
+        elif key == "SaveNXcanSAS":
+            save_algs.append(SaveType.NXcanSAS)
+        else:
+            raise RuntimeError("The save format {0} is not known.".format(key))
+
+    # Get the information from the csv file
+    batch_csv_parser = BatchCsvParser(filename)
+    parsed_batch_entries = batch_csv_parser.parse_batch_file()
+
+    # For each entry we populate the state
+    for parsed_batch_entry in parsed_batch_entries:
+        pass
+
+
 # def CompWavRanges(wavelens, plot=True, combineDet=None, resetSetup=True):
 #     """
 #         Compares the momentum transfer results calculated from different wavelength ranges. Given

@@ -21,29 +21,28 @@ class SANS2DFrontNoGrav_V2(stresstesting.MantidStressTest):
         WavRangeReduction(4.6, 12.85, False)
 
     def validate(self):
-        # TODO: Investigate why it fails
-        self.tolerance = 1e-5
         self.disableChecking.append('SpectraMap')
         self.disableChecking.append('Axes')
         self.disableChecking.append('Instrument')
         return '2500front_1D_4.6_12.85', 'SANS2DFrontNoGrav.nxs'
 
 
-# # class SANS2DWithExtraLengthGravity_V2(stresstesting.MantidStressTest):
-# #     def runTest(self):
-# #         SANS2D()
-# #         MaskFile('MASKSANS2D_094i_RKH.txt')
-# #         SetDetectorOffsets('REAR', -16.0, 58.0, 0.0, 0.0, 0.0, 0.0)
-# #         SetDetectorOffsets('FRONT', -44.0, -20.0, 47.0, 0.0, 1.0, 1.0)
-# #
-# #         extraLength = 1
-# #         Gravity(True, extraLength)
-# #         Set1D()
-# #         AssignSample('2500.nxs')
-# #         WavRangeReduction(4.6, 12.85, False)
-# #
-# #     def validate(self):
-# #         self.disableChecking.append('SpectraMap')
-# #         self.disableChecking.append('Axes')
-# #         self.disableChecking.append('Instrument')
-# #         return '2500front_1D_4.6_12.85','SANS2DWithExtraLengthGravity.nxs'
+class SANS2DWithExtraLengthGravity_V2(stresstesting.MantidStressTest):
+    def runTest(self):
+        UseCompatibilityMode()
+        SANS2D()
+        MaskFile('MASKSANS2D_094i_RKH.txt')
+        SetDetectorOffsets('REAR', -16.0, 58.0, 0.0, 0.0, 0.0, 0.0)
+        SetDetectorOffsets('FRONT', -44.0, -20.0, 47.0, 0.0, 1.0, 1.0)
+
+        extraLength = 1
+        Gravity(True, extraLength)
+        Set1D()
+        AssignSample('2500.nxs')
+        WavRangeReduction(4.6, 12.85, False)
+
+    def validate(self):
+        self.disableChecking.append('SpectraMap')
+        self.disableChecking.append('Axes')
+        self.disableChecking.append('Instrument')
+        return '2500front_1D_4.6_12.85','SANS2DWithExtraLengthGravity.nxs'

@@ -481,7 +481,7 @@ def loader_for_isis_nexus(file_information, is_transmission, period):
     """
     loader_options = {"Filename": file_information.get_file_name(),
                       "OutputWorkspace": EMPTY_NAME}
-    if file_information.is_event_mode():
+    if file_information.is_event_mode() and not is_transmission:
         loader_name = "LoadEventNexus"
         # Note that currently we don't have a way to only load one monitor
         loader_options.update({"LoadMonitors": True})
@@ -491,6 +491,10 @@ def loader_for_isis_nexus(file_information, is_transmission, period):
                                "EntryNumber": 0})
         if period != StateData.ALL_PERIODS:
             loader_options.update({"EntryNumber": period})
+    elif file_information.is_event_mode and is_transmission:
+        # We have the rare case of an event file which is used for transmission calculations. In this case
+        # we only extract the monitors
+        loader_name = "LoadNexusMonitors"
     else:
         # We must be dealing with a transmission file, we need to load the whole file.
         # The file itself will most of the time only contain monitors anyway, but sometimes the detector
@@ -691,13 +695,8 @@ class SANSLoadDataISIS(SANSLoadData):
 
         # Several important remarks regarding the loading
         # 1. Scatter files are loaded as with monitors and the data in two separate workspaces.
-        # 2. Transmission files are loaded entirely. They cannot be event-mode
+        # 2. Transmission files are loaded entirely. If they are event mode then only the monitor is loaded as the data.
         # 3. Added data is handled differently because it is already processed data.
-
-        # Check that the transmission data is not event mode
-        if is_data_transmission_and_event_mode(file_infos):
-            raise RuntimeError("SANSLoad: You have provided an event-type file for a transmission workspace. "
-                               "Only histogram-type files are supported.")
 
         workspaces = {}
         workspace_monitors = {}
