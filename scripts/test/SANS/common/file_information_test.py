@@ -89,10 +89,11 @@ class SANSFileInformationTest(unittest.TestCase):
 
         # Assert
         self.assertTrue(file_information.get_number_of_periods() == 4)
-        self.assertTrue(file_information.get_date() == DateAndTime("2016-10-12T00:17:24"))
+        print(file_information.get_date())
+        self.assertTrue(file_information.get_date() == DateAndTime("2016-10-12T04:33:47"))
         self.assertTrue(file_information.get_instrument() == SANSInstrument.LARMOR)
         self.assertTrue(file_information.get_type() == FileType.ISISNexusAdded)
-        self.assertTrue(file_information.get_run_number() == 13057)
+        self.assertTrue(file_information.get_run_number() == 13065)
         self.assertTrue(file_information.is_event_mode())
         self.assertTrue(file_information.is_added_data())
 

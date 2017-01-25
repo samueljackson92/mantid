@@ -1705,7 +1705,11 @@ class FitParser(UserFileComponentParser):
 
     @staticmethod
     def extract_clear():
-        return {FitId.clear: True}
+        """
+        With this we want to clear the fit type settings.
+        """
+        return {FitId.general: fit_general(start=None, stop=None, fit_type=FitType.NoFit,
+                                           data_type=None, polynomial_order=None)}
 
     @staticmethod
     def get_type():

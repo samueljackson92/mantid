@@ -650,16 +650,6 @@ class FitParserTest(unittest.TestCase):
     def test_that_gets_type(self):
         self.assertTrue(FitParser.get_type(), "FIT")
 
-    def test_that_trans_clear_is_parsed_correctly(self):
-        valid_settings = {"FIT/ trans / clear": {FitId.clear: True},
-                          "FIT/traNS /ofF": {FitId.clear: True}}
-
-        invalid_settings = {"FIT/  clear": RuntimeError,
-                            "FIT/MONITOR/OFF": RuntimeError}
-
-        fit_parser = FitParser()
-        do_test(fit_parser, valid_settings, invalid_settings, self.assertTrue, self.assertRaises)
-
     def test_that_general_fit_is_parsed_correctly(self):
         valid_settings = {"FIT/ trans / LIN 123 3556": {FitId.general: fit_general(start=123, stop=3556,
                                                         fit_type=FitType.Linear, data_type=None, polynomial_order=0)},
@@ -689,6 +679,10 @@ class FitParserTest(unittest.TestCase):
                           "FIT/Trans / can/polynomiAL 5 23 45": {FitId.general: fit_general(start=23, stop=45,
                                                                  fit_type=FitType.Polynomial, data_type=DataType.Can,
                                                                                             polynomial_order=5)},
+                          "FIT/ trans / clear": {FitId.general: fit_general(start=None, stop=None,
+                                                 fit_type=FitType.NoFit, data_type=None, polynomial_order=None)},
+                          "FIT/traNS /ofF": {FitId.general: fit_general(start=None, stop=None,
+                                             fit_type=FitType.NoFit, data_type=None, polynomial_order=None)}
                           }
 
         invalid_settings = {"FIT/TRANS/ YlOG 123": RuntimeError,
@@ -698,7 +692,9 @@ class FitParserTest(unittest.TestCase):
                             "FIT/Trans /": RuntimeError,
                             "FIT/Trans / Lin 23": RuntimeError,
                             "FIT/Trans / lin 23 5 6": RuntimeError,
-                            "FIT/Trans / lin 23 t": RuntimeError}
+                            "FIT/Trans / lin 23 t": RuntimeError,
+                            "FIT/  clear": RuntimeError,
+                            "FIT/MONITOR/OFF": RuntimeError}
 
         fit_parser = FitParser()
         do_test(fit_parser, valid_settings, invalid_settings, self.assertTrue, self.assertRaises)

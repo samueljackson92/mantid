@@ -292,10 +292,6 @@ class SANSReductionCore(DataProcessorAlgorithm):
         transmission_workspace = self._get_transmission_workspace()
         direct_workspace = self._get_direct_workspace()
 
-        # Move the transmission and direct workspaces
-        transmission_workspace = self._move(state, transmission_workspace, component_as_string, is_transmission=True)
-        direct_workspace = self._move(state, direct_workspace, component_as_string, is_transmission=True)
-
         state_serialized = state.property_manager
         adjustment_name = "SANSCreateAdjustmentWorkspaces"
         adjustment_options = {"SANSState": state_serialized,
@@ -307,8 +303,11 @@ class SANSReductionCore(DataProcessorAlgorithm):
                               "OutputWorkspacePixelAdjustment": EMPTY_NAME,
                               "OutputWorkspaceWavelengthAndPixelAdjustment": EMPTY_NAME}
         if transmission_workspace:
+            transmission_workspace = self._move(state, transmission_workspace, component_as_string,
+                                                is_transmission=True)
             adjustment_options.update({"TransmissionWorkspace": transmission_workspace})
         if direct_workspace:
+            direct_workspace = self._move(state, direct_workspace, component_as_string, is_transmission=True)
             adjustment_options.update({"DirectWorkspace": direct_workspace})
         adjustment_alg = create_unmanaged_algorithm(adjustment_name, **adjustment_options)
         adjustment_alg.execute()

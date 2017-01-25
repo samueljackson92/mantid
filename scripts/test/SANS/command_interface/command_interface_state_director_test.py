@@ -109,6 +109,8 @@ class CommandInterfaceStateDirectorTest(unittest.TestCase):
         self._assert_raises_nothing(command_interface.add_command, command)
 
         # Process all commands
+        import time
+        time.sleep(10)
         state = command_interface.process_commands()
 
         # Assert

@@ -1099,14 +1099,26 @@ class UserFileStateDirectorISIS(object):
             fit_general = user_file_items[FitId.general]
             # We can have settings for both the sample or the can or individually
             # There can be three types of settings:
-            # 1. General settings where the entry data_type is not specified. Settings apply to both sample and can
-            # 2. Sample settings
-            # 3. Can settings
+            # 1. Clearing the fit setting
+            # 2. General settings where the entry data_type is not specified. Settings apply to both sample and can
+            # 3. Sample settings
+            # 4. Can settings
             # We first apply the general settings. Specialized settings for can or sample override the general settings
             # As usual if there are multiple settings for a specific case, then the last in the list is used.
 
-            # 1. General settings
-            general_settings = [item for item in fit_general if item.data_type is None]
+            # 1 Fit type settings
+            clear_settings = [item for item in fit_general if item.data_type is None and item.fit_type is FitType.NoFit]
+
+            if clear_settings:
+                check_if_contains_only_one_element(clear_settings, FitId.general)
+                clear_settings = clear_settings[-1]
+                # Will set the fitting to NoFit
+                self._calculate_transmission_builder.set_Sample_fit_type(clear_settings.fit_type)
+                self._calculate_transmission_builder.set_Can_fit_type(clear_settings.fit_type)
+
+            # 2. General settings
+            general_settings = [item for item in fit_general if item.data_type is None and
+                                item.fit_type is not FitType.NoFit]
             if general_settings:
                 check_if_contains_only_one_element(general_settings, FitId.general)
                 general_settings = general_settings[-1]
@@ -1119,7 +1131,7 @@ class UserFileStateDirectorISIS(object):
                 self._calculate_transmission_builder.set_Can_wavelength_low(general_settings.start)
                 self._calculate_transmission_builder.set_Can_wavelength_high(general_settings.stop)
 
-            # 2. Sample settings
+            # 3. Sample settings
             sample_settings = [item for item in fit_general if item.data_type is DataType.Sample]
             if sample_settings:
                 check_if_contains_only_one_element(sample_settings, FitId.general)
@@ -1129,7 +1141,7 @@ class UserFileStateDirectorISIS(object):
                 self._calculate_transmission_builder.set_Sample_wavelength_low(sample_settings.start)
                 self._calculate_transmission_builder.set_Sample_wavelength_high(sample_settings.stop)
 
-            # 2. Can settings
+            # 4. Can settings
             can_settings = [item for item in fit_general if item.data_type is DataType.Can]
             if can_settings:
                 check_if_contains_only_one_element(can_settings, FitId.general)
@@ -1139,15 +1151,6 @@ class UserFileStateDirectorISIS(object):
                 self._calculate_transmission_builder.set_Can_wavelength_low(can_settings.start)
                 self._calculate_transmission_builder.set_Can_wavelength_high(can_settings.stop)
 
-        # We should be able to clear the fit
-        if FitId.clear in user_file_items:
-            fit_clear = user_file_items[FitId.clear]
-            # Should the user have chosen several values, then the last element is selected
-            check_if_contains_only_one_element(fit_clear, FitId.clear)
-            fit_clear = fit_clear[-1]
-            if fit_clear:
-                self._calculate_transmission_builder.set_Sample_fit_type(FitType.NoFit)
-                self._calculate_transmission_builder.set_Can_fit_type(FitType.NoFit)
 
         # Set the wavelength default configuration
         if LimitsId.wavelength in user_file_items:
