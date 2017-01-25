@@ -87,12 +87,12 @@ class SANSCalculateTransmission(DataProcessorAlgorithm):
                                                                     calculate_transmission_state)
 
         # 3. Fit
-        fitted_transmission_workspace, unfitted_transmission_workspace = \
+        output_workspace, unfitted_transmission_workspace = \
             self._perform_fit(transmission_workspace, direct_workspace, detector_ids_roi,
                               detector_id_transmission_monitor, detector_id_incident_monitor,
                               calculate_transmission_state, data_type)
 
-        self.setProperty("OutputWorkspace", fitted_transmission_workspace)
+        self.setProperty("OutputWorkspace", output_workspace)
         if unfitted_transmission_workspace:
             self.setProperty("UnfittedData", unfitted_transmission_workspace)
 
@@ -163,7 +163,12 @@ class SANSCalculateTransmission(DataProcessorAlgorithm):
             fitted_transmission_workspace.setYUnitLabel(y_unit_label_transmission_ratio)
         if unfitted_transmission_workspace:
             unfitted_transmission_workspace.setYUnitLabel(y_unit_label_transmission_ratio)
-        return fitted_transmission_workspace, unfitted_transmission_workspace
+
+        if fit_type is FitType.NoFit:
+            output_workspace = unfitted_transmission_workspace
+        else:
+            output_workspace = fitted_transmission_workspace
+        return output_workspace, unfitted_transmission_workspace
 
     def _get_detector_ids_for_transmission_calculation(self, transmission_workspace, calculate_transmission_state):
         """
@@ -185,7 +190,6 @@ class SANSCalculateTransmission(DataProcessorAlgorithm):
         transmission_monitor_spectrum_number = calculate_transmission_state.transmission_monitor
         detector_id_transmission_monitor = None
         if transmission_monitor_spectrum_number is not None:
-            transmission_monitor_spectrum_number = calculate_transmission_state.default_transmission_monitor
             detector_id_transmission_monitor = get_detector_id_for_spectrum_number(transmission_workspace,
                                                                                    transmission_monitor_spectrum_number)
 
@@ -228,8 +232,9 @@ class SANSCalculateTransmission(DataProcessorAlgorithm):
         # ----------------------------------
         prompt_peak_correction_min = calculate_transmission_state.prompt_peak_correction_min
         prompt_peak_correction_max = calculate_transmission_state.prompt_peak_correction_max
+        prompt_peak_correction_enabled = calculate_transmission_state.prompt_peak_correction_enabled
         workspace = self._perform_prompt_peak_correction(workspace, prompt_peak_correction_min,
-                                                         prompt_peak_correction_max)
+                                                         prompt_peak_correction_max, prompt_peak_correction_enabled)
 
         # ---------------------------------------
         # Perform the flat background correction
@@ -278,18 +283,21 @@ class SANSCalculateTransmission(DataProcessorAlgorithm):
         convert_alg.execute()
         return convert_alg.getProperty("OutputWorkspace").value
 
-    def _perform_prompt_peak_correction(self, workspace, prompt_peak_correction_min, prompt_peak_correction_max):
+    def _perform_prompt_peak_correction(self, workspace, prompt_peak_correction_min, prompt_peak_correction_max,
+                                        prompt_peak_correction_enabled):
         """
         Prompt peak correction is performed if it is explicitly set by the user.
 
         :param workspace: the workspace to correct.
         :param prompt_peak_correction_min: the start time for the prompt peak correction.
         :param prompt_peak_correction_max: the stop time for the prompt peak correction.
+        :prompt_peak_correction_enabled: flag if prompt peak correction should be enabled
         :return: a corrected workspace.
         """
         # We perform only a prompt peak correction if the start and stop values of the bins we want to remove,
         # were explicitly set. Some instruments require it, others don't.
-        if prompt_peak_correction_min is not None and prompt_peak_correction_max is not None:
+        if prompt_peak_correction_enabled and prompt_peak_correction_min is not None and\
+                        prompt_peak_correction_max is not None:
             remove_name = "RemoveBins"
             remove_options = {"InputWorkspace": workspace,
                               "OutputWorkspace": EMPTY_NAME,

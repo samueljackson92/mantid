@@ -149,12 +149,12 @@ class SANSReductionCore(DataProcessorAlgorithm):
         #    a user-specified value which can be obtained with the help of the beam centre finder.
         # ------------------------------------------------------------
         workspace = self._move(state, workspace, component_as_string)
+        monitor_workspace = self._move(state, monitor_workspace, component_as_string)
 
         # --------------------------------------------------------------------------------------------------------------
         # 5. Apply masking (pixel masking and time masking)
         # --------------------------------------------------------------------------------------------------------------
         workspace = self._mask(state, workspace, component_as_string)
-
 
         # --------------------------------------------------------------------------------------------------------------
         # 6. Convert to Wavelength
@@ -236,7 +236,7 @@ class SANSReductionCore(DataProcessorAlgorithm):
         slice_event_factor = slice_alg.getProperty("SliceEventFactor").value
         return workspace, monitor_workspace, slice_event_factor
 
-    def _move(self, state, workspace, component):
+    def _move(self, state, workspace, component, is_transmission=False):
         # First we set the workspace to zero, since it might have been moved around by the user in the ADS
         # Second we use the initial move to bring the workspace into the correct position
         state_serialized = state.property_manager
@@ -253,6 +253,7 @@ class SANSReductionCore(DataProcessorAlgorithm):
         move_alg.setProperty("MoveType", "InitialMove")
         move_alg.setProperty("Component", component)
         move_alg.setProperty("Workspace", workspace)
+        move_alg.setProperty("IsTransmissionWorkspace", is_transmission)
         move_alg.execute()
         return move_alg.getProperty("Workspace").value
 
@@ -287,14 +288,18 @@ class SANSReductionCore(DataProcessorAlgorithm):
         scale_alg.execute()
         return scale_alg.getProperty("OutputWorkspace").value
 
-    def _adjustment(self, state, workspace, monitor_workspace, component, data_type):
+    def _adjustment(self, state, workspace, monitor_workspace, component_as_string, data_type):
         transmission_workspace = self._get_transmission_workspace()
         direct_workspace = self._get_direct_workspace()
+
+        # Move the transmission and direct workspaces
+        transmission_workspace = self._move(state, transmission_workspace, component_as_string, is_transmission=True)
+        direct_workspace = self._move(state, direct_workspace, component_as_string, is_transmission=True)
 
         state_serialized = state.property_manager
         adjustment_name = "SANSCreateAdjustmentWorkspaces"
         adjustment_options = {"SANSState": state_serialized,
-                              "Component": component,
+                              "Component": component_as_string,
                               "DataType": data_type,
                               "MonitorWorkspace": monitor_workspace,
                               "SampleData": workspace,

@@ -2,7 +2,11 @@ import unittest
 import mantid
 
 from mantid.kernel import (V3D, Quat)
-from sans.common.general_functions import (quaternion_to_angle_and_axis, create_unmanaged_algorithm, add_to_sample_log)
+from sans.common.general_functions import (quaternion_to_angle_and_axis, create_unmanaged_algorithm, add_to_sample_log,
+                                           get_output_workspace_name)
+from sans.common.enums import (ISISReductionMode, ReductionDimensionality)
+from sans.test_helper.test_director import TestDirector
+from sans.state.data import StateData
 
 
 class SANSFunctionsTest(unittest.TestCase):
@@ -26,6 +30,26 @@ class SANSFunctionsTest(unittest.TestCase):
         self.assertAlmostEqual(axis[0], converted_axis[0])
         self.assertAlmostEqual(axis[1], converted_axis[1])
         self.assertAlmostEqual(axis[2], converted_axis[2])
+
+    @staticmethod
+    def _get_state():
+        test_director = TestDirector()
+        state = test_director.construct()
+
+        state.data.sample_scatter_run_number = 12345
+        state.data.sample_scatter_period = StateData.ALL_PERIODS
+
+        state.reduction.dimensionality = ReductionDimensionality.OneDim
+
+        state.wavelength.wavelength_low = 12.0
+        state.wavelength.wavelength_high = 34.0
+
+        state.mask.phi_min = 12.0
+        state.mask.phi_max = 56.0
+
+        state.slice.start_time = [4.56778]
+        state.slice.end_time = [12.373938]
+        return state
 
     def test_that_quaternion_can_be_converted_to_axis_and_angle_for_regular(self):
         # Arrange
@@ -92,6 +116,26 @@ class SANSFunctionsTest(unittest.TestCase):
         except ValueError:
             did_raise = True
         self.assertTrue(did_raise)
+
+    def test_that_unknown_reduction_mode_raises(self):
+        # Arrange
+        state = SANSFunctionsTest._get_state()
+
+        # Act + Assert
+        try:
+            get_output_workspace_name(state, ISISReductionMode.All)
+            did_raise = False
+        except RuntimeError:
+            did_raise = True
+        self.assertTrue(did_raise)
+
+    def test_that_creates_correct_workspace_name_for_1D(self):
+        # Arrange
+        state = SANSFunctionsTest._get_state()
+        # Act
+        output_workspace, _ = get_output_workspace_name(state, ISISReductionMode.LAB)
+        # Assert
+        self.assertTrue("12345rear_1D_12.0_34.0Phi12.0_56.0_t4.57_T12.37" == output_workspace)
 
 
 if __name__ == '__main__':

@@ -32,12 +32,18 @@ class DivideByVolumeISIS(DivideByVolume):
 
     def divide_by_volume(self, workspace, scale_info):
         volume = self._get_volume(workspace, scale_info)
-        inverse_volume = 1./volume
-        divide_name = "Scale"
-        divide_options = {"InputWorkspace": workspace,
-                          "OutputWorkspace": EMPTY_NAME,
-                          "Factor": inverse_volume,
-                          "Operation": "Multiply"}
+
+        single_valued_name = "CreateSingleValuedWorkspace"
+        single_valued_options = {"OutputWorkspace": EMPTY_NAME,
+                                 "DataValue": volume}
+        single_valued_alg = create_unmanaged_algorithm(single_valued_name, **single_valued_options)
+        single_valued_alg.execute()
+        single_valued_workspace = single_valued_alg.getProperty("OutputWorkspace").value
+
+        divide_name = "Divide"
+        divide_options = {"LHSWorkspace": workspace,
+                          "RHSWorkspace": single_valued_workspace,
+                          "OutputWorkspace": EMPTY_NAME}
         divide_alg = create_unmanaged_algorithm(divide_name, **divide_options)
         divide_alg.execute()
         return divide_alg.getProperty("OutputWorkspace").value
@@ -107,14 +113,20 @@ class MultiplyByAbsoluteScale(object):
 
     @staticmethod
     def do_scale(workspace, scale_factor):
-        scale_name = "Scale"
-        scale_options = {"InputWorkspace": workspace,
-                         "OutputWorkspace": EMPTY_NAME,
-                         "Factor": scale_factor,
-                         "Operation": "Multiply"}
-        scale_alg = create_unmanaged_algorithm(scale_name, **scale_options)
-        scale_alg.execute()
-        return scale_alg.getProperty("OutputWorkspace").value
+        single_valued_name = "CreateSingleValuedWorkspace"
+        single_valued_options = {"OutputWorkspace": EMPTY_NAME,
+                                 "DataValue": scale_factor}
+        single_valued_alg = create_unmanaged_algorithm(single_valued_name, **single_valued_options)
+        single_valued_alg.execute()
+        single_valued_workspace = single_valued_alg.getProperty("OutputWorkspace").value
+
+        multiply_name = "Multiply"
+        multiply_options = {"LHSWorkspace": workspace,
+                            "RHSWorkspace": single_valued_workspace,
+                            "OutputWorkspace": EMPTY_NAME}
+        multiply_alg = create_unmanaged_algorithm(multiply_name, **multiply_options)
+        multiply_alg.execute()
+        return multiply_alg.getProperty("OutputWorkspace").value
 
     @abstractmethod
     def multiply_by_absolute_scale(self, workspace, scale_info):

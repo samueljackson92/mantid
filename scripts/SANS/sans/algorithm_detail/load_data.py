@@ -44,6 +44,8 @@ cache.
 """
 
 from abc import (ABCMeta, abstractmethod)
+import os
+from mantid.kernel import config
 from mantid.api import (AnalysisDataService)
 from sans.common.file_information import (SANSFileInformationFactory, FileType, get_extension_for_file_type,
                                               find_full_file_path)
@@ -725,6 +727,10 @@ class SANSLoadDataISIS(SANSLoadData):
             progress.report(report_message)
             apply_calibration(calibration_file, workspaces, workspace_monitors, use_cached, publish_to_ads)
 
+        # Apply corrections for transmission workspaces
+        transmission_correction = get_transmission_correction(data_info)
+        transmission_correction.correct(workspaces)
+
         return workspaces, workspace_monitors
 
 
@@ -757,3 +763,61 @@ class SANSLoadDataFactory(object):
         else:
             raise RuntimeError("SANSLoaderFactory: Other instruments are not implemented yet.")
         return loader
+
+
+# -------------------------------------------------
+#  Corrections for a loaded transmission workspace
+# -------------------------------------------------
+
+class TransmissionCorrection(object):
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def correct(self, workspaces):
+        pass
+
+
+class NullTransmissionCorrection(TransmissionCorrection):
+    def correct(self, workspaces):
+        pass
+
+
+class LOQTransmissionCorrection(TransmissionCorrection):
+    def correct(self, workspaces):
+        """
+        For LOQ we want to apply a different instrument definition for the transmission runs.
+
+        @param workspaces: a dictionary of data types, e.g. SampleScatter vs. a workspace
+        """
+        # Get the transmission and the direct workspaces and apply the correction to them
+        workspace_which_require_transmission_correction = []
+        for data_type in workspaces.items():
+            if is_transmission_type(data_type):
+                workspace_which_require_transmission_correction.append(workspaces[data_type])
+
+        # We want to apply a different instrument for the transmission runs
+
+        for workspace in workspace_which_require_transmission_correction:
+            instrument = workspace.getInstrument()
+            has_m4 = instrument.getComponentByName("monitor4")
+            if has_m4 is None:
+                trans_definition_file = os.path.join(config.getString('instrumentDefinition.directory'),
+                                                     'LOQ_trans_Definition.xml')
+            else:
+                trans_definition_file = os.path.join(config.getString('instrumentDefinition.directory'),
+                                                     'LOQ_trans_Definition_M4.xml')
+            # Done
+            instrument_name = "LoadInstrument"
+            instrument_options = {"Workspace": workspace,
+                                  "Filename": trans_definition_file,
+                                  "RewriteSpectraMap": False}
+            instrument_alg = create_unmanaged_algorithm(instrument_name, **instrument_options)
+            instrument_alg.execute()
+
+
+def get_transmission_correction(data_info):
+    instrument_type = data_info.instrument
+    if instrument_type is SANSInstrument.LOQ:
+        return LOQTransmissionCorrection()
+    else:
+        return NullTransmissionCorrection()

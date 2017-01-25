@@ -106,6 +106,41 @@ class SANSBatchReductionTest(unittest.TestCase):
         if AnalysisDataService.doesExist(workspace_name):
             AnalysisDataService.remove(workspace_name)
 
+    def test_batch_reduction_on_multiperiod_file(self):
+        # Arrange
+        # Build the data information
+        data_builder = get_data_builder(SANSFacility.ISIS)
+        data_builder.set_sample_scatter("SANS2D0005512")
+
+        data_info = data_builder.build()
+
+        # Get the rest of the state from the user file
+        user_file_director = UserFileStateDirectorISIS(data_info)
+        user_file_director.set_user_file("MASKSANS2Doptions.091A")
+        # Set the reduction mode to LAB
+        user_file_director.set_reduction_builder_reduction_mode(ISISReductionMode.LAB)
+        state = user_file_director.construct()
+
+        # Act
+        states = {"1": state.property_manager}
+        self._run_batch_reduction(states, use_optimizations=False)
+
+        # Assert
+        # We only assert that the expected workspaces exist on the ADS
+        expected_workspaces = ["5512p1rear_1D_2.0_14.0Phi-45.0_45.0", "5512p2rear_1D_2.0_14.0Phi-45.0_45.0",
+                               "5512p3rear_1D_2.0_14.0Phi-45.0_45.0", "5512p4rear_1D_2.0_14.0Phi-45.0_45.0",
+                               "5512p5rear_1D_2.0_14.0Phi-45.0_45.0", "5512p6rear_1D_2.0_14.0Phi-45.0_45.0",
+                               "5512p7rear_1D_2.0_14.0Phi-45.0_45.0", "5512p8rear_1D_2.0_14.0Phi-45.0_45.0",
+                               "5512p9rear_1D_2.0_14.0Phi-45.0_45.0", "5512p10rear_1D_2.0_14.0Phi-45.0_45.0",
+                               "5512p11rear_1D_2.0_14.0Phi-45.0_45.0", "5512p12rear_1D_2.0_14.0Phi-45.0_45.0",
+                               "5512p13rear_1D_2.0_14.0Phi-45.0_45.0"]
+        for element in expected_workspaces:
+            self.assertTrue(AnalysisDataService.doesExist(element))
+
+        # Clean up
+        for element in expected_workspaces:
+            AnalysisDataService.remove(element)
+
 
 class SANSBatchReductionRunnerTest(stresstesting.MantidStressTest):
     def __init__(self):

@@ -1,6 +1,6 @@
 from mantid.kernel import logger
 
-from sans.common.enums import (DetectorType, FitModeForMerge, RebinType, DataType)
+from sans.common.enums import (DetectorType, FitModeForMerge, RebinType, DataType, FitType)
 from sans.common.file_information import find_full_file_path
 from sans.common.general_functions import (get_ranges_for_rebin_setting, get_ranges_for_rebin_array,
                                            get_ranges_from_event_slice_setting)
@@ -1138,6 +1138,16 @@ class UserFileStateDirectorISIS(object):
                 self._calculate_transmission_builder.set_Can_polynomial_order(can_settings.polynomial_order)
                 self._calculate_transmission_builder.set_Can_wavelength_low(can_settings.start)
                 self._calculate_transmission_builder.set_Can_wavelength_high(can_settings.stop)
+
+        # We should be able to clear the fit
+        if FitId.clear in user_file_items:
+            fit_clear = user_file_items[FitId.clear]
+            # Should the user have chosen several values, then the last element is selected
+            check_if_contains_only_one_element(fit_clear, FitId.clear)
+            fit_clear = fit_clear[-1]
+            if fit_clear:
+                self._calculate_transmission_builder.set_Sample_fit_type(FitType.NoFit)
+                self._calculate_transmission_builder.set_Can_fit_type(FitType.NoFit)
 
         # Set the wavelength default configuration
         if LimitsId.wavelength in user_file_items:

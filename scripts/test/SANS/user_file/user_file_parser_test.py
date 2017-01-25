@@ -5,7 +5,7 @@ from sans.common.enums import (ISISReductionMode, DetectorType, RangeStepType, F
 from sans.user_file.user_file_parser import (DetParser, LimitParser, MaskParser, SampleParser, SetParser, TransParser,
                                              TubeCalibFileParser, QResolutionParser, FitParser, GravityParser,
                                              MaskFileParser, MonParser, PrintParser, BackParser, SANS2DParser, LOQParser,
-                                             UserFileParser)
+                                             UserFileParser, LARMORParser)
 from sans.user_file.user_file_common import (DetectorId, BackId, range_entry, back_single_monitor_entry,
                                              single_entry_with_detector, mask_angle_entry, LimitsId, rebin_string_values,
                                              simple_range, complex_range, MaskId, mask_block, mask_block_cross,
@@ -497,9 +497,9 @@ class SetParserTest(unittest.TestCase):
                           "SET centre / hAb 23 45": {SetId.centre: position_entry(pos1=23, pos2=45,
                                                                                   detector_type=DetectorType.HAB)},
                           "SET centre /FRONT 23 45": {SetId.centre: position_entry(pos1=23, pos2=45,
-                                                      detector_type=DetectorType.Hab)},
+                                                      detector_type=DetectorType.HAB)},
                           "SET centre /FRONT 23 45 55 67": {SetId.centre: position_entry(pos1=23, pos2=45,
-                                                            detector_type=DetectorType.Hab)},
+                                                            detector_type=DetectorType.HAB)},
                           }
 
         invalid_settings = {"SET centre 23": RuntimeError,
@@ -937,6 +937,17 @@ class LOQParserTest(unittest.TestCase):
     def test_that_loq_is_parsed_correctly(self):
         loq_parser = LOQParser()
         result = loq_parser.parse_line("LOQ ")
+        self.assertTrue(result is not None)
+        self.assertTrue(not result)
+
+
+class LARMORParserTest(unittest.TestCase):
+    def test_that_gets_type(self):
+        self.assertTrue(LARMORParser.get_type(), "LARMOR")
+
+    def test_that_loq_is_parsed_correctly(self):
+        loq_parser = LARMORParser()
+        result = loq_parser.parse_line("LARMOR ")
         self.assertTrue(result is not None)
         self.assertTrue(not result)
 

@@ -12,7 +12,8 @@ from sans.common.constants import ALL_PERIODS
 from sans.common.file_information import (find_sans_file, find_full_file_path)
 from sans.common.enums import (RebinType, DetectorType, FitType, RangeStepType, ReductionDimensionality,
                                ISISReductionMode, SANSFacility, SaveType, BatchReductionEntry)
-from sans.common.general_functions import (convert_bank_name_to_detector_type_isis, create_unmanaged_algorithm)
+from sans.common.general_functions import (convert_bank_name_to_detector_type_isis, create_unmanaged_algorithm,
+                                           get_output_workspace_name)
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Globals
@@ -702,9 +703,11 @@ def WavRangeReduction(wav_start=None, wav_end=None, full_trans_wav=None, name_su
                      "UseOptimizations": True}
     batch_alg = create_unmanaged_algorithm(batch_name, **batch_options)
     batch_alg.execute()
-    # Provide the name of the output workspace
-    output_workspace_name = ""
-    return output_workspace_name
+
+    # Provide the name of the output workspace. This is tricky we need to get the output workspace base name
+    reduction_mode = state.reduction.reduction_mode
+    _, output_workspace_base_name = get_output_workspace_name(state, reduction_mode)
+    return output_workspace_base_name
 
 
 # ----------------------------------------------------------------------------------------------------------------------

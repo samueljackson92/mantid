@@ -43,8 +43,7 @@ class SANSConvertToQ(DataProcessorAlgorithm):
                              doc='The workspace which contains only wavelength-specific adjustments, ie which affects '
                                  'all spectra equally.')
         self.declareProperty(MatrixWorkspaceProperty("InputWorkspacePixelAdjustment", '',
-                                                     optional=PropertyMode.Optional, direction=Direction.Input,
-                                                     validator=workspace_validator),
+                                                     optional=PropertyMode.Optional, direction=Direction.Input),
                              doc='The workspace which contains only pixel-specific adjustments, ie which affects '
                                  'all bins within a spectrum equally.')
         self.declareProperty(MatrixWorkspaceProperty("InputWorkspaceWavelengthAndPixelAdjustment", '',
@@ -103,7 +102,7 @@ class SANSConvertToQ(DataProcessorAlgorithm):
         q_binning = convert_to_q.q_1d_rebin_string
         use_gravity = convert_to_q.use_gravity
         gravity_extra_length = convert_to_q.gravity_extra_length
-        radius_cutoff = convert_to_q.radius_cutoff / 1000.  # Q1D2 expects the radius cutoff to be in mm
+        radius_cutoff = convert_to_q.radius_cutoff * 1000.  # Q1D2 expects the radius cutoff to be in mm
         wavelength_cutoff = convert_to_q.wavelength_cutoff
 
         q1d_name = "Q1D"

@@ -141,6 +141,8 @@ class SANSCalculateTransmissionTest(unittest.TestCase):
             calculate_transmission_builder.set_prompt_peak_correction_min(prompt_peak_correction_min)
         if prompt_peak_correction_max:
             calculate_transmission_builder.set_prompt_peak_correction_max(prompt_peak_correction_max)
+        if prompt_peak_correction_min and prompt_peak_correction_max:
+            calculate_transmission_builder.set_prompt_peak_correction_enabled(True)
 
         if background_TOF_general_start:
             calculate_transmission_builder.set_background_TOF_general_start(background_TOF_general_start)

@@ -176,8 +176,7 @@ class TestDirector(object):
             convert_to_q_builder.set_wavelength_cutoff(12.)
             convert_to_q_builder.set_q_min(0.1)
             convert_to_q_builder.set_q_max(0.8)
-            convert_to_q_builder.set_q_step(0.01)
-            convert_to_q_builder.set_q_step_type(RangeStepType.Lin)
+            convert_to_q_builder.set_q_1d_rebin_string("0.1,0.01,0.8")
             convert_to_q_builder.set_use_q_resolution(False)
             self.convert_to_q_state = convert_to_q_builder.build()
 

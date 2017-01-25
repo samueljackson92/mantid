@@ -48,16 +48,16 @@ class SANSScale(DataProcessorAlgorithm):
 
         progress = Progress(self, start=0.0, end=1.0, nreports=3)
 
+        # Multiply by the absolute scale
+        progress.report("Applying absolute scale.")
+        workspace = self._multiply_by_absolute_scale(workspace, state)
+
         # Divide by the sample volume
         progress.report("Dividing by the sample volume.")
         data_type_as_string = self.getProperty("DataType").value
         data_type = DataType.from_string(data_type_as_string)
 
         workspace = self._divide_by_volume(workspace, state, data_type)
-
-        # Multiply by the absolute scale
-        progress.report("Applying absolute scale.")
-        workspace = self._multiply_by_absolute_scale(workspace, state)
 
         append_to_sans_file_tag(workspace, "_scale")
         self.setProperty("OutputWorkspace", workspace)

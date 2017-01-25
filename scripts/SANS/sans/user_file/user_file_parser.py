@@ -1349,7 +1349,7 @@ class TubeCalibFileParser(UserFileComponentParser):
     def __init__(self):
         super(TubeCalibFileParser, self).__init__()
 
-        self._tube_calib_file = "\\s*[\\w]+(\\.NXS)\\s*"
+        self._tube_calib_file = "\\s*[\\w-]+(\\.NXS)\\s*"
         self._tube_calib_file_pattern = re.compile(start_string + self._tube_calib_file + end_string)
 
     def parse_line(self, line):
@@ -1787,7 +1787,7 @@ class MaskFileParser(UserFileComponentParser):
         super(MaskFileParser, self).__init__()
 
         # MaskFile
-        self._single_file = "[\\w]+(\\.XML)"
+        self._single_file = "[\\w-]+(\\.XML)"
         self._multiple_files = self._single_file + "(,\\s*" + self._single_file + ")*\\s*"
         self._mask_file_pattern = re.compile(start_string + "\\s*" + self._multiple_files + end_string)
 
@@ -1932,7 +1932,6 @@ class MonParser(UserFileComponentParser):
         if not is_hab and not is_lab:
             is_hab = True
             is_lab = True
-
         file_path = self._extract_file_path(line, original_line, self._direct)
         output = []
         if is_hab:
@@ -1959,7 +1958,19 @@ class MonParser(UserFileComponentParser):
         direct = re.sub(to_remove, "", direct, count=1)
         direct = re.sub(self._equal, "", direct)
         direct = direct.strip()
-        return re.search(direct, original_line, re.IGNORECASE).group(0)
+        # We need to escape special characters
+        direct = direct.replace("$", "\$")
+        direct = direct.replace(".", "\.")
+        direct = direct.replace("[", "\[")
+        direct = direct.replace("]", "\]")
+        direct = direct.replace(":", "\:")
+
+        # for VMS compatibility ignore anything in "[]", those are normally VMS drive specifications
+        file_path = re.search(direct, original_line, re.IGNORECASE).group(0)
+        if '[' in file_path:
+            index = file_path.rfind(']')
+            file_path = file_path[index + 1:]
+        return file_path
 
     def _extract_spectrum(self, line):
         if re.search(self._interpolate, line) is not None:
@@ -2066,6 +2077,93 @@ class LOQParser(UserFileComponentParser):
         return "\\s*" + LOQParser.get_type() + "(\\s*)"
 
 
+class LARMORParser(UserFileComponentParser):
+    """
+    The LARMORParser is a hollow parser to ensure backwards compatibility
+    """
+    Type = "LARMOR"
+
+    def __init__(self):
+        super(LARMORParser, self).__init__()
+
+    def parse_line(self, line):
+        return {}
+
+    @staticmethod
+    def get_type():
+        return LARMORParser.Type
+
+    @staticmethod
+    @abc.abstractmethod
+    def get_type_pattern():
+        return "\\s*" + LARMORParser.get_type() + "(\\s*)"
+
+
+class IgnoredParser(object):
+    """
+    The IgnoredParser deals with known commands which are not relevant any longer, but might appear in legacy files.
+    This is of particular importance for Collete commands.
+    """
+    def __init__(self):
+        # SPY ON
+        self._on_off = "\\s*(ON|OFF)\\s*"
+        self._spy_on_off = "\\s*SPY\\s*" + self._on_off
+        self._spy_on_off_pattern = re.compile(self._spy_on_off)
+
+        # READ
+        self._read_pattern = re.compile("\\s*READ\\s*")
+
+        # Centre
+        self._centre = "\\s*FIT\\s*/\\s*CENTRE\\s*" + float_number + space_string + float_number
+        self._centre_pattern = re.compile(self._centre)
+
+        # MID
+        self._mid = "\\s*FIT\\s*/\\s*MID\\s*/\\s*FILE\\s*=\\s*"
+        self._mid_pattern = re.compile(self._mid)
+        self._mid_hab = "\\s*FIT\\s*/\\s*MID\\s*/\\s*HAB\\s*/\\s*FILE\\s*=\\s*"
+        self._mid_hab_pattern = re.compile(self._mid_hab)
+
+        # SP
+        self._sp = "\\s*L\\s*/\\s*SP\\s*"
+        self._sp_pattern = re.compile(self._sp)
+
+        # Set notab
+        self._notab = "\\s*SET\\s*/\\s*NOTAB"
+        self._notab_pattern = re.compile(self._notab)
+
+        # Set yc
+        self._yc = "\\s*SET\\s*/\\s*YC\\s*"
+        self._yc_pattern = re.compile(self._yc)
+
+        # Box mask
+        self._mask_pattern = re.compile(start_string + "\\s*MASK\\s*" + integer_number + space_string +
+                                        integer_number + space_string + integer_number + space_string +
+                                        integer_number + end_string)
+
+        # Habeff
+        self._habeff_pattern = re.compile("\\s*MON\\s*/\\s*HABEFF\\s*")
+
+        # Habpath
+        self._habpath_pattern = re.compile("\\s*MON\\s*/\\s*HABPATH\\s*")
+
+        # Bad monitor description
+        self._back_mon_pattern = re.compile("\\s*BACK\\s*/\\s*M\\s*" + integer_number +
+                                            "\." + integer_number + "\\s*/\\s*TIMES\\s*")
+
+    def is_ignored(self, line):
+        ignore = False
+
+        line = line.upper()
+        if (does_pattern_match(self._spy_on_off_pattern, line) or does_pattern_match(self._read_pattern, line) or
+            does_pattern_match(self._centre_pattern, line) or does_pattern_match(self._mid_pattern, line) or
+            does_pattern_match(self._mid_hab_pattern, line) or does_pattern_match(self._sp_pattern, line) or
+            does_pattern_match(self._notab_pattern, line) or does_pattern_match(self._yc_pattern, line) or
+            does_pattern_match(self._mask_pattern, line) or does_pattern_match(self._habeff_pattern, line) or
+            does_pattern_match(self._habpath_pattern, line) or does_pattern_match(self._back_mon_pattern, line)):
+            ignore = True
+        return ignore
+
+
 class UserFileParser(object):
     def __init__(self):
         super(UserFileParser, self).__init__()
@@ -2084,7 +2182,9 @@ class UserFileParser(object):
                          MonParser.get_type(): MonParser(),
                          PrintParser.get_type(): PrintParser(),
                          SANS2DParser.get_type(): SANS2DParser(),
-                         LOQParser.get_type(): LOQParser()}
+                         LOQParser.get_type(): LOQParser(),
+                         LARMORParser.get_type(): LARMORParser()}
+        self._ignored_parser = IgnoredParser()
 
     def _get_correct_parser(self, line):
         line = line.strip()
@@ -2095,6 +2195,7 @@ class UserFileParser(object):
                 return parser
             else:
                 continue
+
         # We have encountered an unknown file specifier.
         raise ValueError("UserFileParser: Unknown user "
                          "file command: {0}".format(line))
@@ -2109,6 +2210,10 @@ class UserFileParser(object):
 
         # If the entry is a comment, then ignore it
         if line.startswith("!"):
+            return {}
+
+        # Check if we are dealing with an ignored line (from collete for example)
+        if self._ignored_parser.is_ignored(line):
             return {}
 
         # Get the appropriate parser

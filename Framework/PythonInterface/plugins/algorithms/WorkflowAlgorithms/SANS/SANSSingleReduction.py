@@ -6,9 +6,8 @@ from mantid.kernel import (Direction, PropertyManagerProperty, Property)
 from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, AlgorithmFactory, PropertyMode)
 
 from sans.state.state_base import create_deserialized_sans_state_from_property_manager
-from sans.state.state_functions import add_workspace_name
 from sans.common.enums import (ReductionMode, DataType, ISISReductionMode)
-from sans.common.general_functions import (create_unmanaged_algorithm)
+from sans.common.general_functions import (create_unmanaged_algorithm, add_workspace_name)
 from sans.algorithm_detail.single_execution import (run_core_reduction, get_final_output_workspaces,
                                                     get_merge_bundle_for_merge_request, run_optimized_for_can)
 from sans.algorithm_detail.bundles import ReductionSettingBundle

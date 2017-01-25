@@ -2,7 +2,7 @@ import unittest
 import mantid
 
 from mantid.api import AnalysisDataService
-from sans.state.state_functions import (get_output_workspace_name, is_pure_none_or_not_none, one_is_none,
+from sans.state.state_functions import (is_pure_none_or_not_none, one_is_none,
                                         validation_message, is_not_none_and_first_larger_than_second,
                                         write_hash_into_reduced_can_workspace, get_reduced_can_workspace_from_ads)
 from sans.test_helper.test_director import TestDirector
@@ -60,26 +60,6 @@ class StateFunctionsTest(unittest.TestCase):
     def _remove_workspaces():
         for element in AnalysisDataService.getObjectNames():
             AnalysisDataService.remove(element)
-
-    def test_that_unknown_reduction_mode_raises(self):
-        # Arrange
-        state = StateFunctionsTest._get_state()
-
-        # Act + Assert
-        try:
-            get_output_workspace_name(state, ISISReductionMode.All)
-            did_raise = False
-        except RuntimeError:
-            did_raise = True
-        self.assertTrue(did_raise)
-
-    def test_that_creates_correct_workspace_name_for_1D(self):
-        # Arrange
-        state = StateFunctionsTest._get_state()
-        # Act
-        output_workspace = get_output_workspace_name(state, ISISReductionMode.LAB)
-        # Assert
-        self.assertTrue("12345rear_1D_12.0_34.0Phi12.0_56.0_t4.57_T12.37" == output_workspace)
 
     def test_that_detects_if_all_entries_are_none_or_not_none_as_true(self):
         self.assertFalse(is_pure_none_or_not_none(["test", None, "test"]))

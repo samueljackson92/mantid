@@ -79,6 +79,8 @@ class SANSNormalizeToMonitorTest(unittest.TestCase):
             normalize_to_monitor_builder.set_prompt_peak_correction_min(prompt_peak_correction_min)
         if prompt_peak_correction_max:
             normalize_to_monitor_builder.set_prompt_peak_correction_max(prompt_peak_correction_max)
+        if prompt_peak_correction_min and prompt_peak_correction_max:
+            normalize_to_monitor_builder.set_prompt_peak_correction_enabled(True)
 
         normalize_to_monitor_state = normalize_to_monitor_builder.build()
         state.adjustment.normalize_to_monitor = normalize_to_monitor_state

@@ -45,8 +45,10 @@ class SANSConvertToQTest(unittest.TestCase):
         convert_to_q_builder.set_wavelength_cutoff(2.)
         convert_to_q_builder.set_q_min(q_min)
         convert_to_q_builder.set_q_max(q_max)
-        convert_to_q_builder.set_q_step(q_step)
-        convert_to_q_builder.set_q_step_type(q_step_type)
+        prefix = 1. if q_step_type is RangeStepType.Lin else -1.
+        q_step *= prefix
+        rebin_string = str(q_min) + "," + str(q_step) + "," + str(q_max)
+        convert_to_q_builder.set_q_1d_rebin_string(rebin_string)
         if q_xy_max is not None:
             convert_to_q_builder.set_q_xy_max(q_xy_max)
         if q_xy_step is not None:

@@ -38,13 +38,20 @@ def get_scaled_workspace(workspace, factor):
     :param factor: the scale factor.
     :return: the scaled workspace.
     """
-    scale_name = "Scale"
-    scale_options = {"InputWorkspace": workspace,
-                     "OutputWorkspace": EMPTY_NAME,
-                     "Factor": factor}
-    scale_alg = create_unmanaged_algorithm(scale_name, **scale_options)
-    scale_alg.execute()
-    return scale_alg.getProperty("OutputWorkspace").value
+    single_valued_name = "CreateSingleValuedWorkspace"
+    single_valued_options = {"OutputWorkspace": EMPTY_NAME,
+                             "DataValue": factor}
+    single_valued_alg = create_unmanaged_algorithm(single_valued_name, **single_valued_options)
+    single_valued_alg.execute()
+    single_valued_workspace = single_valued_alg.getProperty("OutputWorkspace").value
+
+    multiply_name = "Multiply"
+    multiply_options = {"LHSWorkspace": workspace,
+                        "RHSWorkspace": single_valued_workspace,
+                        "OutputWorkspace": EMPTY_NAME}
+    multiply_alg = create_unmanaged_algorithm(multiply_name, **multiply_options)
+    multiply_alg.execute()
+    return multiply_alg.getProperty("OutputWorkspace").value
 
 
 class Slicer(object):

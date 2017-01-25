@@ -242,7 +242,7 @@ class SANSMove(object):
         super(SANSMove, self).__init__()
 
     @abstractmethod
-    def do_move_initial(self, move_info, workspace, coordinates, component):
+    def do_move_initial(self, move_info, workspace, coordinates, component, is_transmission_workspace):
         pass
 
     @abstractmethod
@@ -258,10 +258,10 @@ class SANSMove(object):
     def is_correct(instrument_type, run_number, **kwargs):
         pass
 
-    def move_initial(self, move_info, workspace, coordinates, component):
+    def move_initial(self, move_info, workspace, coordinates, component, is_transmission_workspace):
         SANSMove._validate(move_info, workspace, coordinates, component)
         component_selection = get_detector_component(move_info, component)
-        return self.do_move_initial(move_info, workspace, coordinates, component_selection)
+        return self.do_move_initial(move_info, workspace, coordinates, component_selection, is_transmission_workspace)
 
     def move_with_elementary_displacement(self, move_info, workspace, coordinates, component):
         SANSMove._validate(move_info, workspace, coordinates, component)
@@ -409,7 +409,6 @@ class SANSMoveSANS2D(SANSMove):
 
         move_component(workspace, offset, detector_name)
 
-
     @staticmethod
     def _move_low_angle_bank(move_info, workspace, coordinates):
         # REAR_DET_Z
@@ -456,17 +455,19 @@ class SANSMoveSANS2D(SANSMove):
             detector_position = lab_detector_component.getPos()
             z_position_detector = detector_position.getZ()
 
-            monitor_4_offset = move_info.monitor_4_offset / 1000.
+            monitor_4_offset = move_info.monitor_4_offset
             z_new = z_position_detector + monitor_4_offset
             z_move = z_new - z_position_monitor
-            offset = {CanonicalCoordinates.X: z_move}
+            offset = {CanonicalCoordinates.Z: z_move}
+
             move_component(workspace, offset, monitor_4_name)
 
-    def do_move_initial(self, move_info, workspace, coordinates, component):
+    def do_move_initial(self, move_info, workspace, coordinates, component, is_transmission_workspace):
         # For LOQ we only have to coordinates
         assert len(coordinates) == 2
 
         _component = component  # noqa
+        _is_transmission_workspace = is_transmission_workspace  # noqa
 
         # Move the high angle bank
         self._move_high_angle_bank(move_info, workspace, coordinates)
@@ -498,7 +499,7 @@ class SANSMoveLOQ(SANSMove):
     def __init__(self):
         super(SANSMoveLOQ, self).__init__()
 
-    def do_move_initial(self, move_info, workspace, coordinates, component):
+    def do_move_initial(self, move_info, workspace, coordinates, component, is_transmission_workspace):
         # For LOQ we only have to coordinates
         assert len(coordinates) == 2
         # First move the sample holder
@@ -543,7 +544,7 @@ class SANSMoveLARMOROldStyle(SANSMove):
     def __init__(self):
         super(SANSMoveLARMOROldStyle, self).__init__()
 
-    def do_move_initial(self, move_info, workspace, coordinates, component):
+    def do_move_initial(self, move_info, workspace, coordinates, component, is_transmission_workspace):
         # For LARMOR we only have to coordinates
         assert len(coordinates) == 2
 
@@ -602,7 +603,7 @@ class SANSMoveLARMORNewStyle(SANSMove):
                      CanonicalCoordinates.Z: 0.0}
         rotate_component(workspace, total_angle, direction, detector_name)
 
-    def do_move_initial(self, move_info, workspace, coordinates, component):
+    def do_move_initial(self, move_info, workspace, coordinates, component, is_transmission_workspace):
         # For LARMOR we only have to coordinates
         assert len(coordinates) == 2
 

@@ -2,11 +2,12 @@ from copy import deepcopy
 from collections import namedtuple
 from mantid.api import AnalysisDataService
 
-from sans.common.general_functions import create_unmanaged_algorithm
+from sans.common.general_functions import (create_unmanaged_algorithm, get_output_workspace_name_from_workspace,
+                                           get_output_workspace_base_name_from_workspace,
+                                           get_base_name_from_multi_period_name)
 from sans.common.enums import (SANSDataType, SaveType, OutputMode)
-from sans.common.constants import (EMPTY_NAME, TRANS_SUFFIX, SANS_SUFFIX)
+from sans.common.constants import (EMPTY_NAME, TRANS_SUFFIX, SANS_SUFFIX, ALL_PERIODS)
 from sans.common.file_information import (get_extension_for_file_type, SANSFileInformationFactory)
-from sans.state.state_functions import get_output_workspace_name_from_workspace
 from sans.state.data import StateData
 
 
@@ -57,15 +58,17 @@ def single_reduction_for_batch(state, use_optimizations, output_mode):
 
         # Perform output
         if output_mode is OutputMode.PublishToADS:
-            publish_to_ads(reduced_lab, reduced_hab, reduced_merged)
+            publish_to_ads(reduced_lab, reduced_hab, reduced_merged,
+                           reduction_package.is_part_of_multi_period_reduction)
         elif output_mode is OutputMode.SaveToFile:
             save_workspaces_to_file(reduced_lab, reduced_hab, reduced_merged, reduction_package.state)
         elif output_mode is OutputMode.Both:
-            publish_to_ads(reduced_lab, reduced_hab, reduced_merged)
+            publish_to_ads(reduced_lab, reduced_hab, reduced_merged,
+                           reduction_package.is_part_of_multi_period_reduction)
             save_workspaces_to_file(reduced_lab, reduced_hab, reduced_merged, reduction_package.state)
 
 
-def get_expected_workspace_names(file_information, is_transmission, period):
+def get_expected_workspace_names(file_information, is_transmission, period, get_base_name_only=False):
     """
     Creates the expected names for SANS workspaces.
 
@@ -74,6 +77,7 @@ def get_expected_workspace_names(file_information, is_transmission, period):
     :param file_information: a file information object
     :param is_transmission: if the file information is for a transmission or not
     :param period: the period of interest
+    :param get_base_name_only: if we only want the base name and not the name with the period information
     :return: a list of workspace names
     """
     suffix_file_type = get_extension_for_file_type(file_information)
@@ -93,8 +97,11 @@ def get_expected_workspace_names(file_information, is_transmission, period):
         names = [workspace_name]
     elif file_information.get_number_of_periods() > 1 and period is StateData.ALL_PERIODS:
         workspace_names = []
-        for period in range(1, file_information.get_number_of_periods() + 1):
-            workspace_names.append("{0}p{1}_{2}_{3}".format(run_number, period, suffix_data, suffix_file_type))
+        if get_base_name_only:
+            workspace_names.append("{0}_{1}_{2}".format(run_number, suffix_data, suffix_file_type))
+        else:
+            for period in range(1, file_information.get_number_of_periods() + 1):
+                workspace_names.append("{0}p{1}_{2}_{3}".format(run_number, period, suffix_data, suffix_file_type))
         names = workspace_names
     elif file_information.get_number_of_periods() > 1 and period is not StateData.ALL_PERIODS:
         workspace_name = "{0}p{1}_{2}_{3}".format(run_number, period, suffix_data, suffix_file_type)
@@ -108,7 +115,8 @@ def set_output_workspace_on_load_algorithm_for_one_workspace_type(load_options, 
                                                                   is_transmission, file_info_factory,
                                                                   load_monitor_name=None):
     file_info = file_info_factory.create_sans_file_information(file_name)
-    workspace_names = get_expected_workspace_names(file_info, is_transmission=is_transmission, period=period)
+    workspace_names = get_expected_workspace_names(file_info, is_transmission=is_transmission, period=period,
+                                                   get_base_name_only=True)
     count = 0
     # Now we set the load options if we are dealing with multi-period data, then we need to
     for workspace_name in workspace_names:
@@ -275,21 +283,34 @@ def get_workspaces_from_load_algorithm(load_alg, workspace_to_count, workspace_n
 def get_multi_period_workspaces(load_alg, workspace_name, number_of_workspaces, use_optimizations):
     # Create an output name for each workspace and retrieve it from the load algorithm
     workspaces = []
+    workspace_names = []
     for index in range(1, number_of_workspaces + 1):
         output_name = workspace_name + "_" + str(index)
+        workspace_names.append(load_alg.getProperty(output_name).valueAsStr)
         workspace = load_alg.getProperty(output_name).value
         workspaces.append(workspace)
         if use_optimizations:
             add_loaded_workspace_to_ads(load_alg, output_name, workspace)
+
+    # If we have optimizations then we should group the multi-period workspace.
+    if use_optimizations:
+        base_name = get_base_name_from_multi_period_name(workspace_names[0])
+        group_name = "GroupWorkspaces"
+        group_options = {"InputWorkspaces": workspace_names,
+                         "OutputWorkspace": base_name}
+        group_alg = create_unmanaged_algorithm(group_name, **group_options)
+        group_alg.setChild(False)
+        group_alg.execute()
     return workspaces
 
 
 class ReductionPackage(object):
-    def __init__(self, state, workspaces, monitors):
+    def __init__(self, state, workspaces, monitors, is_part_of_multi_period_reduction=False):
         super(ReductionPackage, self).__init__()
         self.state = state
         self.workspaces = workspaces
         self.monitors = monitors
+        self.is_part_of_multi_period_reduction = is_part_of_multi_period_reduction
 
 
 def get_reduction_packages(state, workspaces, monitors):
@@ -385,7 +406,7 @@ def create_initial_reduction_packages(state, workspaces, monitors):
     If the data stems from multi-period data, then we need to split up the workspaces. The state object is valid
     for each one of these workspaces. Hence we need to create a deep copy of them for each reduction package.
 
-    The way multiperiod files are handled over the different workspaces input types is:
+    The way multi-period files are handled over the different workspaces input types is:
     1. The sample scatter period determines all other periods, i.e. if the sample scatter workspace is has only
        one period, but the sample transmission has two, then only the first period is used.
     2. If the sample scatter period is not available on an other workspace type, then the last period on that
@@ -400,6 +421,14 @@ def create_initial_reduction_packages(state, workspaces, monitors):
     """
     # For loaded peri0d we create a package
     packages = []
+
+    data_info = state.data
+    sample_scatter_period = data_info.sample_scatter_period
+    requires_new_period_selection = len(workspaces[SANSDataType.SampleScatter]) > 1 \
+                                    and sample_scatter_period == ALL_PERIODS
+
+    is_multi_period = len(workspaces[SANSDataType.SampleScatter]) > 1
+
     for index in range(0, len(workspaces[SANSDataType.SampleScatter])):
         workspaces_for_package = {}
         # For each workspace type, i.e sample scatter, can transmission, etc. find the correct workspace
@@ -413,7 +442,11 @@ def create_initial_reduction_packages(state, workspaces, monitors):
             workspace = get_workspace_for_index(index, workspace_list)
             monitors_for_package.update({workspace_type: workspace})
         state_copy = deepcopy(state)
-        packages.append(ReductionPackage(state_copy, workspaces_for_package, monitors_for_package))
+
+        # Set the period on the state
+        if requires_new_period_selection:
+            state_copy.data.sample_scatter_period = index + 1
+        packages.append(ReductionPackage(state_copy, workspaces_for_package, monitors_for_package, is_multi_period))
     return packages
 
 
@@ -490,32 +523,52 @@ def save_workspaces_to_file(reduced_lab, reduced_hab, reduced_merged, state):
         save_workspace_to_file(reduced_merged, state)
 
 
-def publish_to_ads(reduced_lab, reduced_hab, reduced_merged):
+def publish_to_ads(reduced_lab, reduced_hab, reduced_merged, is_part_of_multi_period_reduction):
     """
     Publish the reduced workspaces to the ADS
 
     :param reduced_lab: a reduced workspace for LAB.
     :param reduced_hab: a reduced workspace for HAB.
     :param reduced_merged: a reduced workspace for a merged operation.
+    :param is_part_of_multi_period_reduction: if true then we have several reductions from a multi-period file
     """
     if reduced_lab is not None:
-        do_publish_to_ads(reduced_lab)
+        do_publish_to_ads(reduced_lab, is_part_of_multi_period_reduction)
 
     if reduced_hab is not None:
-        do_publish_to_ads(reduced_hab)
+        do_publish_to_ads(reduced_hab, is_part_of_multi_period_reduction)
 
     if reduced_merged is not None:
-        do_publish_to_ads(reduced_merged)
+        do_publish_to_ads(reduced_merged, is_part_of_multi_period_reduction)
 
 
-def do_publish_to_ads(workspace):
+def do_publish_to_ads(workspace, is_part_of_multi_period_reduction):
     """
     Gets the name of the workspace and adds it to the ADS
 
     :param workspace: the workspace which is to be added to the ADS
+    :param is_part_of_multi_period_reduction: if true then we have several reductions from a multi-period file
     """
     workspace_name = get_output_workspace_name_from_workspace(workspace)
     AnalysisDataService.addOrReplace(workspace_name, workspace)
+
+    if is_part_of_multi_period_reduction:
+        # If we are dealing with a reduced workspace which is actually part of a multi-period workspace
+        # then we need to add it to a GroupWorkspace, if there is no GroupWorkspace yet, then we create one
+        workspace_base_name = get_output_workspace_base_name_from_workspace(workspace)
+
+        if AnalysisDataService.doesExist(workspace_base_name):
+            group_workspace = AnalysisDataService.retrieve(workspace_base_name)
+            group_workspace.add(workspace_name)
+        else:
+            group_name = "GroupWorkspaces"
+            group_options = {"InputWorkspaces": [workspace_name],
+                             "OutputWorkspace": workspace_base_name}
+            group_alg = create_unmanaged_algorithm(group_name, **group_options)
+            # At this point we are dealing with the ADS, hence we need to make sure that this is not called as
+            # a child algorithm
+            group_alg.setChild(False)
+            group_alg.execute()
 
 
 def save_workspace_to_file(workspace, state):

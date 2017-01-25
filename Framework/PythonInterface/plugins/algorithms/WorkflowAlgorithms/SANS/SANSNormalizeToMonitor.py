@@ -117,10 +117,10 @@ class SANSNormalizeToMonitor(DataProcessorAlgorithm):
         """
         prompt_peak_correction_start = normalize_to_monitor_state.prompt_peak_correction_min
         prompt_peak_correction_stop = normalize_to_monitor_state.prompt_peak_correction_max
-
+        prompt_peak_correction_enabled = normalize_to_monitor_state.prompt_peak_correction_enabled
         # We perform only a prompt peak correction if the start and stop values of the bins we want to remove,
         # were explicitly set. Some instruments require it, others don't.
-        if prompt_peak_correction_start is not None and prompt_peak_correction_stop is not None:
+        if prompt_peak_correction_enabled and prompt_peak_correction_start is not None and prompt_peak_correction_stop is not None:
             remove_name = "RemoveBins"
             remove_options = {"InputWorkspace": workspace,
                               "OutputWorkspace": EMPTY_NAME,
@@ -142,6 +142,7 @@ class SANSNormalizeToMonitor(DataProcessorAlgorithm):
         :param normalize_to_monitor_state: a SANSStateNormalizeToMonitor object.
         :return: the corrected workspace.
         """
+
         # Get the time range for the for the background calculation. First check if there is an entry for the
         # incident monitor.
         incident_monitor_spectrum_number = normalize_to_monitor_state.incident_monitor

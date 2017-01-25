@@ -34,6 +34,7 @@ LARMOR = "LARMOR"
 LOQ = "LOQ"
 
 REDUCED_WORKSPACE_NAME_IN_LOGS = "reduced_workspace_name"
+REDUCED_WORKSPACE_BASE_NAME_IN_LOGS = "reduced_workspace_base_name"
 SANS_FILE_TAG = "sans_file_tag"
 REDUCED_CAN_TAG = "reduced_can_hash"
 

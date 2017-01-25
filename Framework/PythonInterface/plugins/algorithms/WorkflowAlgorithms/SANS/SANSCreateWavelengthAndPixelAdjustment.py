@@ -74,7 +74,8 @@ class SANSCreateWavelengthAndPixelAdjustment(DataProcessorAlgorithm):
 
         # Get the pixel adjustment workspace
         pixel_adjustment_file = wavelength_and_pixel_adjustment_state.adjustment_files[component].pixel_adjustment_file
-        pixel_adjustment_workspace = self._get_pixel_adjustment_workspace(pixel_adjustment_file, component)
+        idf_path = wavelength_and_pixel_adjustment_state.idf_path
+        pixel_adjustment_workspace = self._get_pixel_adjustment_workspace(pixel_adjustment_file, component, idf_path)
 
         # Set the output
         if wavelength_adjustment_workspace:
@@ -153,12 +154,13 @@ class SANSCreateWavelengthAndPixelAdjustment(DataProcessorAlgorithm):
             correction_workspace = output_workspace
         return correction_workspace
 
-    def _get_pixel_adjustment_workspace(self, pixel_adjustment_file, component):
+    def _get_pixel_adjustment_workspace(self, pixel_adjustment_file, component, idf_path):
         """
         This get the pixel-by-pixel adjustment of the workspace
 
         :param pixel_adjustment_file: full file path to the pixel adjustment file
         :param component: the component which is currently being investigated
+        :param idf_path: the idf path
         :return: the pixel adjustment workspace
         """
 
@@ -171,6 +173,15 @@ class SANSCreateWavelengthAndPixelAdjustment(DataProcessorAlgorithm):
             load_alg.execute()
             output_workspace = load_alg.getProperty("OutputWorkspace").value
 
+            # Add an instrument to the workspace
+            instrument_name = "LoadInstrument"
+            instrument_options = {"Workspace": output_workspace,
+                                  "Filename": idf_path,
+                                  "RewriteSpectraMap": False}
+            instrument_alg = create_unmanaged_algorithm(instrument_name, **instrument_options)
+            instrument_alg.execute()
+
+            # Crop to the required detector
             crop_name = "SANSCrop"
             crop_options = {"InputWorkspace": output_workspace,
                             "OutputWorkspace": EMPTY_NAME,

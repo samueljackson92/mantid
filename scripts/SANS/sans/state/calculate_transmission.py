@@ -78,6 +78,7 @@ class StateCalculateTransmission(StateBase):
     # ----------------------
     prompt_peak_correction_min = PositiveFloatParameter()
     prompt_peak_correction_max = PositiveFloatParameter()
+    prompt_peak_correction_enabled = BoolParameter()
 
     # ----------------
     # Wavelength rebin
@@ -119,6 +120,8 @@ class StateCalculateTransmission(StateBase):
 
         # Default rebin type is a standard Rebin
         self.rebin_type = RebinType.Rebin
+
+        self.prompt_peak_correction_enabled = False
 
     def validate(self):  # noqa
         is_invalid = {}
@@ -285,6 +288,7 @@ class StateCalculateTransmissionLOQ(StateCalculateTransmission):
         # Set the LOQ default range for prompt peak correction
         self.prompt_peak_correction_min = Configurations.LOQ.prompt_peak_correction_min
         self.prompt_peak_correction_max = Configurations.LOQ.prompt_peak_correction_max
+        self.prompt_peak_correction_enabled = True
 
     def validate(self):
         super(StateCalculateTransmissionLOQ, self).validate()
