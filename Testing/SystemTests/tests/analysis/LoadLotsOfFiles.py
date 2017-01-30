@@ -94,7 +94,8 @@ BANNED_FILES = ['80_tubes_Top_and_Bottom_April_2015.xml',
                 'USER_SANS2D_154E_2p4_4m_M3_Xpress_8mm_SampleChanger.txt',
                 'USER_Larmor_163F_HePATest_r13038.txt',
                 'Vesuvio_IP_file_test.par',
-                'IP0004_10.par']
+                'IP0004_10.par',
+                'Crystalb3lypScratchAbins.out']
 
 EXPECTED_EXT = '.expected'
 
@@ -109,7 +110,8 @@ BANNED_REGEXP = [r'SANS2D\d+.log$',
                  r'.*\.irf',
                  r'.*\.hkl',
                  r'EVS.*\.raw',
-                 r'.*_pulseid\.dat']
+                 r'.*_pulseid\.dat',
+                 r'.*\.phonon']
 
 # This list stores files that will be loaded first.
 # Implemented as simple solution to avoid failures on
