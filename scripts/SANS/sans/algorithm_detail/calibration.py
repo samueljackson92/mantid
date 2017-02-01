@@ -7,7 +7,7 @@ from mantid.api import (AnalysisDataService)
 from sans.common.file_information import find_full_file_path
 from sans.common.constants import (EMPTY_NAME, CALIBRATION_WORKSPACE_TAG)
 from sans.common.log_tagger import (has_tag, get_tag, set_tag)
-from sans.common.general_functions import create_unmanaged_algorithm
+from sans.common.general_functions import (create_unmanaged_algorithm, sanitise_instrument_name)
 from sans.common.enums import SANSDataType
 
 
@@ -136,6 +136,7 @@ def apply_missing_parameters(calibration_workspace, workspace, missing_parameter
     """
     instrument = workspace.getInstrument()
     component_name = instrument.getName()
+    component_name = sanitise_instrument_name(component_name)
     set_instrument_parameter_options = {"Workspace": calibration_workspace,
                                         "ComponentName": component_name}
     alg = create_unmanaged_algorithm("SetInstrumentParameter", **set_instrument_parameter_options)

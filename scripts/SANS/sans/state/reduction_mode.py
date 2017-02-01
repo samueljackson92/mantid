@@ -6,7 +6,7 @@ from abc import (ABCMeta, abstractmethod)
 import copy
 
 from sans.state.state_base import (StateBase, ClassTypeParameter, FloatParameter, DictParameter,
-                                   FloatWithNoneParameter, rename_descriptor_names)
+                                   FloatWithNoneParameter, StringParameter, rename_descriptor_names)
 from sans.common.enums import (ReductionMode, ISISReductionMode, ReductionDimensionality, FitModeForMerge,
                                SANSInstrument, DetectorType)
 from sans.common.file_information import (get_instrument_paths_for_sans_file)
@@ -37,6 +37,9 @@ class StateReductionBase(object):
 class StateReductionMode(StateReductionBase, StateBase):
     reduction_mode = ClassTypeParameter(ReductionMode)
     reduction_dimensionality = ClassTypeParameter(ReductionDimensionality)
+
+    # Output name
+    output_name = StringParameter()
 
     # Fitting
     merge_fit_mode = ClassTypeParameter(FitModeForMerge)

@@ -525,7 +525,11 @@ def loader_for_raw(file_information, is_transmission, period):
     loader_name = "LoadRaw"
     loader_options = {"Filename": file_information.get_file_name(),
                       "OutputWorkspace": EMPTY_NAME}
-    loader_options.update({"LoadMonitors": "Separate"})
+    if is_transmission:
+        loader_options.update({"LoadMonitors": "Include"})
+    else:
+        loader_options.update({"LoadMonitors": "Separate"})
+
     if period != StateData.ALL_PERIODS:
         loader_options.update({"PeriodList": period})
     loader_alg = create_unmanaged_algorithm(loader_name, **loader_options)
@@ -791,12 +795,11 @@ class LOQTransmissionCorrection(TransmissionCorrection):
         """
         # Get the transmission and the direct workspaces and apply the correction to them
         workspace_which_require_transmission_correction = []
-        for data_type in workspaces.items():
+        for data_type, _ in workspaces.items():
             if is_transmission_type(data_type):
-                workspace_which_require_transmission_correction.append(workspaces[data_type])
+                workspace_which_require_transmission_correction.extend(workspaces[data_type])
 
         # We want to apply a different instrument for the transmission runs
-
         for workspace in workspace_which_require_transmission_correction:
             instrument = workspace.getInstrument()
             has_m4 = instrument.getComponentByName("monitor4")
@@ -806,7 +809,7 @@ class LOQTransmissionCorrection(TransmissionCorrection):
             else:
                 trans_definition_file = os.path.join(config.getString('instrumentDefinition.directory'),
                                                      'LOQ_trans_Definition_M4.xml')
-            # Done
+
             instrument_name = "LoadInstrument"
             instrument_options = {"Workspace": workspace,
                                   "Filename": trans_definition_file,

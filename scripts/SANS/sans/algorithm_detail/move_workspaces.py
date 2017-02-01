@@ -6,7 +6,7 @@ from abc import (ABCMeta, abstractmethod)
 from sans.state.move import StateMove
 from sans.common.enums import (SANSInstrument, CanonicalCoordinates, DetectorType)
 from sans.common.general_functions import (create_unmanaged_algorithm, get_single_valued_logs_from_workspace,
-                                           quaternion_to_angle_and_axis)
+                                           quaternion_to_angle_and_axis, sanitise_instrument_name)
 
 
 # -------------------------------------------------
@@ -502,29 +502,31 @@ class SANSMoveLOQ(SANSMove):
     def do_move_initial(self, move_info, workspace, coordinates, component, is_transmission_workspace):
         # For LOQ we only have to coordinates
         assert len(coordinates) == 2
-        # First move the sample holder
-        move_sample_holder(workspace, move_info.sample_offset, move_info.sample_offset_direction)
 
-        x = coordinates[0]
-        y = coordinates[1]
-        center_position = move_info.center_position
+        if not is_transmission_workspace:
+            # First move the sample holder
+            move_sample_holder(workspace, move_info.sample_offset, move_info.sample_offset_direction)
 
-        x_shift = center_position - x
-        y_shift = center_position - y
+            x = coordinates[0]
+            y = coordinates[1]
+            center_position = move_info.center_position
 
-        # Get the detector name
-        component_name = move_info.detectors[component].detector_name
+            x_shift = center_position - x
+            y_shift = center_position - y
 
-        # Shift the detector by the the input amount
-        offset = {CanonicalCoordinates.X: x_shift,
-                  CanonicalCoordinates.Y: y_shift}
-        move_component(workspace, offset, component_name)
+            # Get the detector name
+            component_name = move_info.detectors[component].detector_name
 
-        # Shift the detector according to the corrections of the detector under investigation
-        offset_from_corrections = {CanonicalCoordinates.X: move_info.detectors[component].x_translation_correction,
-                                   CanonicalCoordinates.Y: move_info.detectors[component].y_translation_correction,
-                                   CanonicalCoordinates.Z: move_info.detectors[component].z_translation_correction}
-        move_component(workspace, offset_from_corrections, component_name)
+            # Shift the detector by the the input amount
+            offset = {CanonicalCoordinates.X: x_shift,
+                      CanonicalCoordinates.Y: y_shift}
+            move_component(workspace, offset, component_name)
+
+            # Shift the detector according to the corrections of the detector under investigation
+            offset_from_corrections = {CanonicalCoordinates.X: move_info.detectors[component].x_translation_correction,
+                                       CanonicalCoordinates.Y: move_info.detectors[component].y_translation_correction,
+                                       CanonicalCoordinates.Z: move_info.detectors[component].z_translation_correction}
+            move_component(workspace, offset_from_corrections, component_name)
 
     def do_move_with_elementary_displacement(self, move_info, workspace, coordinates, component):
         # For LOQ we only have to coordinates
@@ -545,6 +547,8 @@ class SANSMoveLARMOROldStyle(SANSMove):
         super(SANSMoveLARMOROldStyle, self).__init__()
 
     def do_move_initial(self, move_info, workspace, coordinates, component, is_transmission_workspace):
+        _is_transmission_workspace = is_transmission_workspace  # noqa
+
         # For LARMOR we only have to coordinates
         assert len(coordinates) == 2
 
@@ -604,6 +608,8 @@ class SANSMoveLARMORNewStyle(SANSMove):
         rotate_component(workspace, total_angle, direction, detector_name)
 
     def do_move_initial(self, move_info, workspace, coordinates, component, is_transmission_workspace):
+        _is_transmission_workspace = is_transmission_workspace  # noqa
+
         # For LARMOR we only have to coordinates
         assert len(coordinates) == 2
 
@@ -662,7 +668,9 @@ class SANSMoveFactory(object):
         # Get selection
         run_number = workspace.getRunNumber()
         instrument = workspace.getInstrument()
-        instrument_type = SANSInstrument.from_string(instrument.getName())
+        instrument_name = instrument.getName()
+        instrument_name = sanitise_instrument_name(instrument_name)
+        instrument_type = SANSInstrument.from_string(instrument_name)
         if SANSMoveLOQ.is_correct(instrument_type, run_number):
             mover = SANSMoveLOQ()
         elif SANSMoveSANS2D.is_correct(instrument_type, run_number):

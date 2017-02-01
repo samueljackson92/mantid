@@ -11,9 +11,18 @@ from sans.command_interface.batch_csv_file_parser import BatchCsvParser
 from sans.common.constants import ALL_PERIODS
 from sans.common.file_information import (find_sans_file, find_full_file_path)
 from sans.common.enums import (RebinType, DetectorType, FitType, RangeStepType, ReductionDimensionality,
-                               ISISReductionMode, SANSFacility, SaveType, BatchReductionEntry)
+                               ISISReductionMode, SANSFacility, SaveType, BatchReductionEntry, OutputMode)
 from sans.common.general_functions import (convert_bank_name_to_detector_type_isis, create_unmanaged_algorithm,
                                            get_output_workspace_name)
+
+# Disable plotting if running outside Mantidplot
+try:
+    import mantidplot
+except (Exception, Warning):
+    mantidplot = None
+    # this should happen when this is called from outside Mantidplot and only then,
+    # the result is that attempting to plot will raise an exception
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Globals
@@ -459,6 +468,18 @@ def SetPhiLimit(phimin, phimax, use_mirror=True):
     director.add_command(centre_command)
 
 
+def set_save(save_algorithms, save_name, save_as_zero_error_free):
+    """
+    Mainly internally used by BatchMode. Provides the save settings.
+
+    @param save_algorithms: A list of SaveType enums.
+    @param save_name: a base name for the saved file.
+    @param save_as_zero_error_free: True if a zero error correction should be performed.
+    """
+    save_command = NParameterCommand(command_id=NParameterCommandId.save, values=[save_algorithms, save_name,
+                                                                                  save_as_zero_error_free])
+    director.add_command(save_command)
+
 # --------------------------
 # Four parameter commands
 # ---------------------------
@@ -641,7 +662,7 @@ def SetDetectorOffsets(bank, x, y, z, rot, radius, side, xtilt=0.0, ytilt=0.0):
 # Commands which actually kick off a reduction
 # --------------------------------------------
 def WavRangeReduction(wav_start=None, wav_end=None, full_trans_wav=None, name_suffix=None, combineDet=None,
-                      resetSetup=True, out_fit_settings=None):
+                      resetSetup=True, out_fit_settings=None, output_name=None, output_mode=OutputMode.PublishToADS):
     """
         Run reduction from loading the raw data to calculating Q. Its optional arguments allows specifics
         details to be adjusted, and optionally the old setup is reset at the end. Note if FIT of RESCALE or SHIFT
@@ -666,6 +687,8 @@ def WavRangeReduction(wav_start=None, wav_end=None, full_trans_wav=None, name_su
         @param resetSetup: if true reset setup at the end
         @param out_fit_settings: An output parameter. It is used, specially when resetSetup is True, in order
                                  to remember the 'scale and fit' of the fitting algorithm.
+        @param output_name: name of the output workspace/file, if none is specified then one is generated internally.
+        @param output_mode: the way the data should be put out: Can be PublishToADS, SaveToFile or Both
         @return Name of one of the workspaces created
     """
     print_message('WavRangeReduction(' + str(wav_start) + ', ' + str(wav_end) + ', ' + str(full_trans_wav) + ')')
@@ -693,13 +716,17 @@ def WavRangeReduction(wav_start=None, wav_end=None, full_trans_wav=None, name_su
 
     # Get the states
     state = director.process_commands()
+
+    if output_name is not None:
+        state.reduction.output_name = output_name
+
     serialized_state = state.property_manager
     states = {"1": serialized_state}
 
     # Run the reduction
     batch_name = "SANSBatchReduction"
     batch_options = {"SANSStates": states,
-                     "OutputMode": "PublishToADS",
+                     "OutputMode": OutputMode.to_string(output_mode),
                      "UseOptimizations": True}
     batch_alg = create_unmanaged_algorithm(batch_name, **batch_options)
     batch_alg.execute()
@@ -708,6 +735,169 @@ def WavRangeReduction(wav_start=None, wav_end=None, full_trans_wav=None, name_su
     reduction_mode = state.reduction.reduction_mode
     _, output_workspace_base_name = get_output_workspace_name(state, reduction_mode)
     return output_workspace_base_name
+
+
+def BatchReduce(filename, format, plotresults=False, saveAlgs=None, verbose=False,  # noqa
+                centreit=False, reducer=None, combineDet=None, save_as_zero_error_free=False):  # noqa
+    """
+        @param filename: the CSV file with the list of runs to analyse
+        @param format: type of file to load, nxs for Nexus, etc.
+        @param plotresults: if true and this function is run from Mantidplot a graph will be created for the results of each reduction
+        @param saveAlgs: this named algorithm will be passed the name of the results workspace and filename (default = 'SaveRKH').
+            Pass a tuple of strings to save to multiple file formats
+        @param verbose: set to true to write more information to the log (default=False)
+        @param centreit: do centre finding (default=False)
+        @param reducer: if to use the command line (default) or GUI reducer object
+        @param combineDet: that will be forward to WavRangeReduction (rear, front, both, merged, None)
+        @param save_as_zero_error_free: Should the reduced workspaces contain zero errors or not
+        @return final_setings: A dictionary with some values of the Reduction - Right Now:(scale, shift)
+    """
+    if saveAlgs is None:
+        saveAlgs = {'SaveRKH': 'txt'}
+
+    _ = reducer
+    _ = verbose
+
+    if centreit:
+        raise RuntimeError("The beam centre finder is currently not supported.")
+    if plotresults:
+        raise RuntimeError("Plotting the results is currenlty not supported.")
+
+    # Set up the save algorithms
+    save_algs = []
+    for key, _ in saveAlgs.items():
+        if key == "SaveRKH":
+            save_algs.append(SaveType.RKH)
+        elif key == "SaveNexus":
+            save_algs.append(SaveType.Nexus)
+        elif key == "SaveNistQxy":
+            save_algs.append(SaveType.NistQxy)
+        elif key == "SaveCanSAS" or key == "SaveCanSAS1D":
+            save_algs.append(SaveType.CanSAS)
+        elif key == "SaveCSV":
+            save_algs.append(SaveType.CSV)
+        elif key == "SaveNXcanSAS":
+            save_algs.append(SaveType.NXcanSAS)
+        else:
+            raise RuntimeError("The save format {0} is not known.".format(key))
+
+    # Get the information from the csv file
+    batch_csv_parser = BatchCsvParser(filename)
+    parsed_batch_entries = batch_csv_parser.parse_batch_file()
+
+    # Get a state with all existing settings
+    for parsed_batch_entry in parsed_batch_entries:
+        # A new user file. If a new user file is provided then this will overwrite all other settings from,
+        # otherwise we might have cross-talk between user files.
+        if BatchReductionEntry.UserFile in parsed_batch_entry.keys():
+            user_file = parsed_batch_entry[BatchReductionEntry.UserFile]
+            MaskFile(user_file)
+
+        # Sample scatter
+        sample_scatter = parsed_batch_entry[BatchReductionEntry.SampleScatter]
+        AssignSample(sample_run=sample_scatter)
+
+        # Sample transmission
+        if (BatchReductionEntry.SampleTransmission in parsed_batch_entry.keys() and
+           BatchReductionEntry.SampleDirect in parsed_batch_entry.keys()):
+            sample_transmission = parsed_batch_entry[BatchReductionEntry.SampleTransmission]
+            sample_direct = parsed_batch_entry[BatchReductionEntry.SampleDirect]
+            TransmissionSample(sample=sample_transmission, direct=sample_direct)
+
+        # Can scatter
+        if BatchReductionEntry.CanScatter in parsed_batch_entry.keys():
+            can_scatter = parsed_batch_entry[BatchReductionEntry.CanScatter]
+            AssignCan(can_run=can_scatter)
+
+        # Can transmission
+        if (BatchReductionEntry.CanTransmission in parsed_batch_entry.keys() and
+           BatchReductionEntry.CanDirect in parsed_batch_entry.keys()):
+            can_transmission = parsed_batch_entry[BatchReductionEntry.CanTransmission]
+            can_direct = parsed_batch_entry[BatchReductionEntry.CanDirect]
+            TransmissionCan(can=can_transmission, direct=can_direct)
+
+        # Name of the output
+        output_name = parsed_batch_entry[BatchReductionEntry.Output]
+
+        # Apply save options
+        set_save(save_algorithms=save_algs, save_name=output_name, save_as_zero_error_free=save_as_zero_error_free)
+
+        # Run the reduction for a single
+        reduced_workspace_name = WavRangeReduction(combineDet=combineDet, output_name=output_name,
+                                                   output_mode=OutputMode.Both)
+
+        # Plot the results if that was requested, the flag 1 is from the old version.
+        if plotresults == 1:
+            if AnalysisDataService.doesExist(reduced_workspace_name):
+                workspace = AnalysisDataService.retrieve(reduced_workspace_name)
+                if isinstance(workspace, WorkspaceGroup):
+                    for ws in workspace:
+                        PlotResult(str(ws))
+                else:
+                    PlotResult(str(workspace))
+
+
+def CompWavRanges(wavelens, plot=True, combineDet=None, resetSetup=True):
+    """
+        Compares the momentum transfer results calculated from different wavelength ranges. Given
+        the list of wave ranges [a, b, c] it reduces for wavelengths a-b, b-c and a-c.
+        @param wavelens: the list of wavelength ranges
+        @param plot: set this to true to plot the result (must be run in Mantid), default is true
+        @param combineDet: see description in WavRangeReduction
+        @param resetSetup: if true reset setup at the end
+    """
+
+    print_message('CompWavRanges( %s,plot=%s)' % (str(wavelens), plot))
+
+    if not isinstance(wavelens, list) or len(wavelens) < 2:
+        if not isinstance(wavelens, tuple):
+            raise RuntimeError(
+                'Error CompWavRanges() requires a list of wavelengths between which '
+                'reductions will be performed.')
+
+    # Perform a reduction over the full wavelength range which was specified
+    reduced_workspace_names = []
+    full_reduction_name = WavRangeReduction(wav_start=wavelens[0], wav_end=wavelens[- 1],
+                                            combineDet=combineDet, resetSetup=False)
+    reduced_workspace_names.append(full_reduction_name)
+
+    # Reduce each wavelength slice
+    for i in range(0, len(wavelens) - 1):
+        reduced_workspace_name = WavRangeReduction(wav_start=wavelens[i], wav_end=wavelens[i + 1],
+                                                   combineDet=combineDet, resetSetup=False)
+        reduced_workspace_names.append(reduced_workspace_name)
+
+    if plot and mantidplot:
+        mantidplot.plotSpectrum(reduced_workspace_names, 0)
+
+    # Return just the workspace name of the full range
+    return reduced_workspace_names[0]
+
+
+def PhiRanges(phis, plot=True):
+    """
+        Given a list of phi ranges [a, b, c, d] it reduces in the phi ranges a-b and c-d
+        @param phis: the list of phi ranges
+        @param plot: set this to true to plot the result (must be run in Mantid), default is true
+    """
+
+    print_message('PhiRanges( %s,plot=%s)' % (str(phis), plot))
+
+    # todo covert their string into Python array
+
+    if len(phis) % 2 != 0:
+        raise RuntimeError('Phi ranges must be given as pairs')
+
+    reduced_workspace_names = []
+    for i in range(0, len(phis), 2):
+        reduced_workspace_name = WavRangeReduction()
+        reduced_workspace_names.append(reduced_workspace_name)
+
+    if plot and mantidplot:
+        mantidplot.plotSpectrum(reduced_workspace_names, 0)
+
+    # Return just the workspace name of the full range
+    return reduced_workspace_names[0]
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -736,135 +926,5 @@ def PlotResult(workspace, canvas=None):
         return graph
     except ImportError:
         print_message('Plot functions are not available, is this being run from outside Mantidplot?')
-
-
-def BatchReduce(filename, format, plotresults=False, saveAlgs={'SaveRKH': 'txt'}, verbose=False,  # noqa
-                centreit=False, reducer=None, combineDet=None, save_as_zero_error_free=False):  # noqa
-    """
-        @param filename: the CSV file with the list of runs to analyse
-        @param format: type of file to load, nxs for Nexus, etc.
-        @param plotresults: if true and this function is run from Mantidplot a graph will be created for the results of each reduction
-        @param saveAlgs: this named algorithm will be passed the name of the results workspace and filename (default = 'SaveRKH').
-            Pass a tuple of strings to save to multiple file formats
-        @param verbose: set to true to write more information to the log (default=False)
-        @param centreit: do centre finding (default=False)
-        @param reducer: if to use the command line (default) or GUI reducer object
-        @param combineDet: that will be forward to WavRangeReduction (rear, front, both, merged, None)
-        @param save_as_zero_error_free: Should the reduced workspaces contain zero errors or not
-        @return final_setings: A dictionary with some values of the Reduction - Right Now:(scale, shift)
-    """
-    _ = reducer
-    _ = verbose
-
-    if centreit:
-        raise RuntimeError("The beam centre finder is currently not supported.")
-    if plotresults:
-        raise RuntimeError("Plotting the results is currenlty not supported.")
-
-    # Set up the save algorithms
-    save_algs = []
-    for key, _ in saveAlgs.items():
-        if key == "SaveRKH":
-            save_algs.append(SaveType.RKH)
-        elif key == "SaveNexus":
-            save_algs.append(SaveType.Nexus)
-        elif key == "SaveNistQxy":
-            save_algs.append(SaveType.NistQxy)
-        elif key == "SaveCanSAS":
-            save_algs.append(SaveType.CanSAS)
-        elif key == "SaveCSV":
-            save_algs.append(SaveType.CSV)
-        elif key == "SaveNXcanSAS":
-            save_algs.append(SaveType.NXcanSAS)
-        else:
-            raise RuntimeError("The save format {0} is not known.".format(key))
-
-    # Get the information from the csv file
-    batch_csv_parser = BatchCsvParser(filename)
-    parsed_batch_entries = batch_csv_parser.parse_batch_file()
-
-    # For each entry we populate the state
-    for parsed_batch_entry in parsed_batch_entries:
-        pass
-
-
-# def CompWavRanges(wavelens, plot=True, combineDet=None, resetSetup=True):
-#     """
-#         Compares the momentum transfer results calculated from different wavelength ranges. Given
-#         the list of wave ranges [a, b, c] it reduces for wavelengths a-b, b-c and a-c.
-#         @param wavelens: the list of wavelength ranges
-#         @param plot: set this to true to plot the result (must be run in Mantid), default is true
-#         @param combineDet: see description in WavRangeReduction
-#         @param resetSetup: if true reset setup at the end
-#     """
-#
-#     _printMessage('CompWavRanges( %s,plot=%s)' % (str(wavelens), plot))
-#
-#     # this only makes sense for 1D reductions
-#     if ReductionSingleton().to_Q.output_type == '2D':
-#         issueWarning('This wave ranges check is a 1D analysis, ignoring 2D setting')
-#         _printMessage('Set1D()')
-#         ReductionSingleton().to_Q.output_type = '1D'
-#
-#     if not isinstance(wavelens, type([])) or len(wavelens) < 2:
-#         if not isinstance(wavelens, type((1,))):
-#             raise RuntimeError(
-#                 'Error CompWavRanges() requires a list of wavelengths between which reductions will be performed.')
-#
-#     calculated = [WavRangeReduction(wav_start=wavelens[0], wav_end=wavelens[len(wavelens) - 1], combineDet=combineDet,
-#                                     resetSetup=False)]
-#     for i in range(0, len(wavelens) - 1):
-#         calculated.append(
-#             WavRangeReduction(wav_start=wavelens[i], wav_end=wavelens[i + 1], combineDet=combineDet, resetSetup=False))
-#
-#     if resetSetup:
-#         _refresh_singleton()
-#
-#     if plot and mantidplot:
-#         mantidplot.plotSpectrum(calculated, 0)
-#
-#     # return just the workspace name of the full range
-#     return calculated[0]
-#
-#
-# def PhiRanges(phis, plot=True):
-#     """
-#         Given a list of phi ranges [a, b, c, d] it reduces in the phi ranges a-b and c-d
-#         @param phis: the list of phi ranges
-#         @param plot: set this to true to plot the result (must be run in Mantid), default is true
-#     """
-#
-#     _printMessage('PhiRanges( %s,plot=%s)' % (str(phis), plot))
-#
-#     # todo covert their string into Python array
-#
-#     if len(phis) / 2 != float(len(phis)) / 2.:
-#         raise RuntimeError('Phi ranges must be given as pairs')
-#
-#     try:
-#         # run the reductions, calculated will be an array with the names of all the workspaces produced
-#         calculated = []
-#         for i in range(0, len(phis), 2):
-#             SetPhiLimit(phis[i], phis[i + 1])
-#             # reducedResult = ReductionSingleton()._reduce()
-#             # RenameWorkspace(reducedResult,'bob')
-#             # calculated.append(reducedResult)
-#             calculated.append(ReductionSingleton()._reduce())
-#             ReductionSingleton.replace(ReductionSingleton().cur_settings())
-#     finally:
-#         _refresh_singleton()
-#
-#     if plot and mantidplot:
-#         mantidplot.plotSpectrum(calculated, 0)
-#
-#     # return just the workspace name of the full range
-#     return calculated[0]
-#
-#
-
-
-
-
-
 
 

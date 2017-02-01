@@ -11,7 +11,6 @@ from sans.common.constants import EMPTY_NAME
 from sans.common.general_functions import (create_unmanaged_algorithm, append_to_sans_file_tag)
 from sans.common.enums import (DetectorType, DataType)
 
-
 class SANSReductionCore(DataProcessorAlgorithm):
     def category(self):
         return 'SANS\\Reduction'
@@ -116,7 +115,8 @@ class SANSReductionCore(DataProcessorAlgorithm):
         # Once the new reduction chain is established, we should remove the compatibility feature.
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         compatibility = state.compatibility
-        if compatibility.use_compatibility_mode:
+        is_event_workspace = isinstance(workspace, IEventWorkspace)
+        if compatibility.use_compatibility_mode and is_event_workspace:
             # We convert the workspace here to a histogram workspace, since we cannot otherwise
             # compare the results between the old and the new reduction workspace in a meaningful manner.
             # The old one is histogram and the new one is event.
@@ -358,7 +358,7 @@ class SANSReductionCore(DataProcessorAlgorithm):
             convert_options.update({"InputWorkspacePixelAdjustment": pixel_adjustment_workspace})
         if wavelength_and_pixel_adjustment_workspace:
             convert_options.update({"InputWorkspaceWavelengthAndPixelAdjustment":
-                                        wavelength_and_pixel_adjustment_workspace})
+                                    wavelength_and_pixel_adjustment_workspace})
         convert_alg = create_unmanaged_algorithm(convert_name, **convert_options)
         convert_alg.execute()
         data_workspace = convert_alg.getProperty("OutputWorkspace").value

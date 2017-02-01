@@ -27,7 +27,7 @@ class DataCommandId(object):
                    "user_file", "mask", "sample_offset", "detector", "event_slices",  # Single parameter commands
                    "flood_file", "wavelength_correction_file",  # Single parameter commands
                    "incident_spectrum", "gravity",  # Double parameter commands
-                   "centre",   # Three parameter commands
+                   "centre", "save",   # Three parameter commands
                    "trans_fit", "phi_limit", "mask_radius", "wavelength_limit", "qxy_limit",  # Four parameter commands
                    "wavrange_settings",  # Five parameter commands
                    "front_detector_rescale",  # Six parameter commands
@@ -247,14 +247,18 @@ class CommandInterfaceStateDirector(object):
                             NParameterCommandId.qxy_limit: self._process_qxy_limit,
                             NParameterCommandId.wavrange_settings: self._process_wavrange,
                             NParameterCommandId.compatibility_mode: self._process_compatibility_mode,
-                            NParameterCommandId.detector_offsets: self._process_detector_offsets
+                            NParameterCommandId.detector_offsets: self._process_detector_offsets,
+                            NParameterCommandId.save: self._process_save
                             }
 
-    def add_to_processed_state_settings(self, new_state_settings):
+    def add_to_processed_state_settings(self, new_state_settings, treat_list_as_element=False):
         """
         Adds the new entries to the already processed state settings
 
         @param new_state_settings: a dictionary with new entries for the processed state settings
+        @param treat_list_as_element: if we have a list and add it for the fist time, then we should treat it as an
+                                      element if true. For example, if the state is [1, 2] the a new settint would, be
+                                      [[1, 2,]] and not [1, 2]. With a further entry it could be [[1,2], [3,4]].
         """
         for key, value in new_state_settings.items():
             # Add the new entry
@@ -265,6 +269,8 @@ class CommandInterfaceStateDirector(object):
             if key in self._processed_state_settings:
                 old_values = self._processed_state_settings[key]
                 old_values.append(value)
+            elif isinstance(value, list) and treat_list_as_element:
+                self._processed_state_settings.update({key: [value]})
             elif isinstance(value, list):
                 self._processed_state_settings.update({key: value})
             else:
@@ -489,3 +495,12 @@ class CommandInterfaceStateDirector(object):
                                  single_entry_with_detector(entry=y_tilt, detector_type=detector_type),
                              }
         self.add_to_processed_state_settings(new_state_entries)
+
+    def _process_save(self, command):
+        save_algorithms = command.values[0]
+        save_name = command.values[1]
+        save_as_zero_error_free = command.values[2]
+        new_state_entries = {OtherId.save_types: save_algorithms,
+                             OtherId.save_name: save_name,
+                             OtherId.save_as_zero_error_free: save_as_zero_error_free}
+        self.add_to_processed_state_settings(new_state_entries,  treat_list_as_element=True)

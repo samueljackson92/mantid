@@ -3,7 +3,8 @@ import mantid
 
 from mantid.kernel import (V3D, Quat)
 from sans.common.general_functions import (quaternion_to_angle_and_axis, create_unmanaged_algorithm, add_to_sample_log,
-                                           get_output_workspace_name)
+                                           get_output_workspace_name, sanitise_instrument_name)
+from sans.common.constants import (SANS2D, LOQ, LARMOR)
 from sans.common.enums import (ISISReductionMode, ReductionDimensionality)
 from sans.test_helper.test_director import TestDirector
 from sans.state.data import StateData
@@ -137,6 +138,18 @@ class SANSFunctionsTest(unittest.TestCase):
         # Assert
         self.assertTrue("12345rear_1D_12.0_34.0Phi12.0_56.0_t4.57_T12.37" == output_workspace)
 
+    def test_that_sanitises_instrument_names(self):
+        name1 = sanitise_instrument_name("LOQ_trans")
+        self.assertTrue(LOQ == name1)
+
+        name2 = sanitise_instrument_name("sans2d")
+        self.assertTrue(SANS2D == name2)
+
+        name3 = sanitise_instrument_name("__LArMOR_")
+        self.assertTrue(LARMOR == name3)
+
+        name4 = sanitise_instrument_name("OThER")
+        self.assertTrue("OThER" == name4)
 
 if __name__ == '__main__':
     unittest.main()

@@ -11,6 +11,9 @@ class BatchCsvParser(object):
                            "can_trans": BatchReductionEntry.CanTransmission,
                            "can_direct_beam": BatchReductionEntry.CanDirect,
                            "user_file": BatchReductionEntry.UserFile}
+    batch_file_keywords_which_are_dropped = {"background_sans": None,
+                                             "background_trans": None,
+                                             "background_direct_beam": None}
 
     def __init__(self, batch_file_name):
         super(BatchCsvParser, self).__init__()
@@ -56,6 +59,8 @@ class BatchCsvParser(object):
                 new_key = self.batch_file_keywords[key]
                 value = value.strip()
                 output.update({new_key: value})
+            elif key in self.batch_file_keywords_which_are_dropped.keys():
+                continue
             else:
                 raise RuntimeError("The key {0} is not part of the SANS batch csv file keywords".format(key))
 

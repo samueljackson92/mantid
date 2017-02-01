@@ -1,6 +1,6 @@
 from mantid.api import ExperimentInfo
 
-from sans.common.general_functions import create_unmanaged_algorithm
+from sans.common.general_functions import (create_unmanaged_algorithm, sanitise_instrument_name)
 from sans.common.constants import EMPTY_NAME
 
 
@@ -103,6 +103,7 @@ def get_idf_path_from_workspace(workspace):
     run = workspace.run()
     instrument = workspace.getInstrument()
     instrument_name = instrument.getName()
+    instrument_name = sanitise_instrument_name(instrument_name)
     if run.hasProperty("start_time"):
         time = run.getProperty("start_time").value
         idf_path = ExperimentInfo.getInstrumentFilename(instrument_name, time)

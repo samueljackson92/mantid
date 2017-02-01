@@ -100,7 +100,6 @@ class SANSSave(DataProcessorAlgorithm):
             errors.update({"CSV": "At least one data format needs to be specified."})
 
         # NistQxy cannot be used with 1D data
-        workspace = self.getProperty("InputWorkspace").value
         is_nistqxy_selected = self.getProperty("NistQxy").value
         if is_nistqxy_selected and number_of_histograms == 1 and not is_first_axis_numeric:
             errors.update({"NistQxy": "Attempting to save a 1D workspace with NistQxy. NistQxy can store 2D data"
@@ -116,7 +115,7 @@ class SANSSave(DataProcessorAlgorithm):
         self._check_file_types(file_types, "RKH", SaveType.RKH)
         self._check_file_types(file_types, "CSV", SaveType.CSV)
 
-        # Now check if several file formats were selected which save inot the same file
+        # Now check if several file formats were selected which save into the same file
         # type, e.g. as Nexus and NXcanSAS do. If this is the case then we want to mark these file formats
         file_formats = []
 

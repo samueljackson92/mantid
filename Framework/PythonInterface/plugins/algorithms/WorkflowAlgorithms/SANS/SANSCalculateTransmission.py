@@ -60,6 +60,8 @@ class SANSCalculateTransmission(DataProcessorAlgorithm):
         transmission_workspace = self.getProperty("TransmissionWorkspace").value
         direct_workspace = self.getProperty("DirectWorkspace").value
         incident_monitor_spectrum_number = calculate_transmission_state.incident_monitor
+        if incident_monitor_spectrum_number is None:
+            incident_monitor_spectrum_number = calculate_transmission_state.default_incident_monitor
 
         # 1. Get relevant spectra
         detector_id_incident_monitor = get_detector_id_for_spectrum_number(transmission_workspace,
@@ -69,11 +71,12 @@ class SANSCalculateTransmission(DataProcessorAlgorithm):
         detector_id_default_transmission_monitor = self._get_detector_ids_for_transmission_calculation(
                                                                   transmission_workspace, calculate_transmission_state)
         all_detector_ids = [detector_id_incident_monitor]
-        if detector_ids_roi:
+
+        if len(detector_ids_roi) > 0:
             all_detector_ids.extend(detector_ids_roi)
-        elif detector_id_transmission_monitor:
+        elif detector_id_transmission_monitor is not None:
             all_detector_ids.append(detector_id_transmission_monitor)
-        elif detector_id_default_transmission_monitor:
+        elif detector_id_default_transmission_monitor is not None:
             all_detector_ids.append(detector_id_default_transmission_monitor)
         else:
             raise RuntimeError("SANSCalculateTransmission: No region of interest or transmission monitor selected.")
@@ -89,15 +92,16 @@ class SANSCalculateTransmission(DataProcessorAlgorithm):
         # 3. Fit
         output_workspace, unfitted_transmission_workspace = \
             self._perform_fit(transmission_workspace, direct_workspace, detector_ids_roi,
-                              detector_id_transmission_monitor, detector_id_incident_monitor,
-                              calculate_transmission_state, data_type)
+                              detector_id_transmission_monitor, detector_id_default_transmission_monitor,
+                              detector_id_incident_monitor, calculate_transmission_state, data_type)
 
         self.setProperty("OutputWorkspace", output_workspace)
         if unfitted_transmission_workspace:
             self.setProperty("UnfittedData", unfitted_transmission_workspace)
 
     def _perform_fit(self, transmission_workspace, direct_workspace,
-                     transmission_roi_detector_ids, transmission_monitor_detector_id, incident_monitor_detector_id,
+                     transmission_roi_detector_ids, transmission_monitor_detector_id,
+                     transmission_monitor_detector_id_default, incident_monitor_detector_id,
                      calculate_transmission_state, data_type):
         """
         This performs the actual transmission calculation.
@@ -106,6 +110,7 @@ class SANSCalculateTransmission(DataProcessorAlgorithm):
         @param direct_workspace: the corrected direct workspace
         @param transmission_roi_detector_ids: the roi detector ids
         @param transmission_monitor_detector_id: the transmission monitor detector id
+        @param transmission_monitor_detector_id_default: the default transmission monitor id
         @param incident_monitor_detector_id: the incident monitor id
         @param calculate_transmission_state: the state for the transmission calculation
         @param data_type: the data type which is currently being investigated, ie if it is a sample or a can run.
@@ -129,10 +134,15 @@ class SANSCalculateTransmission(DataProcessorAlgorithm):
                          "OutputUnfittedData": True}
 
         # If we have a region of interest we use it else we use the transmission monitor
-        if transmission_roi_detector_ids:
+
+        if len(transmission_roi_detector_ids) > 0:
             trans_options.update({"TransmissionROI": transmission_roi_detector_ids})
-        else:
+        elif transmission_monitor_detector_id is not None:
             trans_options.update({"TransmissionMonitor": transmission_monitor_detector_id})
+        elif transmission_monitor_detector_id_default:
+            trans_options.update({"TransmissionMonitor": transmission_monitor_detector_id_default})
+        else:
+            raise RuntimeError("No transmission monitor has been provided.")
 
         # Get the fit setting for the correct data type, ie either for the Sample of the Can
         fit_type = calculate_transmission_state.fit[DataType.to_string(data_type)].fit_type
@@ -325,7 +335,10 @@ class SANSCalculateTransmission(DataProcessorAlgorithm):
             transmission_workspace = self.getProperty("TransmissionWorkspace").value
             calculate_transmission_state = state.adjustment.calculate_transmission
             try:
-                transmission_workspace.getIndexFromSpectrumNumber(calculate_transmission_state.incident_monitor)
+                incident_monitor = calculate_transmission_state.incident_monitor
+                if incident_monitor is None:
+                    incident_monitor = calculate_transmission_state.default_incident_monitor
+                transmission_workspace.getIndexFromSpectrumNumber(incident_monitor)
             except RuntimeError:
                 errors.update({"IncidentMonitorSpectrumNumber": "The spectrum number for the incident monitor spectrum "
                                                                 "does not seem to exist for the transmission"

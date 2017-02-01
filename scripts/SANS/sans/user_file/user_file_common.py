@@ -133,6 +133,6 @@ class BackId(object):
 
 # -- OTHER - not settable in user file
 @serializable_enum("reduction_dimensionality", "use_full_wavelength_range", "event_slices",
-                   "use_compatibility_mode")
+                   "use_compatibility_mode", "save_types", "save_name", "save_as_zero_error_free")
 class OtherId(object):
     pass

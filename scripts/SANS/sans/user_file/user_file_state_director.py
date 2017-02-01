@@ -266,6 +266,9 @@ class UserFileStateDirectorISIS(object):
         # Compatibility state
         self._set_up_compatibility(user_file_items)
 
+        # Save state
+        self._set_up_save(user_file_items)
+
     def construct(self):
         # Create the different sub states and add them to the state
         # Mask state
@@ -1220,6 +1223,25 @@ class UserFileStateDirectorISIS(object):
             check_if_contains_only_one_element(use_compatibility_mode, OtherId.use_compatibility_mode)
             use_compatibility_mode = use_compatibility_mode[-1]
             self._compatibility_builder.set_use_compatibility_mode(use_compatibility_mode)
+
+    def _set_up_save(self, user_file_items):
+        if OtherId.save_types in user_file_items:
+            save_types = user_file_items[OtherId.save_types]
+            check_if_contains_only_one_element(save_types, OtherId.save_types)
+            save_types = save_types[-1]
+            self._save_builder.set_file_format(save_types)
+
+        if OtherId.save_name in user_file_items:
+            save_name = user_file_items[OtherId.save_name]
+            check_if_contains_only_one_element(save_name, OtherId.save_name)
+            save_name = save_name[-1]
+            self._save_builder.set_file_name(save_name)
+
+        if OtherId.save_as_zero_error_free in user_file_items:
+            save_as_zero_error_free = user_file_items[OtherId.save_as_zero_error_free]
+            check_if_contains_only_one_element(save_as_zero_error_free, OtherId.save_as_zero_error_free)
+            save_as_zero_error_free = save_as_zero_error_free[-1]
+            self._save_builder.set_zero_free_correction(save_as_zero_error_free)
 
     def _add_information_to_data_state(self, user_file_items):
         # The only thing that should be set on the data is the tube calibration file which is specified in
