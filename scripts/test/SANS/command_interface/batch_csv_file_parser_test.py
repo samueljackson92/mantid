@@ -1,8 +1,10 @@
+from __future__ import (absolute_import, division, print_function)
 import unittest
 import os
 
 import mantid
 from sans.common.enums import BatchReductionEntry
+from sans.common.constants import ALL_PERIODS
 from sans.command_interface.batch_csv_file_parser import BatchCsvParser
 
 
@@ -93,17 +95,48 @@ class BatchCsvParserTest(unittest.TestCase):
         self.assertTrue(len(output) == 2)
 
         first_line = output[0]
-        self.assertTrue(len(first_line) == 5)
+        # Should have 5 user specified entries and 3 period entries
+        self.assertTrue(len(first_line) == 8)
         self.assertTrue(first_line[BatchReductionEntry.SampleScatter] == "1")
+        self.assertTrue(first_line[BatchReductionEntry.SampleScatterPeriod] == ALL_PERIODS)
         self.assertTrue(first_line[BatchReductionEntry.SampleTransmission] == "2")
+        self.assertTrue(first_line[BatchReductionEntry.SampleTransmissionPeriod] == ALL_PERIODS)
         self.assertTrue(first_line[BatchReductionEntry.SampleDirect] == "3")
+        self.assertTrue(first_line[BatchReductionEntry.SampleDirectPeriod] == ALL_PERIODS)
         self.assertTrue(first_line[BatchReductionEntry.Output] == "test_file")
         self.assertTrue(first_line[BatchReductionEntry.UserFile] == "user_test_file")
         second_line = output[1]
-        self.assertTrue(len(second_line) == 3)
+
+        # Should have 3 user specified entries and 2 period entries
+        self.assertTrue(len(second_line) == 5)
         self.assertTrue(second_line[BatchReductionEntry.SampleScatter] == "1")
+        self.assertTrue(second_line[BatchReductionEntry.SampleScatterPeriod] == ALL_PERIODS)
         self.assertTrue(second_line[BatchReductionEntry.CanScatter] == "2")
+        self.assertTrue(second_line[BatchReductionEntry.CanScatterPeriod] == ALL_PERIODS)
         self.assertTrue(second_line[BatchReductionEntry.Output] == "test_file2")
+
+        BatchCsvParserTest._remove_csv(batch_file_path)
+
+    def test_that_parses_period_selection(self):
+        content = "# MANTID_BATCH_FILE add more text here\n" \
+                   "sample_sans,1p7,can_sans,2P3,output_as,test_file2\n"
+        batch_file_path = BatchCsvParserTest._save_to_csv(content)
+        parser = BatchCsvParser(batch_file_path)
+
+        # Act
+        output = parser.parse_batch_file()
+
+        # Assert
+        self.assertTrue(len(output) == 1)
+
+        first_line = output[0]
+        # Should have 5 user specified entries and 3 period entries
+        self.assertTrue(len(first_line) == 5)
+        self.assertTrue(first_line[BatchReductionEntry.SampleScatter] == "1")
+        self.assertTrue(first_line[BatchReductionEntry.SampleScatterPeriod] == 7)
+        self.assertTrue(first_line[BatchReductionEntry.CanScatter] == "2")
+        self.assertTrue(first_line[BatchReductionEntry.CanScatterPeriod] == 3)
+        self.assertTrue(first_line[BatchReductionEntry.Output] == "test_file2")
 
         BatchCsvParserTest._remove_csv(batch_file_path)
 

@@ -6,7 +6,8 @@ from math import (acos, sqrt, degrees)
 import re
 from mantid.api import AlgorithmManager, AnalysisDataService
 from sans.common.constants import (SANS_FILE_TAG, ALL_PERIODS, REDUCED_WORKSPACE_NAME_IN_LOGS,
-                                   REDUCED_WORKSPACE_BASE_NAME_IN_LOGS, SANS2D, LOQ, LARMOR)
+                                   REDUCED_WORKSPACE_NAME_BY_USER_IN_LOGS, REDUCED_WORKSPACE_BASE_NAME_IN_LOGS,
+                                   SANS2D, LOQ, LARMOR)
 from sans.common.log_tagger import (get_tag, has_tag, set_tag)
 from sans.common.enums import (DetectorType, RangeStepType, ReductionDimensionality, ISISReductionMode)
 
@@ -465,7 +466,8 @@ def get_output_workspace_name(state, reduction_mode):
 
 def add_workspace_name(workspace, state, reduction_mode, external_output_name):
     """
-    Adds the default reduced workspace name to the sample logs
+    Adds the default reduced workspace name to the sample logs as well as the base name and a a user specified name,
+    if one was specified.
 
     :param workspace: The output workspace
     :param state: a SANSState object
@@ -474,18 +476,10 @@ def add_workspace_name(workspace, state, reduction_mode, external_output_name):
     """
     reduced_workspace_name, reduced_workspace_base_name = get_output_workspace_name(state, reduction_mode)
 
-    if external_output_name is not None:
-        # We set the output name to the user selected output name. If the base name and the actual name differ, then
-        # this mans that we are dealing with part of a multi-period run. In this case the external name only refers
-        # to the base name, in order to be consistent with the old reduction system.
-        if reduced_workspace_name == reduced_workspace_base_name:
-            reduced_workspace_base_name = external_output_name
-            reduced_workspace_name = external_output_name
-        else:
-            reduced_workspace_base_name = external_output_name
-
+    external_output_name = "" if external_output_name is None else external_output_name
     add_to_sample_log(workspace, REDUCED_WORKSPACE_NAME_IN_LOGS, reduced_workspace_name, "String")
     add_to_sample_log(workspace, REDUCED_WORKSPACE_BASE_NAME_IN_LOGS, reduced_workspace_base_name, "String")
+    add_to_sample_log(workspace, REDUCED_WORKSPACE_NAME_BY_USER_IN_LOGS, external_output_name, "String")
 
 
 def get_output_workspace_name_from_workspace_log(workspace, log_name):
@@ -509,10 +503,21 @@ def get_output_workspace_base_name_from_workspace(workspace):
     """
     Gets the base name of the reduced workspace. This can be the same as the name, but is different for
     multi-period files, it will not contain the _X of the name of the multi-period file.
+
     @param workspace: a matrix workspace
     @return: the base name of the workspace
     """
     return get_output_workspace_name_from_workspace_log(workspace, REDUCED_WORKSPACE_BASE_NAME_IN_LOGS)
+
+
+def get_output_user_specified_name_from_workspace(workspace):
+    """
+    Gets a user specified name from the workspace logs.
+
+    @param workspace: a matrix workspace.
+    @return: the user specified output workspace name.
+    """
+    return get_output_workspace_name_from_workspace_log(workspace, REDUCED_WORKSPACE_NAME_BY_USER_IN_LOGS)
 
 
 def get_base_name_from_multi_period_name(workspace_name):

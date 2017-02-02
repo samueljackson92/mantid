@@ -32,7 +32,7 @@ class DataCommandId(object):
                    "wavrange_settings",  # Five parameter commands
                    "front_detector_rescale",  # Six parameter commands
                    "detector_offsets"  # Nine parameter commands
-           )
+                   )
 class NParameterCommandId(object):
     pass
 
@@ -262,13 +262,32 @@ class CommandInterfaceStateDirector(object):
         """
         for key, value in new_state_settings.items():
             # Add the new entry
-            # 1. A similar entry can already exist, then append it
+            # 1. A similar entry can already exist, then append it (or extend it)
             # 2. The entry does not exist, but it is in form of a list (you would get that for example when
             #    dealing with input from the UserFileReader
             # 3. The entry does not exist and is not in a list. In this case we need to add it to a list.
             if key in self._processed_state_settings:
+                # If the key already exists then we have to be careful. We have the current value V = [A, B, ...]
+                # and our new element N
+                # i. If the existing entries (ie A, ...) are not lists and N is not a list, then append to V.
+                # ii. If the existing entries (ie A, ...) are not lists and N is a list then extend V.
+                # iii. If the existing entries (ie A, ...) are lists and N is a list then append to V.
+                # iv. If the existing entries (ie A, ...) are lists and N is not a list, then raise
+                # The reason we have to be careful is that we might get an N from a user file which comes always already
+                # in the form of a list.
                 old_values = self._processed_state_settings[key]
-                old_values.append(value)
+                is_old_first_entry_a_list = isinstance(old_values[0], list)
+                is_new_entry_a_list = isinstance(value, list)
+
+                if not is_old_first_entry_a_list and not is_new_entry_a_list:
+                    old_values.append(value)
+                elif not is_old_first_entry_a_list and is_new_entry_a_list:
+                    old_values.extend(value)
+                elif is_old_first_entry_a_list and is_new_entry_a_list:
+                    old_values.append(value)
+                else:
+                    raise RuntimeError("CommandInterfaceStateDirector: Trying to insert {0} which is a list into {0} "
+                                       "which is collection of non-list elements".format())
             elif isinstance(value, list) and treat_list_as_element:
                 self._processed_state_settings.update({key: [value]})
             elif isinstance(value, list):

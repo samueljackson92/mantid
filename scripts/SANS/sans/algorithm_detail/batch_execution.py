@@ -1,9 +1,11 @@
+from __future__ import (absolute_import, division, print_function)
 from copy import deepcopy
 from collections import namedtuple
 from mantid.api import AnalysisDataService
 
 from sans.common.general_functions import (create_unmanaged_algorithm, get_output_workspace_name_from_workspace,
                                            get_output_workspace_base_name_from_workspace,
+                                           get_output_user_specified_name_from_workspace,
                                            get_base_name_from_multi_period_name)
 from sans.common.enums import (SANSDataType, SaveType, OutputMode)
 from sans.common.constants import (EMPTY_NAME, TRANS_SUFFIX, SANS_SUFFIX, ALL_PERIODS)
@@ -549,26 +551,59 @@ def do_publish_to_ads(workspace, is_part_of_multi_period_reduction):
     :param workspace: the workspace which is to be added to the ADS
     :param is_part_of_multi_period_reduction: if true then we have several reductions from a multi-period file
     """
+    # The naming of SANS reduction is reasonably complicated (mainly due to the fact that multi-period files
+    # are grouped together. The old reduction did it this ways, so we have to do it too.
+    # In the sample log of the workspace we store the name and the base name of the reduced workspace (done in
+    # SANSSingleReduction). For a workspace which comes from a single-period file the two are identical. For a
+    # multi-period file the workspace name will normally contain an information about the period,
+    # e.g. 5512p7rear_1D_2.0_14.0Phi-45.0_45.0 and the base name would not have that information,
+    # e.g 5512rear_1D_2.0_14.0Phi-45.0_45.0.
+    #
+    # Additionally the user can specify a custom name for the workspace, which in the case of multi-period files is
+    # only used for the WorkspaceGroup's name and the child workspaces have the auto-generated names (although this
+    # seems inconsistent, it is how the old reducer operated).
+    #
+    # There are several scenarios to consider:
+    # 1. Collection of workspaces from a multiperiod files:
+    #    - save each workspace with the standard workspace name (which contains information about the period)
+    #    - group all workspaces to a WorkspaceGroup and name it according to the base name. As mentioned above,
+    #      this name can be very similar to the actual workspace name (but without the period information) or it can
+    #      be user provided.
+    # 2. Single workspace:
+    #    i. From a non-multi-period file:
+    #       the workspace name and the base name are the same. There is nothing to worry about.
+    #    ii. Single period from a multi-period file:
+    #        Here the workspace name and the base name are different.
+
     workspace_name = get_output_workspace_name_from_workspace(workspace)
-    AnalysisDataService.addOrReplace(workspace_name, workspace)
+    workspace_base_name = get_output_workspace_base_name_from_workspace(workspace)
+    user_specified_workspace_name = get_output_user_specified_name_from_workspace(workspace)
 
     if is_part_of_multi_period_reduction:
+        AnalysisDataService.addOrReplace(workspace_name, workspace)
         # If we are dealing with a reduced workspace which is actually part of a multi-period workspace
         # then we need to add it to a GroupWorkspace, if there is no GroupWorkspace yet, then we create one
-        workspace_base_name = get_output_workspace_base_name_from_workspace(workspace)
+        name_of_group_workspace = user_specified_workspace_name if user_specified_workspace_name else\
+            workspace_base_name
 
-        if AnalysisDataService.doesExist(workspace_base_name):
-            group_workspace = AnalysisDataService.retrieve(workspace_base_name)
+        if AnalysisDataService.doesExist(name_of_group_workspace):
+            group_workspace = AnalysisDataService.retrieve(name_of_group_workspace)
             group_workspace.add(workspace_name)
         else:
             group_name = "GroupWorkspaces"
             group_options = {"InputWorkspaces": [workspace_name],
-                             "OutputWorkspace": workspace_base_name}
+                             "OutputWorkspace": name_of_group_workspace}
             group_alg = create_unmanaged_algorithm(group_name, **group_options)
             # At this point we are dealing with the ADS, hence we need to make sure that this is not called as
             # a child algorithm
             group_alg.setChild(False)
             group_alg.execute()
+    else:
+        # User specified a name, then use it
+        if user_specified_workspace_name:
+            AnalysisDataService.addOrReplace(user_specified_workspace_name, workspace)
+        else:
+            AnalysisDataService.addOrReplace(workspace_name, workspace)
 
 
 def save_workspace_to_file(workspace, state):

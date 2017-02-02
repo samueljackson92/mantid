@@ -480,6 +480,7 @@ def set_save(save_algorithms, save_name, save_as_zero_error_free):
                                                                                   save_as_zero_error_free])
     director.add_command(save_command)
 
+
 # --------------------------
 # Four parameter commands
 # ---------------------------
@@ -795,26 +796,34 @@ def BatchReduce(filename, format, plotresults=False, saveAlgs=None, verbose=Fals
 
         # Sample scatter
         sample_scatter = parsed_batch_entry[BatchReductionEntry.SampleScatter]
-        AssignSample(sample_run=sample_scatter)
+        sample_scatter_period = parsed_batch_entry[BatchReductionEntry.SampleScatterPeriod]
+        AssignSample(sample_run=sample_scatter, period=sample_scatter_period)
 
         # Sample transmission
         if (BatchReductionEntry.SampleTransmission in parsed_batch_entry.keys() and
            BatchReductionEntry.SampleDirect in parsed_batch_entry.keys()):
             sample_transmission = parsed_batch_entry[BatchReductionEntry.SampleTransmission]
+            sample_transmission_period = parsed_batch_entry[BatchReductionEntry.SampleTransmissionPeriod]
             sample_direct = parsed_batch_entry[BatchReductionEntry.SampleDirect]
-            TransmissionSample(sample=sample_transmission, direct=sample_direct)
+            sample_direct_period = parsed_batch_entry[BatchReductionEntry.SampleDirectPeriod]
+            TransmissionSample(sample=sample_transmission, direct=sample_direct,
+                               period_t=sample_transmission_period, period_d=sample_direct_period)
 
         # Can scatter
         if BatchReductionEntry.CanScatter in parsed_batch_entry.keys():
             can_scatter = parsed_batch_entry[BatchReductionEntry.CanScatter]
-            AssignCan(can_run=can_scatter)
+            can_scatter_period = parsed_batch_entry[BatchReductionEntry.CanScatterPeriod]
+            AssignCan(can_run=can_scatter, period=can_scatter_period)
 
         # Can transmission
         if (BatchReductionEntry.CanTransmission in parsed_batch_entry.keys() and
            BatchReductionEntry.CanDirect in parsed_batch_entry.keys()):
             can_transmission = parsed_batch_entry[BatchReductionEntry.CanTransmission]
+            can_transmission_period = parsed_batch_entry[BatchReductionEntry.CanTransmissionPeriod]
             can_direct = parsed_batch_entry[BatchReductionEntry.CanDirect]
-            TransmissionCan(can=can_transmission, direct=can_direct)
+            can_direct_period = parsed_batch_entry[BatchReductionEntry.CanDirectPeriod]
+            TransmissionCan(can=can_transmission, direct=can_direct,
+                            period_t=can_transmission_period, period_d=can_direct_period)
 
         # Name of the output
         output_name = parsed_batch_entry[BatchReductionEntry.Output]

@@ -1,5 +1,8 @@
+from __future__ import (absolute_import, division, print_function)
+import re
 from csv import reader
 from sans.common.enums import BatchReductionEntry
+from sans.common.constants import ALL_PERIODS
 
 
 class BatchCsvParser(object):
@@ -14,6 +17,13 @@ class BatchCsvParser(object):
     batch_file_keywords_which_are_dropped = {"background_sans": None,
                                              "background_trans": None,
                                              "background_direct_beam": None}
+
+    data_keys = {BatchReductionEntry.SampleScatter: BatchReductionEntry.SampleScatterPeriod,
+                 BatchReductionEntry.SampleTransmission: BatchReductionEntry.SampleTransmissionPeriod,
+                 BatchReductionEntry.SampleDirect: BatchReductionEntry.SampleDirectPeriod,
+                 BatchReductionEntry.CanScatter: BatchReductionEntry.CanScatterPeriod,
+                 BatchReductionEntry.CanTransmission: BatchReductionEntry.CanTransmissionPeriod,
+                 BatchReductionEntry.CanDirect: BatchReductionEntry.CanDirectPeriod}
 
     def __init__(self, batch_file_name):
         super(BatchCsvParser, self).__init__()
@@ -33,6 +43,10 @@ class BatchCsvParser(object):
             batch_reader = reader(csvfile, delimiter=",")
             row_number = 0
             for row in batch_reader:
+                # Check if the row is empty
+                if not row:
+                    continue
+
                 # If the first element contains a # symbol then ignore it
                 if "MANTID_BATCH_FILE" in row[0]:
                     continue
@@ -54,11 +68,18 @@ class BatchCsvParser(object):
             raise RuntimeError("We expect an even number of entries, but row {0} has {1} entries.".format(row_number,
                                                                                                           len(row)))
         output = {}
+        # Special attention has to go to the specification of the period in a run number. The user can
+        # specify something like 5512p for sample scatter. This means she wants run number 5512 with period 7.
         for key, value in zip(row[::2], row[1::2]):
-            if key in self.batch_file_keywords.keys():
-                new_key = self.batch_file_keywords[key]
+            if key in list(BatchCsvParser.batch_file_keywords.keys()):
+                new_key = BatchCsvParser.batch_file_keywords[key]
                 value = value.strip()
-                output.update({new_key: value})
+                if BatchCsvParser._is_data_entry(new_key):
+                    run_number, period, period_key = BatchCsvParser._get_run_number_and_period(new_key, value)
+                    output.update({new_key: run_number})
+                    output.update({period_key: period})
+                else:
+                    output.update({new_key: value})
             elif key in self.batch_file_keywords_which_are_dropped.keys():
                 continue
             else:
@@ -73,7 +94,7 @@ class BatchCsvParser(object):
             raise RuntimeError("The output_as entry in row {0} seems to be missing.".format(row_number))
 
         # Ensure that the transmission data for the sample is specified either completely or not at all.
-        has_sample_transmission = BatchReductionEntry.SampleTransmission in output and\
+        has_sample_transmission = BatchReductionEntry.SampleTransmission in output and \
                                   output[BatchReductionEntry.SampleTransmission]
         has_sample_direct_beam = BatchReductionEntry.SampleDirect in output and output[BatchReductionEntry.SampleDirect]
 
@@ -97,3 +118,37 @@ class BatchCsvParser(object):
         if not has_can_scatter and has_can_transmission:
             raise RuntimeError("The can transmission was set but not the scatter file in row {0}.".format(row_number))
         return output
+
+    @staticmethod
+    def _is_data_entry(entry):
+        data_entry_keys = list(BatchCsvParser.data_keys.keys())
+        for data_enum in data_entry_keys:
+            if entry is data_enum:
+                return True
+        return False
+
+    @staticmethod
+    def _get_run_number_and_period(data_type, entry):
+        """
+        Gets the run number and the period from a csv data entry.
+
+        @patam data_type: the type of data entry, e.g. BatchReductionEntry.SampleScatter
+        @param entry: a data entry, e.g. 5512 or 5512p7
+        @return: the run number, the period selection and the corresponding key word
+        """
+        data_period_type = BatchCsvParser.data_keys[data_type]
+
+        # Slice off period if it exists. If it does not exist, then the period is ALL_PERIODS
+        period_pattern = "[p,P][0-9]$"
+
+        has_period = re.search(period_pattern, entry)
+
+        period = ALL_PERIODS
+        run_number = entry
+        if has_period:
+            run_number = re.sub(period_pattern, "", entry)
+            period_partial = re.sub(run_number, "", entry)
+            period = re.sub("[p,P]", "", period_partial)
+            period = int(period)
+
+        return run_number, period, data_period_type
