@@ -468,15 +468,14 @@ def SetPhiLimit(phimin, phimax, use_mirror=True):
     director.add_command(centre_command)
 
 
-def set_save(save_algorithms, save_name, save_as_zero_error_free):
+def set_save(save_algorithms, save_as_zero_error_free):
     """
     Mainly internally used by BatchMode. Provides the save settings.
 
     @param save_algorithms: A list of SaveType enums.
-    @param save_name: a base name for the saved file.
     @param save_as_zero_error_free: True if a zero error correction should be performed.
     """
-    save_command = NParameterCommand(command_id=NParameterCommandId.save, values=[save_algorithms, save_name,
+    save_command = NParameterCommand(command_id=NParameterCommandId.save, values=[save_algorithms,
                                                                                   save_as_zero_error_free])
     director.add_command(save_command)
 
@@ -663,7 +662,8 @@ def SetDetectorOffsets(bank, x, y, z, rot, radius, side, xtilt=0.0, ytilt=0.0):
 # Commands which actually kick off a reduction
 # --------------------------------------------
 def WavRangeReduction(wav_start=None, wav_end=None, full_trans_wav=None, name_suffix=None, combineDet=None,
-                      resetSetup=True, out_fit_settings=None, output_name=None, output_mode=OutputMode.PublishToADS):
+                      resetSetup=True, out_fit_settings=None, output_name=None, output_mode=OutputMode.PublishToADS,
+                      use_reduction_mode_as_suffix=False):
     """
         Run reduction from loading the raw data to calculating Q. Its optional arguments allows specifics
         details to be adjusted, and optionally the old setup is reset at the end. Note if FIT of RESCALE or SHIFT
@@ -690,6 +690,8 @@ def WavRangeReduction(wav_start=None, wav_end=None, full_trans_wav=None, name_su
                                  to remember the 'scale and fit' of the fitting algorithm.
         @param output_name: name of the output workspace/file, if none is specified then one is generated internally.
         @param output_mode: the way the data should be put out: Can be PublishToADS, SaveToFile or Both
+        @param use_reduction_mode_as_suffix: If true then a second suffix will be used which is
+                                             based on the reduction mode.
         @return Name of one of the workspaces created
     """
     print_message('WavRangeReduction(' + str(wav_start) + ', ' + str(wav_end) + ', ' + str(full_trans_wav) + ')')
@@ -712,15 +714,22 @@ def WavRangeReduction(wav_start=None, wav_end=None, full_trans_wav=None, name_su
                            " both, merged and no input are allowed".format(combineDet))
 
     wavelength_command = NParameterCommand(command_id=NParameterCommandId.wavrange_settings,
-                                           values=[wav_start, wav_end, full_trans_wav, name_suffix, reduction_mode])
+                                           values=[wav_start, wav_end, full_trans_wav, reduction_mode])
     director.add_command(wavelength_command)
+
+    # Save options
+    if output_name is not None:
+        director.add_command(NParameterCommand(command_id=NParameterCommandId.user_specified_output_name,
+                                               values=[output_name]))
+    if name_suffix is not None:
+        director.add_command(NParameterCommand(command_id=NParameterCommandId.user_specified_output_name_suffix,
+                                               values=[name_suffix]))
+    if use_reduction_mode_as_suffix:
+        director.add_command(NParameterCommand(command_id=NParameterCommandId.use_reduction_mode_as_suffix,
+                                               values=[use_reduction_mode_as_suffix]))
 
     # Get the states
     state = director.process_commands()
-
-    if output_name is not None:
-        state.reduction.output_name = output_name
-
     serialized_state = state.property_manager
     states = {"1": serialized_state}
 
@@ -766,21 +775,26 @@ def BatchReduce(filename, format, plotresults=False, saveAlgs=None, verbose=Fals
 
     # Set up the save algorithms
     save_algs = []
-    for key, _ in saveAlgs.items():
-        if key == "SaveRKH":
-            save_algs.append(SaveType.RKH)
-        elif key == "SaveNexus":
-            save_algs.append(SaveType.Nexus)
-        elif key == "SaveNistQxy":
-            save_algs.append(SaveType.NistQxy)
-        elif key == "SaveCanSAS" or key == "SaveCanSAS1D":
-            save_algs.append(SaveType.CanSAS)
-        elif key == "SaveCSV":
-            save_algs.append(SaveType.CSV)
-        elif key == "SaveNXcanSAS":
-            save_algs.append(SaveType.NXcanSAS)
-        else:
-            raise RuntimeError("The save format {0} is not known.".format(key))
+
+    if saveAlgs:
+        for key, _ in saveAlgs.items():
+            if key == "SaveRKH":
+                save_algs.append(SaveType.RKH)
+            elif key == "SaveNexus":
+                save_algs.append(SaveType.Nexus)
+            elif key == "SaveNistQxy":
+                save_algs.append(SaveType.NistQxy)
+            elif key == "SaveCanSAS" or key == "SaveCanSAS1D":
+                save_algs.append(SaveType.CanSAS)
+            elif key == "SaveCSV":
+                save_algs.append(SaveType.CSV)
+            elif key == "SaveNXcanSAS":
+                save_algs.append(SaveType.NXcanSAS)
+            else:
+                raise RuntimeError("The save format {0} is not known.".format(key))
+        output_mode = OutputMode.Both
+    else:
+        output_mode = OutputMode.PublishToADS
 
     # Get the information from the csv file
     batch_csv_parser = BatchCsvParser(filename)
@@ -825,15 +839,21 @@ def BatchReduce(filename, format, plotresults=False, saveAlgs=None, verbose=Fals
             TransmissionCan(can=can_transmission, direct=can_direct,
                             period_t=can_transmission_period, period_d=can_direct_period)
 
-        # Name of the output
+        # Name of the output. We need to modify the name according to the setup of the old reduction mechanism
         output_name = parsed_batch_entry[BatchReductionEntry.Output]
 
+        # In addition to the output name the user can specify with combineDet an additional suffix (in addtion to the
+        # suffix that the user can set already -- was there previously, so we have to provide that)
+        use_reduction_mode_as_suffix = combineDet is not None
+
         # Apply save options
-        set_save(save_algorithms=save_algs, save_name=output_name, save_as_zero_error_free=save_as_zero_error_free)
+        if save_algs:
+            set_save(save_algorithms=save_algs, save_as_zero_error_free=save_as_zero_error_free)
 
         # Run the reduction for a single
         reduced_workspace_name = WavRangeReduction(combineDet=combineDet, output_name=output_name,
-                                                   output_mode=OutputMode.Both)
+                                                   output_mode=output_mode,
+                                                   use_reduction_mode_as_suffix=use_reduction_mode_as_suffix)
 
         # Plot the results if that was requested, the flag 1 is from the old version.
         if plotresults == 1:

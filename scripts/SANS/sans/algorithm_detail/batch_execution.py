@@ -5,7 +5,6 @@ from mantid.api import AnalysisDataService
 
 from sans.common.general_functions import (create_unmanaged_algorithm, get_output_workspace_name_from_workspace,
                                            get_output_workspace_base_name_from_workspace,
-                                           get_output_user_specified_name_from_workspace,
                                            get_base_name_from_multi_period_name)
 from sans.common.enums import (SANSDataType, SaveType, OutputMode)
 from sans.common.constants import (EMPTY_NAME, TRANS_SUFFIX, SANS_SUFFIX, ALL_PERIODS)
@@ -14,6 +13,17 @@ from sans.state.data import StateData
 
 
 batch_reduction_return_bundle = namedtuple('batch_reduction_return_bundle', 'state, lab, hab, merged')
+
+
+class ReducedDataType(object):
+    class Merged(object):
+        pass
+
+    class LAB(object):
+        pass
+
+    class HAB(object):
+        pass
 
 
 def single_reduction_for_batch(state, use_optimizations, output_mode):
@@ -59,16 +69,15 @@ def single_reduction_for_batch(state, use_optimizations, output_mode):
         reduced_merged = reduction_alg.getProperty("OutputWorkspaceMerged").value
 
         # Perform output
-        if output_mode is OutputMode.PublishToADS:
-            publish_to_ads(reduced_lab, reduced_hab, reduced_merged,
-                           reduction_package.is_part_of_multi_period_reduction)
-        elif output_mode is OutputMode.SaveToFile:
-            save_workspaces_to_file(reduced_lab, reduced_hab, reduced_merged, reduction_package.state)
-        elif output_mode is OutputMode.Both:
-            publish_to_ads(reduced_lab, reduced_hab, reduced_merged,
-                           reduction_package.is_part_of_multi_period_reduction)
-            save_workspaces_to_file(reduced_lab, reduced_hab, reduced_merged, reduction_package.state)
-
+        if reduced_lab:
+            output_workspace(reduced_lab, reduction_package.state, ReducedDataType.LAB, output_mode,
+                             reduction_package.is_part_of_multi_period_reduction)
+        if reduced_hab:
+            output_workspace(reduced_hab, reduction_package.state, ReducedDataType.HAB, output_mode,
+                             reduction_package.is_part_of_multi_period_reduction)
+        if reduced_merged:
+            output_workspace(reduced_merged, reduction_package.state, ReducedDataType.Merged, output_mode,
+                             reduction_package.is_part_of_multi_period_reduction)
 
 def get_expected_workspace_names(file_information, is_transmission, period, get_base_name_only=False):
     """
@@ -506,85 +515,55 @@ def set_properties_for_reduction_algorithm(reduction_alg, reduction_package, wor
     reduction_alg.setProperty("OutputWorkspaceMerged", EMPTY_NAME)
 
 
-def save_workspaces_to_file(reduced_lab, reduced_hab, reduced_merged, state):
+# ----------------------------------------------------------------------------------------------------------------------
+# Output section
+# ----------------------------------------------------------------------------------------------------------------------
+def output_workspace(workspace, state, reduced_data_type, output_mode, is_part_of_multi_period_reduction):
     """
-    Saves the reduced workspaces to a file
+    Performs an output of the workspace. This can be to the ADS, a file or both.
 
-    :param reduced_lab: a reduced workspace for LAB.
-    :param reduced_hab: a reduced workspace for HAB.
-    :param reduced_merged: a reduced worksapce for a merged operation.
-    :param state: a SANSState object
+    @param workspace: The workspace on which we perform the output
+    @param state: a sans state object
+    @param reduced_data_type: the reduction output
+    @param output_mode:
+    @param is_part_of_multi_period_reduction:
+    @return:
     """
-    if reduced_lab is not None:
-        save_workspace_to_file(reduced_lab, state)
+    output_name, output_base_name = get_output_names(state, workspace, reduced_data_type,
+                                                     is_part_of_multi_period_reduction)
+    if output_mode is OutputMode.PublishToADS:
+        publish_to_ads(workspace, output_name, output_base_name, is_part_of_multi_period_reduction)
+    elif output_mode is OutputMode.Both:
+        publish_to_ads(workspace, output_name, output_base_name, is_part_of_multi_period_reduction)
+        save_workspace_to_file(workspace, state, output_base_name)
+    elif output_mode is OutputMode.SaveToFile:
+        save_workspace_to_file(workspace, state, output_name)
+    else:
+        raise RuntimeError("Unknown output mode {0}. You can specify to add to ADS or save to file "
+                                   "or both".format(output_mode))
 
-    if reduced_hab is not None:
-        save_workspace_to_file(reduced_hab, state)
 
-    if reduced_merged is not None:
-        save_workspace_to_file(reduced_merged, state)
-
-
-def publish_to_ads(reduced_lab, reduced_hab, reduced_merged, is_part_of_multi_period_reduction):
+def publish_to_ads(workspace, workspace_name, workspace_base_name, is_part_of_multi_period_reduction):
     """
-    Publish the reduced workspaces to the ADS
+    Publish the reduced workspaces to the ADS. If the workspace is part of a multi-period workspace which
+    is being reduced then we need to make sure that the workspace is added with the workspace name but then
+    added to a WorkspaceGroup with the base name. For non-multi-period data the workspace name and the workspace
+    base name are the same and we just have to add it to the ADS.
 
-    :param reduced_lab: a reduced workspace for LAB.
-    :param reduced_hab: a reduced workspace for HAB.
-    :param reduced_merged: a reduced workspace for a merged operation.
+    :param workspace: the workspace which is being added to the ADS
+    :param workspace_name: the name of the workspace
+    :param workspace_base_name: the base name of the workspace. This is identiacal to the workspace name for
+                                non-multi-period data. For multi-period data it is different, eg 7712p7main_1D could
+                                be the name of the 7th reduced period and 7712main_1D would be the base name which
+                                is common to all periods.
     :param is_part_of_multi_period_reduction: if true then we have several reductions from a multi-period file
     """
-    if reduced_lab is not None:
-        do_publish_to_ads(reduced_lab, is_part_of_multi_period_reduction)
-
-    if reduced_hab is not None:
-        do_publish_to_ads(reduced_hab, is_part_of_multi_period_reduction)
-
-    if reduced_merged is not None:
-        do_publish_to_ads(reduced_merged, is_part_of_multi_period_reduction)
-
-
-def do_publish_to_ads(workspace, is_part_of_multi_period_reduction):
-    """
-    Gets the name of the workspace and adds it to the ADS
-
-    :param workspace: the workspace which is to be added to the ADS
-    :param is_part_of_multi_period_reduction: if true then we have several reductions from a multi-period file
-    """
-    # The naming of SANS reduction is reasonably complicated (mainly due to the fact that multi-period files
-    # are grouped together. The old reduction did it this ways, so we have to do it too.
-    # In the sample log of the workspace we store the name and the base name of the reduced workspace (done in
-    # SANSSingleReduction). For a workspace which comes from a single-period file the two are identical. For a
-    # multi-period file the workspace name will normally contain an information about the period,
-    # e.g. 5512p7rear_1D_2.0_14.0Phi-45.0_45.0 and the base name would not have that information,
-    # e.g 5512rear_1D_2.0_14.0Phi-45.0_45.0.
-    #
-    # Additionally the user can specify a custom name for the workspace, which in the case of multi-period files is
-    # only used for the WorkspaceGroup's name and the child workspaces have the auto-generated names (although this
-    # seems inconsistent, it is how the old reducer operated).
-    #
-    # There are several scenarios to consider:
-    # 1. Collection of workspaces from a multiperiod files:
-    #    - save each workspace with the standard workspace name (which contains information about the period)
-    #    - group all workspaces to a WorkspaceGroup and name it according to the base name. As mentioned above,
-    #      this name can be very similar to the actual workspace name (but without the period information) or it can
-    #      be user provided.
-    # 2. Single workspace:
-    #    i. From a non-multi-period file:
-    #       the workspace name and the base name are the same. There is nothing to worry about.
-    #    ii. Single period from a multi-period file:
-    #        Here the workspace name and the base name are different.
-
-    workspace_name = get_output_workspace_name_from_workspace(workspace)
-    workspace_base_name = get_output_workspace_base_name_from_workspace(workspace)
-    user_specified_workspace_name = get_output_user_specified_name_from_workspace(workspace)
 
     if is_part_of_multi_period_reduction:
         AnalysisDataService.addOrReplace(workspace_name, workspace)
         # If we are dealing with a reduced workspace which is actually part of a multi-period workspace
         # then we need to add it to a GroupWorkspace, if there is no GroupWorkspace yet, then we create one
-        name_of_group_workspace = user_specified_workspace_name if user_specified_workspace_name else\
-            workspace_base_name
+        name_of_group_workspace = workspace_base_name
 
         if AnalysisDataService.doesExist(name_of_group_workspace):
             group_workspace = AnalysisDataService.retrieve(name_of_group_workspace)
@@ -599,31 +578,21 @@ def do_publish_to_ads(workspace, is_part_of_multi_period_reduction):
             group_alg.setChild(False)
             group_alg.execute()
     else:
-        # User specified a name, then use it
-        if user_specified_workspace_name:
-            AnalysisDataService.addOrReplace(user_specified_workspace_name, workspace)
-        else:
-            AnalysisDataService.addOrReplace(workspace_name, workspace)
+        AnalysisDataService.addOrReplace(workspace_name, workspace)
 
 
-def save_workspace_to_file(workspace, state):
+def save_workspace_to_file(workspace, state, output_name):
     """
     Saves the workspace to the different file formats specified in the state object.
 
-    Note that the name of the file can be stored in the state object. If it is not supplied then the workspace
-    name is used.
     :param workspace: the workspace to be stored.
     :param state: the SANSState object
+    :param output_name: the name of the file
     """
     save_info = state.save
-
     save_name = "SANSSave"
     save_options = {"InputWorkspace": workspace}
-    if save_info.file_name:
-        file_name = save_info.file_name
-    else:
-        file_name = get_output_workspace_name_from_workspace(workspace)
-    save_options.update({"Filename": file_name})
+    save_options.update({"Filename": output_name})
 
     file_formats = save_info.file_format
     if SaveType.Nexus in file_formats:
@@ -641,3 +610,50 @@ def save_workspace_to_file(workspace, state):
 
     save_alg = create_unmanaged_algorithm(save_name, **save_options)
     save_alg.execute()
+
+
+def get_output_names(state, workspace, reduction_data_type, is_part_of_multi_period_reduction):
+    # Get the workspace name and the workspace base name from that are saved on the workspace
+    workspace_name = get_output_workspace_name_from_workspace(workspace)
+    workspace_base_name = get_output_workspace_base_name_from_workspace(workspace)
+
+    # Get the external settings from the save state
+    save_info = state.save
+    user_specified_output_name = save_info.user_specified_output_name
+    user_specified_output_name_suffix = save_info.user_specified_output_name_suffix
+    use_reduction_mode_as_suffix = save_info.use_reduction_mode_as_suffix
+
+    # If user specified output name is not none then we use it for the base name
+    if user_specified_output_name and not is_part_of_multi_period_reduction:
+        # Deal with single period data which has a user-specified name
+        output_name = user_specified_output_name
+        output_base_name = user_specified_output_name
+    elif user_specified_output_name and is_part_of_multi_period_reduction:
+        # Deal with multi-period data which has a user-specified name
+        output_name = workspace_name
+        output_base_name = user_specified_output_name
+    elif not user_specified_output_name and is_part_of_multi_period_reduction:
+        output_name = workspace_name
+        output_base_name = workspace_base_name
+    else:
+        output_name = workspace_name
+        output_base_name = workspace_name
+
+    # Add a reduction mode suffix if it is required
+    if use_reduction_mode_as_suffix:
+        if reduction_data_type is ReducedDataType.LAB:
+            output_name += "_rear"
+            output_base_name += "_rear"
+        elif reduction_data_type is ReducedDataType.HAB:
+            output_name += "_front"
+            output_base_name += "_rear"
+        elif reduction_data_type is ReducedDataType.Merged:
+            output_name += "_merged"
+            output_base_name += "_rear"
+
+    # Add a suffix if the user has specified one
+    if user_specified_output_name_suffix:
+        output_name += user_specified_output_name_suffix
+        output_base_name += user_specified_output_name_suffix
+
+    return output_name, output_base_name

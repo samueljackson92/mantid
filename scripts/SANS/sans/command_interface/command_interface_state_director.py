@@ -26,6 +26,8 @@ class DataCommandId(object):
 @serializable_enum("clean", "reduction_dimensionality", "compatibility_mode",  # Null Parameter commands
                    "user_file", "mask", "sample_offset", "detector", "event_slices",  # Single parameter commands
                    "flood_file", "wavelength_correction_file",  # Single parameter commands
+                   "user_specified_output_name", "user_specified_output_name_suffix",  # Single parameter commands
+                   "use_reduction_mode_as_suffix",  # Single parameter commands
                    "incident_spectrum", "gravity",  # Double parameter commands
                    "centre", "save",   # Three parameter commands
                    "trans_fit", "phi_limit", "mask_radius", "wavelength_limit", "qxy_limit",  # Four parameter commands
@@ -248,7 +250,12 @@ class CommandInterfaceStateDirector(object):
                             NParameterCommandId.wavrange_settings: self._process_wavrange,
                             NParameterCommandId.compatibility_mode: self._process_compatibility_mode,
                             NParameterCommandId.detector_offsets: self._process_detector_offsets,
-                            NParameterCommandId.save: self._process_save
+                            NParameterCommandId.save: self._process_save,
+                            NParameterCommandId.user_specified_output_name: self._process_user_specified_output_name,
+                            NParameterCommandId.user_specified_output_name_suffix:
+                                self._process_user_specified_output_name_suffix,
+                            NParameterCommandId.use_reduction_mode_as_suffix:
+                                self._process_use_reduction_mode_as_suffix
                             }
 
     def add_to_processed_state_settings(self, new_state_settings, treat_list_as_element=False):
@@ -442,9 +449,7 @@ class CommandInterfaceStateDirector(object):
         wavelength_low = command.values[0]
         wavelength_high = command.values[1]
         full_wavelength_range = command.values[2]
-        # TODO add output workspace name suffix
-        output_workspace_name_suffix = command.values[3]
-        reduction_mode = command.values[4]
+        reduction_mode = command.values[3]
 
         # Update the lower and the upper wavelength values. Note that this is considered an incomplete setting, since
         # not step or step type have been specified. This means we need to update one of the processed commands, which
@@ -517,9 +522,22 @@ class CommandInterfaceStateDirector(object):
 
     def _process_save(self, command):
         save_algorithms = command.values[0]
-        save_name = command.values[1]
-        save_as_zero_error_free = command.values[2]
+        save_as_zero_error_free = command.values[1]
         new_state_entries = {OtherId.save_types: save_algorithms,
-                             OtherId.save_name: save_name,
                              OtherId.save_as_zero_error_free: save_as_zero_error_free}
         self.add_to_processed_state_settings(new_state_entries,  treat_list_as_element=True)
+
+    def _process_user_specified_output_name(self, command):
+        user_specified_output_name = command.values[0]
+        new_state_entry = {OtherId.user_specified_output_name: user_specified_output_name}
+        self.add_to_processed_state_settings(new_state_entry)
+
+    def _process_user_specified_output_name_suffix(self, command):
+        user_specified_output_name_suffix = command.values[0]
+        new_state_entry = {OtherId.user_specified_output_name_suffix: user_specified_output_name_suffix}
+        self.add_to_processed_state_settings(new_state_entry)
+
+    def _process_use_reduction_mode_as_suffix(self, command):
+        use_reduction_mode_as_suffix = command.values[0]
+        new_state_entry = {OtherId.use_reduction_mode_as_suffix: use_reduction_mode_as_suffix}
+        self.add_to_processed_state_settings(new_state_entry)

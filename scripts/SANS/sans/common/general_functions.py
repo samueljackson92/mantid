@@ -464,22 +464,19 @@ def get_output_workspace_name(state, reduction_mode):
     return output_workspace_name, output_workspace_base_name
 
 
-def add_workspace_name(workspace, state, reduction_mode, external_output_name):
+def add_workspace_name(workspace, state, reduction_mode):
     """
     Adds the default reduced workspace name to the sample logs as well as the base name and a a user specified name,
     if one was specified.
 
     :param workspace: The output workspace
     :param state: a SANSState object
-    :param reduction_mode: the reduction mode, i.e. LAB, HAB, MERGED
-    :param external_output_name: a user provided output name
+    :param reduction_mode: the reduction mode, i.e. LAB, HAB, MERGED of the particular data set. If it is HAB it can
+                           still be part of an overall MERGED request.
     """
     reduced_workspace_name, reduced_workspace_base_name = get_output_workspace_name(state, reduction_mode)
-
-    external_output_name = "" if external_output_name is None else external_output_name
     add_to_sample_log(workspace, REDUCED_WORKSPACE_NAME_IN_LOGS, reduced_workspace_name, "String")
     add_to_sample_log(workspace, REDUCED_WORKSPACE_BASE_NAME_IN_LOGS, reduced_workspace_base_name, "String")
-    add_to_sample_log(workspace, REDUCED_WORKSPACE_NAME_BY_USER_IN_LOGS, external_output_name, "String")
 
 
 def get_output_workspace_name_from_workspace_log(workspace, log_name):

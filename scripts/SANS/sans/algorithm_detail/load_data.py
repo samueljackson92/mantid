@@ -493,7 +493,7 @@ def loader_for_isis_nexus(file_information, is_transmission, period):
                                "EntryNumber": 0})
         if period != StateData.ALL_PERIODS:
             loader_options.update({"EntryNumber": period})
-    elif file_information.is_event_mode and is_transmission:
+    elif file_information.is_event_mode() and is_transmission:
         # We have the rare case of an event file which is used for transmission calculations. In this case
         # we only extract the monitors
         loader_name = "LoadNexusMonitors"
@@ -797,10 +797,13 @@ class LOQTransmissionCorrection(TransmissionCorrection):
         workspace_which_require_transmission_correction = []
         for data_type, _ in workspaces.items():
             if is_transmission_type(data_type):
-                workspace_which_require_transmission_correction.extend(workspaces[data_type])
+                workspace_which_require_transmission_correction.append(workspaces[data_type])
 
         # We want to apply a different instrument for the transmission runs
+
         for workspace in workspace_which_require_transmission_correction:
+            assert len(workspace) == 1
+            workspace = workspace[0]
             instrument = workspace.getInstrument()
             has_m4 = instrument.getComponentByName("monitor4")
             if has_m4 is None:
@@ -809,7 +812,7 @@ class LOQTransmissionCorrection(TransmissionCorrection):
             else:
                 trans_definition_file = os.path.join(config.getString('instrumentDefinition.directory'),
                                                      'LOQ_trans_Definition_M4.xml')
-
+            # Done
             instrument_name = "LoadInstrument"
             instrument_options = {"Workspace": workspace,
                                   "Filename": trans_definition_file,

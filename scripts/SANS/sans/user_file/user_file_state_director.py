@@ -35,12 +35,12 @@ def check_if_contains_only_one_element(to_check, element_name):
         msg = "The element {0} contains more than one element. Expected only one element. " \
               "The last element {1} is used. The elements {2} are discarded.".format(element_name,
                                                                                      to_check[-1], to_check[:-1])
-        logger.notice(msg)
+        logger.information(msg)
 
 
 def log_non_existing_field(field):
     msg = "The field {0} does not seem to exist on the state.".format(field)
-    logger.notice(msg)
+    logger.information(msg)
 
 
 def convert_detector(detector_type):
@@ -1231,17 +1231,31 @@ class UserFileStateDirectorISIS(object):
             save_types = save_types[-1]
             self._save_builder.set_file_format(save_types)
 
-        if OtherId.save_name in user_file_items:
-            save_name = user_file_items[OtherId.save_name]
-            check_if_contains_only_one_element(save_name, OtherId.save_name)
-            save_name = save_name[-1]
-            self._save_builder.set_file_name(save_name)
-
         if OtherId.save_as_zero_error_free in user_file_items:
             save_as_zero_error_free = user_file_items[OtherId.save_as_zero_error_free]
             check_if_contains_only_one_element(save_as_zero_error_free, OtherId.save_as_zero_error_free)
             save_as_zero_error_free = save_as_zero_error_free[-1]
             self._save_builder.set_zero_free_correction(save_as_zero_error_free)
+
+        if OtherId.user_specified_output_name in user_file_items:
+            user_specified_output_name = user_file_items[OtherId.user_specified_output_name]
+            check_if_contains_only_one_element(user_specified_output_name, OtherId.user_specified_output_name)
+            user_specified_output_name = user_specified_output_name[-1]
+            self._save_builder.set_user_specified_output_name(user_specified_output_name)
+
+        if OtherId.user_specified_output_name_suffix in user_file_items:
+            user_specified_output_name_suffix = user_file_items[OtherId.user_specified_output_name_suffix]
+            check_if_contains_only_one_element(user_specified_output_name_suffix,
+                                               OtherId.user_specified_output_name_suffix)
+            user_specified_output_name_suffix = user_specified_output_name_suffix[-1]
+            self._save_builder.set_user_specified_output_name_suffix(user_specified_output_name_suffix)
+
+        if OtherId.use_reduction_mode_as_suffix in user_file_items:
+            use_reduction_mode_as_suffix = user_file_items[OtherId.use_reduction_mode_as_suffix]
+            check_if_contains_only_one_element(use_reduction_mode_as_suffix,
+                                               OtherId.use_reduction_mode_as_suffix)
+            use_reduction_mode_as_suffix = use_reduction_mode_as_suffix[-1]
+            self._save_builder.set_use_reduction_mode_as_suffix(use_reduction_mode_as_suffix)
 
     def _add_information_to_data_state(self, user_file_items):
         # The only thing that should be set on the data is the tube calibration file which is specified in

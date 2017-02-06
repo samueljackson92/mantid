@@ -104,12 +104,12 @@ class SANSSingleReduction(DataProcessorAlgorithm):
         state = self._get_state()
 
         # Get reduction mode
-        reduction_mode = self._get_reduction_mode(state)
+        overall_reduction_mode = self._get_reduction_mode(state)
 
         # Decide which core reduction information to run, i.e. HAB, LAB, ALL, MERGED. In the case of ALL and MERGED,
         # the required simple reduction modes need to be run. Normally this is HAB and LAB, future implementations
         # might have more detectors though (or different types)
-        reduction_setting_bundles = self._get_reduction_setting_bundles(state, reduction_mode)
+        reduction_setting_bundles = self._get_reduction_setting_bundles(state, overall_reduction_mode)
 
         # Run core reductions
         use_optimizations = self.getProperty("UseOptimizations").value
@@ -137,7 +137,7 @@ class SANSSingleReduction(DataProcessorAlgorithm):
 
         reduction_mode_vs_output_workspaces = {}
         # Merge if required with stitching etc.
-        if reduction_mode is ReductionMode.Merged:
+        if overall_reduction_mode is ReductionMode.Merged:
             merge_bundle = get_merge_bundle_for_merge_request(output_parts_bundles)
             self.set_shift_and_scale_output(merge_bundle)
             reduction_mode_vs_output_workspaces.update({ReductionMode.Merged: merge_bundle.merged_workspace})
@@ -254,8 +254,7 @@ class SANSSingleReduction(DataProcessorAlgorithm):
         # HAB or LAB anywhere which means that in the future there could be other detectors of relevance. Here we
         # reference HAB and LAB directly since we currently don't want to rely on dynamic properties. See also in PyInit
         for reduction_mode, output_workspace in reduction_mode_vs_output_workspaces.items():
-            external_output_name = state.reduction.output_name
-            add_workspace_name(output_workspace, state, reduction_mode, external_output_name)
+            add_workspace_name(output_workspace, state, reduction_mode)
             if reduction_mode is ReductionMode.Merged:
                 self.setProperty("OutputWorkspaceMerged", output_workspace)
             elif reduction_mode is ISISReductionMode.LAB:

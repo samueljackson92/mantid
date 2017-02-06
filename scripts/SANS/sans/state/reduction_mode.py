@@ -38,9 +38,6 @@ class StateReductionMode(StateReductionBase, StateBase):
     reduction_mode = ClassTypeParameter(ReductionMode)
     reduction_dimensionality = ClassTypeParameter(ReductionDimensionality)
 
-    # Output name
-    output_name = StringParameter()
-
     # Fitting
     merge_fit_mode = ClassTypeParameter(FitModeForMerge)
     merge_shift = FloatParameter()

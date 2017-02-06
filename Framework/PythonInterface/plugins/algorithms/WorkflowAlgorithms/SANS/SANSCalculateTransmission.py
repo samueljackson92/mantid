@@ -1,7 +1,7 @@
 # pylint: disable=invalid-name
 
 """ SANSCalculateTransmission algorithm calculates the transmission correction of a SANS workspace."""
-
+from __future__ import (absolute_import, division, print_function)
 from mantid.kernel import (Direction, StringArrayProperty, StringListValidator, Property,
                            PropertyManagerProperty, FloatBoundedValidator)
 from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, AlgorithmFactory, PropertyMode, Progress)
@@ -205,8 +205,10 @@ class SANSCalculateTransmission(DataProcessorAlgorithm):
 
         # Get the default transmission monitor detector id. This is our fallback if nothing else was specified.
         default_transmission_monitor = calculate_transmission_state.default_transmission_monitor
+
         detector_id_default_transmission_monitor = get_detector_id_for_spectrum_number(transmission_workspace,
                                                                                        default_transmission_monitor)
+
         return detector_ids_roi, detector_id_transmission_monitor, detector_id_default_transmission_monitor
 
     def _get_corrected_wavelength_workspace(self, workspace, detector_ids, calculate_transmission_state):

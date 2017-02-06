@@ -13,9 +13,13 @@ from sans.state.automatic_setters import (automatic_setters)
 # ----------------------------------------------------------------------------------------------------------------------
 @rename_descriptor_names
 class StateSave(StateBase):
-    file_name = StringParameter()
     zero_free_correction = BoolParameter()
     file_format = ClassTypeListParameter(SaveType)
+
+    # Settings for the output name
+    user_specified_output_name = StringParameter()
+    user_specified_output_name_suffix = StringParameter()
+    use_reduction_mode_as_suffix = BoolParameter()
 
     def __init__(self):
         super(StateSave, self).__init__()

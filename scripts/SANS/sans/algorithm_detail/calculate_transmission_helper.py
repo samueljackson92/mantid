@@ -94,9 +94,13 @@ def get_detector_id_for_spectrum_number(workspace, spectrum_number):
     :param spectrum_number: the spectrum number.
     :return: the corresponding detector id.
     """
-    workspace_index = workspace.getIndexFromSpectrumNumber(spectrum_number)
-    detector = workspace.getDetector(workspace_index)
-    return detector.getID()
+    try:
+        workspace_index = workspace.getIndexFromSpectrumNumber(spectrum_number)
+        detector = workspace.getDetector(workspace_index)
+        detector_id = detector.getID()
+    except RuntimeError:
+        detector_id = None
+    return detector_id
 
 
 def get_idf_path_from_workspace(workspace):
