@@ -90,8 +90,8 @@ class SANSCreateWavelengthAndPixelAdjustment(DataProcessorAlgorithm):
         be the same for all pixels. This is essentially the product of several workspaces.
         The participating workspaces are:
         1. A workspace loaded from a calibration file
-        2. The workspace resulting from the transmission calcuation (using SANSCalculateTransmission)
-        3. The workspace resulting from the monitor normalization
+        2.. The workspace resulting from the monitor normalization
+        3. The workspace resulting from the transmission calculation (using SANSCalculateTransmission) if applicable
 
         :param wavelength_adjustment_file: the file path to the wavelength adjustment file
         :param transmission_workspace: the calculated transmission workspace (which can be None)
@@ -99,16 +99,19 @@ class SANSCreateWavelengthAndPixelAdjustment(DataProcessorAlgorithm):
         :param rebin_string: the parameters for rebinning
         :return: a general wavelength adjustment workspace
         """
-        wavelength_adjustment_workspaces = [monitor_normalization_workspace]
-
-        if transmission_workspace:
-            wavelength_adjustment_workspaces.append(transmission_workspace)
-
-        # Get the wavelength correction workspace from the file
+        # 1. Get the wavelength correction workspace from the file
+        wavelength_adjustment_workspaces = []
         if wavelength_adjustment_file:
             wavelength_correction_workspace_from_file = \
                 self._load_wavelength_correction_file(wavelength_adjustment_file)
             wavelength_adjustment_workspaces.append(wavelength_correction_workspace_from_file)
+
+        # 2. Normalization
+        wavelength_adjustment_workspaces.append(monitor_normalization_workspace)
+
+        # 3. Transmission Calculation
+        if transmission_workspace:
+            wavelength_adjustment_workspaces.append(transmission_workspace)
 
         # Multiply all workspaces
         wavelength_adjustment_workspace = None

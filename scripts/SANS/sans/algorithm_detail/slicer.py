@@ -5,7 +5,7 @@ from mantid.dataobjects import Workspace2D
 
 from sans.common.general_functions import (get_charge_and_time, create_unmanaged_algorithm)
 from sans.common.constants import EMPTY_NAME
-from sans.common.enums import (SANSInstrument)
+from sans.common.enums import (SANSInstrument, DataType)
 
 
 def slice_by_time(workspace, start_time=None, stop_time=None):
@@ -79,8 +79,9 @@ class NullSlicer(Slicer):
 class ISISSlicer(Slicer):
     __metaclass__ = ABCMeta
 
-    def __init__(self):
+    def __init__(self, data_type):
         super(ISISSlicer, self).__init__()
+        self._data_type = data_type
 
     def create_slice(self, workspace, slice_info):
         # Get the slice limits
@@ -95,16 +96,24 @@ class ISISSlicer(Slicer):
             raise("Slicer: There seem to be too many start or end values for slicing present. Can have only 1 "
                   "but found {0} and {1} for the start and end time, respectively.".format(start_time, end_time))
 
+        start_time = start_time[0]
+        end_time = end_time[0]
+
         # Slice the workspace
         total_charge, total_time = get_charge_and_time(workspace)
 
+        # If we are dealing with a Can reduction then the slice times are -1
+        if self._data_type is DataType.Can:
+            start_time = -1.
+            end_time = -1.
+
         # If the start_time is -1 or the end_time is -1 then use the limit of that slice
-        if start_time == -1:
+        if start_time == -1.:
             start_time = 0.0
-        if end_time == -1:
+        if end_time == -1.:
             end_time = total_time + 0.001
 
-        sliced_workspace = slice_by_time(workspace, start_time[0], end_time[0])
+        sliced_workspace = slice_by_time(workspace, start_time, end_time)
         partial_charge, partial_time = get_charge_and_time(sliced_workspace)
 
         # The slice factor
@@ -117,12 +126,13 @@ class SliceEventFactory(object):
         super(SliceEventFactory, self).__init__()
 
     @staticmethod
-    def create_slicer(state, workspace):
+    def create_slicer(state, workspace, data_type):
         """
         Provides the appropriate slicer.
 
         :param state: a SANSState object
         :param workspace: the workspace to slice
+        :param data_type: the data type, ie if the Sample or Can
         :return: the corresponding slicer
         """
         data_info = state.data
@@ -136,8 +146,7 @@ class SliceEventFactory(object):
             slicer = NullSlicer()
         elif instrument is SANSInstrument.LARMOR or instrument is SANSInstrument.LOQ or \
              instrument is SANSInstrument.SANS2D:  # noqa
-            slicer = ISISSlicer()
+            slicer = ISISSlicer(data_type)
         else:
-            slicer = NullSlicer()
-            RuntimeError("SliceEventFactory: Other instruments are not implemented yet.")
+            raise RuntimeError("SliceEventFactory: Other instruments are not implemented yet.")
         return slicer

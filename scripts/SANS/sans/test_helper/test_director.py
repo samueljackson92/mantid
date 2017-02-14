@@ -102,7 +102,7 @@ class TestDirector(object):
         # Build the SANSStateSave
         if self.save_state is None:
             save_builder = get_save_builder(self.data_state)
-            save_builder.set_file_name("test_file_name")
+            save_builder.set_user_specified_output_name("test_file_name")
             save_builder.set_file_format([SaveType.Nexus])
             self.save_state = save_builder.build()
 

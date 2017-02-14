@@ -40,16 +40,6 @@ class ScaleHelperTest(unittest.TestCase):
         # Arrange
         self.assertTrue(isinstance(divider, DivideByVolumeISIS))
 
-    def test_that_null_divide_strategy_is_selected_for_isis_instrument_and_is_can(self):
-        # Arrange
-        test_director = TestDirector()
-        state_isis = test_director.construct()
-        divide_factory = DivideByVolumeFactory()
-        # Act
-        divider = divide_factory.create_divide_by_volume(state_isis, data_type=DataType.Can)
-        # Arrange
-        self.assertTrue(isinstance(divider, NullDivideByVolume))
-
     def test_that_divide_uses_settings_from_workspace(self):
         # Arrange
         facility = SANSFacility.ISIS
@@ -67,10 +57,11 @@ class ScaleHelperTest(unittest.TestCase):
         divide_factory = DivideByVolumeFactory()
         divider = divide_factory.create_divide_by_volume(state, data_type=DataType.Sample)
 
-        width = 10.
-        height = 5.
-        thickness = 2.
-        shape = 1
+        # Apply the settings from the SANS2D00022024 workspace
+        width = 8.
+        height = 8.
+        thickness = 1.
+        shape = 3
 
         workspace = ScaleHelperTest._get_workspace(width, height, thickness, shape)
 
@@ -78,7 +69,7 @@ class ScaleHelperTest(unittest.TestCase):
         output_workspace = divider.divide_by_volume(workspace, scale_state)
 
         # Assert
-        expected_volume = height * math.pi * math.pow(width, 2) / 4.0
+        expected_volume = thickness * math.pi * math.pow(width, 2) / 4.0
         expected_value = 0.3 / expected_volume
         data_y = output_workspace.dataY(0)
         self.assertEquals(data_y[0], expected_value)

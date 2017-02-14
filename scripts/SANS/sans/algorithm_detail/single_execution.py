@@ -1,6 +1,6 @@
 from sans.common.constants import EMPTY_NAME
 from sans.common.general_functions import create_unmanaged_algorithm
-from sans.common.enums import (ISISReductionMode, DetectorType)
+from sans.common.enums import (ISISReductionMode, DetectorType, DataType)
 from sans.state.state_functions import (get_reduced_can_workspace_from_ads, write_hash_into_reduced_can_workspace)
 from sans.algorithm_detail.strip_end_nans_and_infs import strip_end_nans
 from sans.algorithm_detail.merge_reductions import (MergeFactory, is_sample, is_can)
@@ -25,6 +25,7 @@ def run_core_reduction(reduction_alg, reduction_setting_bundle, use_optimization
     reduction_alg.setProperty("Component", component)
     reduction_alg.setProperty("ScatterWorkspace", reduction_setting_bundle.scatter_workspace)
     reduction_alg.setProperty("ScatterMonitorWorkspace", reduction_setting_bundle.scatter_monitor_workspace)
+    reduction_alg.setProperty("DataType", DataType.to_string(reduction_setting_bundle.data_type))
 
     if reduction_setting_bundle.transmission_workspace is not None:
         reduction_alg.setProperty("TransmissionWorkspace", reduction_setting_bundle.transmission_workspace)
@@ -115,6 +116,7 @@ def perform_can_subtraction(sample, can):
     # If the workspace is 1D and contains Q resolution (i.e. DX values), then we need to make sure that the
     # resulting output workspace contains the correct values
     correct_q_resolution_for_can(sample, can, output_workspace)
+
     return output_workspace
 
 

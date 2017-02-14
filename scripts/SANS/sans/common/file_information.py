@@ -10,10 +10,12 @@ from abc import (ABCMeta, abstractmethod)
 from mantid.api import FileFinder
 from mantid.kernel import (DateAndTime, ConfigService)
 from mantid.api import (AlgorithmManager, ExperimentInfo)
-from sans.common.enums import (SANSInstrument, FileType)
+from sans.common.enums import (SANSInstrument, FileType, SampleShape)
 from sans.common.xml_parsing import get_valid_to_time_from_idf_string
 
 from six import with_metaclass
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 # General functions
 # ----------------------------------------------------------------------------------------------------------------------
@@ -295,6 +297,32 @@ def get_event_mode_information(file_name):
     return is_event_mode
 
 
+def get_geometry_information_isis_nexus(file_name):
+    """
+    Gets geometry information from the sample folder in the nexus file
+
+    @param file_name:
+    @return: height, width, thickness, shape
+    """
+    with h5.File(file_name) as h5_file:
+        # Open first entry
+        keys = list(h5_file.keys())
+        top_level = h5_file[keys[0]]
+        sample = top_level['sample']
+        height = float(sample['height'][0])
+        width = float(sample['width'][0])
+        thickness = float(sample['thickness'][0])
+        shape_as_string = sample['shape'][0]
+        if shape_as_string == "Cylinder":
+            shape = SampleShape.CylinderAxisUp
+        elif shape_as_string == "Flat plate":
+            shape = SampleShape.Cuboid
+        elif shape_as_string == "Disc":
+            shape = SampleShape.CylinderAxisAlong
+        else:
+            shape = None
+    return height, width, thickness, shape
+
 # ----------------------------------------------------------------------------------------------------------------------
 # Functions for Added data
 # ----------------------------------------------------------------------------------------------------------------------
@@ -458,6 +486,33 @@ def is_added_event(file_name):
     return is_added and is_event
 
 
+def get_geometry_information_isis_added_nexus(file_name):
+    """
+    Gets geometry information from the sample folder in an added nexus file
+
+    @param file_name: the file name
+    @return: height, width, thickness, shape
+    """
+    with h5.File(file_name) as h5_file:
+        # Open first entry
+        keys = list(h5_file.keys())
+        top_level = h5_file[keys[0]]
+        sample = top_level['sample']
+        height = float(sample['geom_height'][0])
+        width = float(sample['geom_width'][0])
+        thickness = float(sample['geom_thickness'][0])
+        shape_id = int(sample['geom_id'][0])
+        if shape_id == 1:
+            shape = SampleShape.CylinderAxisUp
+        elif shape_id == 2:
+            shape = SampleShape.Cuboid
+        elif shape_id == 3:
+            shape = SampleShape.CylinderAxisAlong
+        else:
+            shape = None
+    return height, width, thickness, shape
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 # ISIS Raw
 # ----------------------------------------------------------------------------------------------------------------------
@@ -617,6 +672,22 @@ class SANSFileInformation(with_metaclass(ABCMeta, object)):
     def is_added_data(self):
         pass
 
+    @abstractmethod
+    def get_height(self):
+        pass
+
+    @abstractmethod
+    def get_width(self):
+        pass
+
+    @abstractmethod
+    def get_thickness(self):
+        pass
+
+    @abstractmethod
+    def get_shape(self):
+        pass
+
     @staticmethod
     def get_full_file_name(file_name):
         return find_sans_file(file_name)
@@ -642,6 +713,13 @@ class SANSFileInformationISISNexus(SANSFileInformation):
         # Setup event mode check
         self._is_event_mode = get_event_mode_information(self._full_file_name)
 
+        # Get geometry details
+        height, width, thickness, shape = get_geometry_information_isis_nexus(self._full_file_name)
+        self._height = height if height is not None else 1.
+        self._width = width if height is not None else 1.
+        self._thickness = thickness if thickness is not None else 1.
+        self._shape = shape if shape is not None else SampleShape.CylinderAxisAlong
+
     def get_file_name(self):
         return self._full_file_name
 
@@ -666,6 +744,18 @@ class SANSFileInformationISISNexus(SANSFileInformation):
     def is_added_data(self):
         return False
 
+    def get_height(self):
+        return self._height
+
+    def get_width(self):
+        return self._width
+
+    def get_thickness(self):
+        return self._thickness
+
+    def get_shape(self):
+        return self._shape
+
 
 class SANSFileInformationISISAdded(SANSFileInformation):
     def __init__(self, file_name):
@@ -682,6 +772,13 @@ class SANSFileInformationISISAdded(SANSFileInformation):
         _,  number_of_periods, is_event = get_added_nexus_information(self._full_file_name)
         self._number_of_periods = number_of_periods
         self._is_event_mode = is_event
+
+        # Get geometry details
+        height, width, thickness, shape = get_geometry_information_isis_added_nexus(self._full_file_name)
+        self._height = height if height is not None else 1.
+        self._width = width if height is not None else 1.
+        self._thickness = thickness if thickness is not None else 1.
+        self._shape = shape if shape is not None else SampleShape.CylinderAxisAlong
 
     def get_file_name(self):
         return self._full_file_name
@@ -707,6 +804,18 @@ class SANSFileInformationISISAdded(SANSFileInformation):
     def is_added_data(self):
         return True
 
+    def get_height(self):
+        return self._height
+
+    def get_width(self):
+        return self._width
+
+    def get_thickness(self):
+        return self._thickness
+
+    def get_shape(self):
+        return self._shape
+
 
 class SANSFileInformationRaw(SANSFileInformation):
     def __init__(self, file_name):
@@ -724,6 +833,13 @@ class SANSFileInformationRaw(SANSFileInformation):
 
         # Setup run number
         self._run_number = get_run_number_for_raw(self._full_file_name)
+
+        # Set geometry
+        # Raw files don't have the sample information, so set to default
+        self._height = 1.
+        self._width = 1.
+        self._thickness = 1.
+        self._shape = SampleShape.CylinderAxisAlong
 
     def get_file_name(self):
         return self._full_file_name
@@ -748,6 +864,18 @@ class SANSFileInformationRaw(SANSFileInformation):
 
     def is_added_data(self):
         return False
+
+    def get_height(self):
+        return self._height
+
+    def get_width(self):
+        return self._width
+
+    def get_thickness(self):
+        return self._thickness
+
+    def get_shape(self):
+        return self._shape
 
 
 class SANSFileInformationFactory(object):

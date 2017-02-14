@@ -2,11 +2,12 @@
 
 """ SANSSliceEvent takes out a slice from a event workspace."""
 
-from mantid.kernel import (Direction, PropertyManagerProperty)
+from mantid.kernel import (Direction, PropertyManagerProperty, StringListValidator)
 from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, AlgorithmFactory, PropertyMode, Progress)
 
 from sans.algorithm_detail.slicer import (SliceEventFactory, get_scaled_workspace)
 from sans.common.general_functions import append_to_sans_file_tag
+from sans.common.enums import DataType
 from sans.state.state_base import create_deserialized_sans_state_from_property_manager
 
 
@@ -35,6 +36,13 @@ class SANSSliceEvent(DataProcessorAlgorithm):
                                                      optional=PropertyMode.Mandatory, direction=Direction.Input),
                              doc='The monitor workspace associated with the main input workspace.')
 
+        # The data type
+        allowed_data = StringListValidator([DataType.to_string(DataType.Sample),
+                                            DataType.to_string(DataType.Can)])
+        self.declareProperty("DataType", DataType.to_string(DataType.Sample),
+                             validator=allowed_data, direction=Direction.Input,
+                             doc="The component of the instrument which is to be reduced.")
+
         # ---------------
         # OUTPUT
         # ---------------
@@ -55,9 +63,12 @@ class SANSSliceEvent(DataProcessorAlgorithm):
         state = create_deserialized_sans_state_from_property_manager(state_property_manager)
 
         progress = Progress(self, start=0.0, end=1.0, nreports=3)
-        # Get the correct SANS move strategy from the SANSMoveFactory
         input_workspace = self.getProperty("InputWorkspace").value
-        slicer = SliceEventFactory.create_slicer(state, input_workspace)
+
+        data_type_as_string = self.getProperty("DataType").value
+        data_type = DataType.from_string(data_type_as_string)
+
+        slicer = SliceEventFactory.create_slicer(state, input_workspace, data_type)
         slice_info = state.slice
 
         # Perform the slicing

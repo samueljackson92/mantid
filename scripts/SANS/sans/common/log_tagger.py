@@ -4,7 +4,7 @@
 
 from __future__ import (absolute_import, division, print_function)
 from hashlib import sha224
-from mantid.api import MatrixWorkspace
+from mantid.api import (MatrixWorkspace, WorkspaceGroup)
 from six import string_types
 
 
@@ -94,6 +94,9 @@ def has_hash(tag, value, workspace):
     :param workspace: the workspace.
     :return: true if the hash exists on the workspace else false.
     """
+    if isinstance(workspace, WorkspaceGroup):
+        return False
+
     check_if_valid_tag_and_workspace(tag, workspace)
     same_hash = False
     if has_tag(tag, workspace):

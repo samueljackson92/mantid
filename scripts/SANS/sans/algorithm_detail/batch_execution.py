@@ -12,7 +12,10 @@ from sans.common.file_information import (get_extension_for_file_type, SANSFileI
 from sans.state.data import StateData
 
 
-batch_reduction_return_bundle = namedtuple('batch_reduction_return_bundle', 'state, lab, hab, merged')
+# ----------------------------------------------------------------------------------------------------------------------
+# Container classes
+# ----------------------------------------------------------------------------------------------------------------------
+# batch_reduction_return_bundle = namedtuple('batch_reduction_return_bundle', 'state, lab, hab, merged')
 
 
 class ReducedDataType(object):
@@ -26,6 +29,25 @@ class ReducedDataType(object):
         pass
 
 
+class ReductionPackage(object):
+    def __init__(self, state, workspaces, monitors, is_part_of_multi_period_reduction=False,
+                 is_part_of_event_slice_reduction=False):
+        super(ReductionPackage, self).__init__()
+        self.state = state
+        self.workspaces = workspaces
+        self.monitors = monitors
+        self.is_part_of_multi_period_reduction = is_part_of_multi_period_reduction
+        self.is_part_of_event_slice_reduction = is_part_of_event_slice_reduction
+
+        # Reduced workspaces
+        self.reduced_lab = None
+        self.reduced_hab = None
+        self.redued_merged = None
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Functions for the execution of a single batch iteration
+# ----------------------------------------------------------------------------------------------------------------------
 def single_reduction_for_batch(state, use_optimizations, output_mode):
     """
     Runs a single reduction.
@@ -57,6 +79,7 @@ def single_reduction_for_batch(state, use_optimizations, output_mode):
     single_reduction_options = {"UseOptimizations": use_optimizations}
     reduction_alg = create_unmanaged_algorithm(single_reduction_name, **single_reduction_options)
 
+    # Perform the data reduction
     for reduction_package in reduction_packages:
         # Set the properties on the algorithm
         set_properties_for_reduction_algorithm(reduction_alg, reduction_package,
@@ -68,16 +91,40 @@ def single_reduction_for_batch(state, use_optimizations, output_mode):
         reduced_hab = reduction_alg.getProperty("OutputWorkspaceHAB").value
         reduced_merged = reduction_alg.getProperty("OutputWorkspaceMerged").value
 
-        # Perform output
-        if reduced_lab:
-            output_workspace(reduced_lab, reduction_package.state, ReducedDataType.LAB, output_mode,
-                             reduction_package.is_part_of_multi_period_reduction)
-        if reduced_hab:
-            output_workspace(reduced_hab, reduction_package.state, ReducedDataType.HAB, output_mode,
-                             reduction_package.is_part_of_multi_period_reduction)
-        if reduced_merged:
-            output_workspace(reduced_merged, reduction_package.state, ReducedDataType.Merged, output_mode,
-                             reduction_package.is_part_of_multi_period_reduction)
+        # Loose the reference to the loaded workspaces.
+        reduction_package.workspaces = None
+
+        # Complete the reduction package with the output
+        reduction_package.reduced_lab = reduced_lab
+        reduction_package.reduced_hab = reduced_hab
+        reduction_package.reduced_merged = reduced_merged
+
+        # Place the workspaces into the ADS as they come, provided that the user requested them to be placed into
+        # the ADS. This will allow users to inspect workspaces for reductions which have slicing or a lot of periods
+        if output_mode == OutputMode.PublishToADS or output_mode == OutputMode.SaveToFile:
+            output_workspaces_to_ads(reduction_package)
+
+    # Once all reductions are completed we need to check if the user would like to save the reduced workspaces
+    # to a file.
+    if output_mode is OutputMode.Both:
+        # Find all relevant grouped workspaces (all workspaces which are part of a multi-period or
+        # slice event scan reduction) and all individual workspaces
+        save_to_file(reduction_packages)
+    elif output_mode is OutputMode.SaveToFile:
+        # 1. We need to save the workspaces out just as previously done
+        # 2. Save the workspaces
+        # 3. Delete the workspaces from the ADS.
+        # This is not nice, but since we need to save some files in a group workspace we have to go through the
+        # ADS (Mantid requires us to do so).
+        for reduction_package in reduction_packages:
+            output_workspaces_to_ads(reduction_package)
+
+        # Get all names to save to file
+        save_to_file(reduction_packages)
+
+        # Delete the output workspaces
+        delete_output_workspaces(reduction_packages)
+
 
 def get_expected_workspace_names(file_information, is_transmission, period, get_base_name_only=False):
     """
@@ -315,15 +362,6 @@ def get_multi_period_workspaces(load_alg, workspace_name, number_of_workspaces, 
     return workspaces
 
 
-class ReductionPackage(object):
-    def __init__(self, state, workspaces, monitors, is_part_of_multi_period_reduction=False):
-        super(ReductionPackage, self).__init__()
-        self.state = state
-        self.workspaces = workspaces
-        self.monitors = monitors
-        self.is_part_of_multi_period_reduction = is_part_of_multi_period_reduction
-
-
 def get_reduction_packages(state, workspaces, monitors):
     """
     This function creates a set of reduction packages which contain the necessary state for a single reduction
@@ -345,7 +383,7 @@ def get_reduction_packages(state, workspaces, monitors):
     # Note that at this point all reduction packages will have the same state information. They only differ in the
     # workspaces that they use.
     if reduction_packages_require_splitting_for_event_slices(reduction_packages):
-        reduction_packages = split_reduction_packages_for_event_packages(reduction_packages)
+        reduction_packages = split_reduction_packages_for_event_slice_packages(reduction_packages)
 
     # TODO: Third: Split resulting reduction packages on a per-wave-length-range basis
     return reduction_packages
@@ -373,7 +411,7 @@ def reduction_packages_require_splitting_for_event_slices(reduction_packages):
     return requires_split
 
 
-def split_reduction_packages_for_event_packages(reduction_packages):
+def split_reduction_packages_for_event_slice_packages(reduction_packages):
     """
     Splits a reduction package object into several reduction package objects if it contains several event slice settings
 
@@ -403,9 +441,14 @@ def split_reduction_packages_for_event_packages(reduction_packages):
     for reduction_package in reduction_packages:
         workspaces = reduction_package.workspaces
         monitors = reduction_package.monitors
+        is_part_of_multi_period_reduction = reduction_package.is_part_of_multi_period_reduction
         for state in states:
             new_state = deepcopy(state)
-            new_reduction_package = ReductionPackage(new_state, workspaces, monitors)
+            new_reduction_package = ReductionPackage(state=new_state,
+                                                     workspaces=workspaces,
+                                                     monitors=monitors,
+                                                     is_part_of_multi_period_reduction=is_part_of_multi_period_reduction,
+                                                     is_part_of_event_slice_reduction=True)
             reduction_packages_split.append(new_reduction_package)
     return reduction_packages_split
 
@@ -457,7 +500,11 @@ def create_initial_reduction_packages(state, workspaces, monitors):
         # Set the period on the state
         if requires_new_period_selection:
             state_copy.data.sample_scatter_period = index + 1
-        packages.append(ReductionPackage(state_copy, workspaces_for_package, monitors_for_package, is_multi_period))
+        packages.append(ReductionPackage(state=state_copy,
+                                         workspaces=workspaces_for_package,
+                                         monitors=monitors_for_package,
+                                         is_part_of_multi_period_reduction=is_multi_period,
+                                         is_part_of_event_slice_reduction=False))
     return packages
 
 
@@ -518,32 +565,54 @@ def set_properties_for_reduction_algorithm(reduction_alg, reduction_package, wor
 # ----------------------------------------------------------------------------------------------------------------------
 # Output section
 # ----------------------------------------------------------------------------------------------------------------------
-def output_workspace(workspace, state, reduced_data_type, output_mode, is_part_of_multi_period_reduction):
+def output_workspaces_to_ads(reduction_package):
     """
-    Performs an output of the workspace. This can be to the ADS, a file or both.
+    Performs an output of the LAB, HAB and Merged data set to the ADS (provided they exist)
 
-    @param workspace: The workspace on which we perform the output
-    @param state: a sans state object
-    @param reduced_data_type: the reduction output
-    @param output_mode:
-    @param is_part_of_multi_period_reduction:
+    :param reduction_package: a reduction package containing the sans state, reduced workspaces etc.
     @return:
     """
-    output_name, output_base_name = get_output_names(state, workspace, reduced_data_type,
-                                                     is_part_of_multi_period_reduction)
-    if output_mode is OutputMode.PublishToADS:
-        publish_to_ads(workspace, output_name, output_base_name, is_part_of_multi_period_reduction)
-    elif output_mode is OutputMode.Both:
-        publish_to_ads(workspace, output_name, output_base_name, is_part_of_multi_period_reduction)
-        save_workspace_to_file(workspace, state, output_base_name)
-    elif output_mode is OutputMode.SaveToFile:
-        save_workspace_to_file(workspace, state, output_name)
-    else:
-        raise RuntimeError("Unknown output mode {0}. You can specify to add to ADS or save to file "
-                                   "or both".format(output_mode))
+
+    reduced_lab = reduction_package.reduced_lab
+    reduced_hab = reduction_package.reduced_hab
+    reduced_merged = reduction_package.reduced_merged
+    is_part_of_multi_period_reduction = reduction_package.is_part_of_multi_period_reduction
+    is_part_of_event_slice_reduction = reduction_package.is_part_of_event_slice_reduction
+    state = reduction_package.state
+
+    if reduced_lab:
+        output_name, output_base_name = get_output_names(state, reduced_lab, ReducedDataType.LAB,
+                                                         is_part_of_multi_period_reduction,
+                                                         is_part_of_event_slice_reduction)
+        publish_to_ads(reduced_lab,
+                       output_name,
+                       output_base_name,
+                       is_part_of_multi_period_reduction,
+                       is_part_of_event_slice_reduction)
+
+    if reduced_hab:
+        output_name, output_base_name = get_output_names(state, reduced_hab, ReducedDataType.HAB,
+                                                         is_part_of_multi_period_reduction,
+                                                         is_part_of_event_slice_reduction)
+        publish_to_ads(reduced_hab,
+                       output_name,
+                       output_base_name,
+                       is_part_of_multi_period_reduction,
+                       is_part_of_event_slice_reduction)
+
+    if reduced_merged:
+        output_name, output_base_name = get_output_names(state, reduced_merged, ReducedDataType.Merged,
+                                                         is_part_of_multi_period_reduction,
+                                                         is_part_of_event_slice_reduction)
+        publish_to_ads(reduced_merged,
+                       output_name,
+                       output_base_name,
+                       is_part_of_multi_period_reduction,
+                       is_part_of_event_slice_reduction)
 
 
-def publish_to_ads(workspace, workspace_name, workspace_base_name, is_part_of_multi_period_reduction):
+def publish_to_ads(workspace, workspace_name, workspace_base_name, is_part_of_multi_period_reduction,
+                   is_part_of_event_slice_reduction):
     """
     Publish the reduced workspaces to the ADS. If the workspace is part of a multi-period workspace which
     is being reduced then we need to make sure that the workspace is added with the workspace name but then
@@ -557,9 +626,10 @@ def publish_to_ads(workspace, workspace_name, workspace_base_name, is_part_of_mu
                                 be the name of the 7th reduced period and 7712main_1D would be the base name which
                                 is common to all periods.
     :param is_part_of_multi_period_reduction: if true then we have several reductions from a multi-period file
+    :param is_part_of_event_slice_reduction: if true then we have several reductions from a event slice scan
     """
 
-    if is_part_of_multi_period_reduction:
+    if is_part_of_multi_period_reduction or is_part_of_event_slice_reduction:
         AnalysisDataService.addOrReplace(workspace_name, workspace)
         # If we are dealing with a reduced workspace which is actually part of a multi-period workspace
         # then we need to add it to a GroupWorkspace, if there is no GroupWorkspace yet, then we create one
@@ -581,20 +651,90 @@ def publish_to_ads(workspace, workspace_name, workspace_base_name, is_part_of_mu
         AnalysisDataService.addOrReplace(workspace_name, workspace)
 
 
-def save_workspace_to_file(workspace, state, output_name):
+def save_to_file(reduction_packages):
+    """
+    Extracts all workspace names which need to be saved and saves them into a file.
+
+    @param reduction_packages: a list of reduction packages which contain all the relevant information for saving
+    """
+    names_to_save = get_all_names_to_save(reduction_packages)
+
+    state = reduction_packages[0].state
+    save_info = state.save
+    file_formats = save_info.file_format
+    for name_to_save in names_to_save:
+        save_workspace_to_file(name_to_save, file_formats)
+
+
+def delete_output_workspaces(reduction_packages):
+    """
+    Deletes all workspaces which would have been generated from a list of reduction packages.
+
+    @param reduction_packages: a list of reduction package
+    """
+    # Get all names which were saved out to workspaces
+    names_to_delete = get_all_names_to_save(reduction_packages)
+
+    # Delete each workspace
+    delete_name = "DeleteWorkspace"
+    delete_options = {}
+    delete_alg = create_unmanaged_algorithm(delete_name, **delete_options)
+    for name_to_delete in names_to_delete:
+        delete_alg.setProperty("Workspace", name_to_delete)
+        delete_alg.execute()
+
+
+def get_all_names_to_save(reduction_packages):
+    """
+    Extracts all the output names from a list of reduction packages. The main
+
+    @param reduction_packages: a list of reduction packages
+    @return:
+    """
+    def add_names(names_to_save_list, workspace, state_info, data_type, is_part_of_group_workspace):
+        output_name, output_base_name = get_output_names(state_info, workspace, data_type,
+                                                         is_part_of_multi_period_reduction,
+                                                         is_part_of_event_slice_reduction)
+        if is_part_of_group_workspace:
+            names_to_save_list.append(output_base_name)
+        else:
+            names_to_save_list.append(output_name)
+
+    names_to_save = []
+    for reduction_package in reduction_packages:
+        state = reduction_package.state
+        is_part_of_multi_period_reduction = reduction_package.is_part_of_multi_period_reduction
+        is_part_of_event_slice_reduction = reduction_package.is_part_of_event_slice_reduction
+        is_part_of_group_workspace_output = is_part_of_multi_period_reduction or is_part_of_event_slice_reduction
+
+        reduced_lab = reduction_package.reduced_lab
+        reduced_hab = reduction_package.reduced_hab
+        reduced_merged = reduction_package.reduced_merged
+
+        if reduced_lab:
+            add_names(names_to_save, reduced_lab, state, ReducedDataType.LAB, is_part_of_group_workspace_output)
+
+        if reduced_hab:
+            add_names(names_to_save, reduced_hab, state, ReducedDataType.HAB, is_part_of_group_workspace_output)
+
+        if reduced_merged:
+            add_names(names_to_save, reduced_merged, state, ReducedDataType.Merged, is_part_of_group_workspace_output)
+
+    # We might have some workspaces as duplicates (the group workspaces), so make them unique
+    return set(names_to_save)
+
+
+def save_workspace_to_file(output_name, file_formats):
     """
     Saves the workspace to the different file formats specified in the state object.
 
-    :param workspace: the workspace to be stored.
-    :param state: the SANSState object
-    :param output_name: the name of the file
+    :param output_name: the name of the output workspace and also the name of the file
+    :param file_formats: a list of file formats to save
     """
-    save_info = state.save
     save_name = "SANSSave"
-    save_options = {"InputWorkspace": workspace}
+    save_options = {"InputWorkspace": output_name}
     save_options.update({"Filename": output_name})
 
-    file_formats = save_info.file_format
     if SaveType.Nexus in file_formats:
         save_options.update({"Nexus": True})
     if SaveType.CanSAS in file_formats:
@@ -612,7 +752,19 @@ def save_workspace_to_file(workspace, state, output_name):
     save_alg.execute()
 
 
-def get_output_names(state, workspace, reduction_data_type, is_part_of_multi_period_reduction):
+def get_output_names(state, workspace, reduction_data_type, is_part_of_multi_period_reduction,
+                     is_part_of_event_slice_reduction):
+    """
+    The name of the output workspaces are very complex in the reduction framework. This function is central
+    to creating the output workspace names.
+
+    @param state: a sans state object.
+    @param workspace: the reduced workspace.
+    @param reduction_data_type: the type of data reduction, ie LAB, HAB or Merged.
+    @param is_part_of_multi_period_reduction: True if the workspace is part of a multi-period reduction.
+    @param is_part_of_event_slice_reduction: True if the workspace is part of a event slice scan, else False.
+    @return: a workspace name and a workspace base name
+    """
     # Get the workspace name and the workspace base name from that are saved on the workspace
     workspace_name = get_output_workspace_name_from_workspace(workspace)
     workspace_base_name = get_output_workspace_base_name_from_workspace(workspace)
@@ -623,16 +775,20 @@ def get_output_names(state, workspace, reduction_data_type, is_part_of_multi_per
     user_specified_output_name_suffix = save_info.user_specified_output_name_suffix
     use_reduction_mode_as_suffix = save_info.use_reduction_mode_as_suffix
 
+    # An output name requires special attention when the workspace is part of a multi-period reduction
+    # or slice event scan
+    requires_special_attention = is_part_of_event_slice_reduction or is_part_of_multi_period_reduction
+
     # If user specified output name is not none then we use it for the base name
-    if user_specified_output_name and not is_part_of_multi_period_reduction:
+    if user_specified_output_name and not requires_special_attention:
         # Deal with single period data which has a user-specified name
         output_name = user_specified_output_name
         output_base_name = user_specified_output_name
-    elif user_specified_output_name and is_part_of_multi_period_reduction:
-        # Deal with multi-period data which has a user-specified name
+    elif user_specified_output_name and requires_special_attention:
+        # Deal with data which requires special attention and which has a user-specified name
         output_name = workspace_name
         output_base_name = user_specified_output_name
-    elif not user_specified_output_name and is_part_of_multi_period_reduction:
+    elif not user_specified_output_name and requires_special_attention:
         output_name = workspace_name
         output_base_name = workspace_base_name
     else:

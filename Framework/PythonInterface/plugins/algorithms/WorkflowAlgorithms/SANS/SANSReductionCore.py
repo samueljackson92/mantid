@@ -105,8 +105,10 @@ class SANSReductionCore(DataProcessorAlgorithm):
         #    If we are dealing with an event workspace as input, this will cut out a time-based (user-defined) slice.
         #    In case of a histogram workspace, nothing happens.
         # --------------------------------------------------------------------------------------------------------------
+        data_type_as_string = self.getProperty("DataType").value
         monitor_workspace = self._get_monitor_workspace()
-        workspace, monitor_workspace, slice_event_factor = self._slice(state, workspace, monitor_workspace)
+        workspace, monitor_workspace, slice_event_factor = self._slice(state, workspace, monitor_workspace,
+                                                                       data_type_as_string)
 
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # COMPATIBILITY BEGIN
@@ -159,12 +161,12 @@ class SANSReductionCore(DataProcessorAlgorithm):
         # --------------------------------------------------------------------------------------------------------------
         # 6. Convert to Wavelength
         # --------------------------------------------------------------------------------------------------------------
+
         workspace = self._convert_to_wavelength(state, workspace)
 
         # --------------------------------------------------------------------------------------------------------------
         # 7. Multiply by volume and absolute scale
         # --------------------------------------------------------------------------------------------------------------
-        data_type_as_string = self.getProperty("DataType").value
         workspace = self._scale(state, workspace, data_type_as_string)
 
         # --------------------------------------------------------------------------------------------------------------
@@ -185,9 +187,10 @@ class SANSReductionCore(DataProcessorAlgorithm):
         # ------------------------------------------------------------
         workspace = self._convert_to_histogram(workspace)
 
+
         # ------------------------------------------------------------
         # 10. Convert to Q
-        # ------------------------------------------------------------
+        # -----------------------------------------------------------
         workspace, sum_of_counts, sum_of_norms = self._convert_to_q(state,
                                                                     workspace,
                                                                     wavelength_adjustment_workspace,
@@ -220,14 +223,15 @@ class SANSReductionCore(DataProcessorAlgorithm):
         crop_alg.execute()
         return crop_alg.getProperty("OutputWorkspace").value
 
-    def _slice(self, state, workspace, monitor_workspace):
+    def _slice(self, state, workspace, monitor_workspace, data_type_as_string):
         state_serialized = state.property_manager
         slice_name = "SANSSliceEvent"
         slice_options = {"SANSState": state_serialized,
                          "InputWorkspace": workspace,
                          "InputWorkspaceMonitor": monitor_workspace,
                          "OutputWorkspace": EMPTY_NAME,
-                         "OutputWorkspaceMonitor": "dummy2"}
+                         "OutputWorkspaceMonitor": "dummy2",
+                         "DataType": data_type_as_string}
         slice_alg = create_unmanaged_algorithm(slice_name, **slice_options)
         slice_alg.execute()
 

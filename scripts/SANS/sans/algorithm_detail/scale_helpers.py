@@ -31,7 +31,7 @@ class DivideByVolumeISIS(DivideByVolume):
         super(DivideByVolumeISIS, self).__init__()
 
     def divide_by_volume(self, workspace, scale_info):
-        volume = self._get_volume(workspace, scale_info)
+        volume = self._get_volume(scale_info)
 
         single_valued_name = "CreateSingleValuedWorkspace"
         single_valued_options = {"OutputWorkspace": EMPTY_NAME,
@@ -48,21 +48,11 @@ class DivideByVolumeISIS(DivideByVolume):
         divide_alg.execute()
         return divide_alg.getProperty("OutputWorkspace").value
 
-    def _get_volume(self, workspace, scale_info):
-        # Get the geometry information from the workspace
-        sample_details = workspace.sample()
-
-        # If the sample details are specified in the state, then use
-        # this information else use the information stored on the workspace
-        try:
-            shape = scale_info.shape if scale_info.shape is not None else \
-                convert_int_to_shape(sample_details.getGeometryFlag())
-        except ValueError:
-            shape = SampleShape.CylinderAxisAlong
-
-        thickness = scale_info.thickness if scale_info.thickness is not None else sample_details.getThickness()
-        width = scale_info.width if scale_info.width is not None else sample_details.getWidth()
-        height = scale_info.height if scale_info.height is not None else sample_details.getHeight()
+    def _get_volume(self, scale_info):
+        thickness = scale_info.thickness if scale_info.thickness is not None else scale_info.thickness_from_file
+        width = scale_info.width if scale_info.width is not None else scale_info.width_from_file
+        height = scale_info.height if scale_info.height is not None else scale_info.height_from_file
+        shape = scale_info.shape if scale_info.shape is not None else scale_info.shape_from_file
 
         # Now we calculate the volume
         if shape is SampleShape.CylinderAxisUp:
@@ -95,10 +85,8 @@ class DivideByVolumeFactory(object):
 
         is_isis_instrument = instrument is SANSInstrument.LARMOR or instrument is SANSInstrument.SANS2D or\
                              instrument is SANSInstrument.LOQ
-        if is_isis_instrument and data_type is DataType.Sample:
+        if is_isis_instrument:
             divider = DivideByVolumeISIS()
-        elif is_isis_instrument:
-            divider = NullDivideByVolume()
         else:
             raise RuntimeError("DivideVolumeFactory: Other instruments are not implemented yet.")
         return divider
