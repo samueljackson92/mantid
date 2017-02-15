@@ -203,7 +203,7 @@ def get_isis_nexus_info(file_name):
     try:
         with h5.File(file_name) as h5_file:
             keys = list(h5_file.keys())
-            is_isis_nexus = u"raw_data_1" in keys
+            is_isis_nexus = "raw_data_1" in keys
             if is_isis_nexus:
                 first_entry = h5_file["raw_data_1"]
                 period_group = first_entry["periods"]
@@ -290,7 +290,7 @@ def get_event_mode_information(file_name):
         first_entry = h5_file[keys[0]]
         # Open instrument group
         is_event_mode = False
-        for value in first_entry.values():
+        for value in list(first_entry.values()):
             if "NX_class" in value.attrs and "NXevent_data" == value.attrs["NX_class"]:
                 is_event_mode = True
                 break
