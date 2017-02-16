@@ -16,6 +16,11 @@ Algorithms
 Data Analysis
 #############
 
+Conv Fit
+~~~~~~~~
+
+* All FABADA minimizer options are now accessible from the function browser.
+
 Jump Fit
 ~~~~~~~~
 
@@ -25,5 +30,7 @@ Improvements
 
 Bugfixes
 --------
+
+- The *Diffraction* Interface no longer crashes when in OSIRIS diffonly mode
 
 `Full list of changes on GitHub <http://github.com/mantidproject/mantid/pulls?q=is%3Apr+milestone%3A%22Release+3.10%22+is%3Amerged+label%3A%22Component%3A+Indirect+Inelastic%22>`_
