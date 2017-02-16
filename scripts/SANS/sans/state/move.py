@@ -239,7 +239,7 @@ class StateMoveLARMORBuilder(object):
 
     def _set_conversion_value(self, data_info):
         run_number = data_info.sample_scatter_run_number
-        self.conversion_value = 1000. if run_number >= 2217 else 1.
+        self.conversion_value = 1000. if run_number <= 2217 else 1.
 
     def build(self):
         self.state.validate()

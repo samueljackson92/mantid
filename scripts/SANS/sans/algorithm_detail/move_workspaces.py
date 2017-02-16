@@ -623,7 +623,7 @@ class SANSMoveLARMORNewStyle(SANSMove):
                                     DetectorType.to_string(DetectorType.LAB))
 
         # Shift the low-angle bank detector in the x direction
-        angle = -coordinates[0]
+        angle = coordinates[0]
 
         bench_rot_tag = "Bench_Rot"
         log_names = [bench_rot_tag]

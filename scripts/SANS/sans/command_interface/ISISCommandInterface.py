@@ -3,6 +3,7 @@ import inspect
 from six import types
 from mantid.kernel import config
 from mantid.api import (AnalysisDataService, WorkspaceGroup)
+from SANSadd2 import add_runs
 from sans.command_interface.command_interface_functions import (print_message, warning_message)
 from sans.command_interface.command_interface_state_director import (CommandInterfaceStateDirector, DataCommand,
                                                                      DataCommandId, NParameterCommand, NParameterCommandId,
@@ -27,7 +28,7 @@ except (Exception, Warning):
 # ----------------------------------------------------------------------------------------------------------------------
 # Globals
 # ----------------------------------------------------------------------------------------------------------------------
-DefaultTrans = 'True'
+DefaultTrans = True
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -153,6 +154,7 @@ def AssignSample(sample_run, reload=True, period=ALL_PERIODS):
     """
     _ = reload
     # First of all the default for all periods used to be -1. If we encounter this then set periods to ALL_PERIODS
+    period = int(period)
     period = ALL_PERIODS if period == -1 else period
 
     # Print the output
@@ -180,6 +182,7 @@ def AssignCan(can_run, reload=True, period=ALL_PERIODS):
     """
     _ = reload
     # First of all the default for all periods used to be -1. If we encounter this then set periods to ALL_PERIODS
+    period = int(period)
     period = ALL_PERIODS if period == -1 else period
 
     # Print the output
@@ -210,6 +213,8 @@ def TransmissionSample(sample, direct, reload=True,
     """
     _ = reload
     # First of all the default for all periods used to be -1. If we encounter this then set periods to ALL_PERIODS
+    period_t = int(period_t)
+    period_d = int(period_d)
     period_t = ALL_PERIODS if period_t == -1 else period_t
     period_d = ALL_PERIODS if period_d == -1 else period_d
 
@@ -238,6 +243,8 @@ def TransmissionCan(can, direct, reload=True, period_t=-1, period_d=-1):
     """
     _ = reload
     # First of all the default for all periods used to be -1. If we encounter this then set periods to ALL_PERIODS
+    period_t = int(period_t)
+    period_d = int(period_d)
     period_t = ALL_PERIODS if period_t == -1 else period_t
     period_d = ALL_PERIODS if period_d == -1 else period_d
 
@@ -298,6 +305,7 @@ def UseCompatibilityMode():
                                        values=[True])
     director.add_command(set_2d_command)
 
+
 # -------------------------
 # Single parameter commands
 # -------------------------
@@ -332,6 +340,7 @@ def SetSampleOffset(value):
 
     @param value: the offset in mm
     """
+    value = float(value)
     sample_offset_command = NParameterCommand(command_id=NParameterCommandId.sample_offset, values=[value])
     director.add_command(sample_offset_command)
 
@@ -369,6 +378,7 @@ def SetMonitorSpectrum(specNum, interp=False):
     @param interp: when rebinning the wavelength bins to match the main workspace, if use interpolation
                    default no interpolation
     """
+    specNum = int(specNum)
     monitor_spectrum_command = NParameterCommand(command_id=NParameterCommandId.monitor_spectrum, values=[specNum,
                                                                                                           interp])
     director.add_command(monitor_spectrum_command)
@@ -382,6 +392,7 @@ def SetTransSpectrum(specNum, interp=False):
     @param interp: when rebinning the wavelength bins to match the main workspace, if use interpolation
                    default no interpolation
     """
+    specNum = int(specNum)
     transmission_spectrum_command = NParameterCommand(command_id=NParameterCommandId.transmission_spectrum,
                                                       values=[specNum, interp])
     director.add_command(transmission_spectrum_command)
@@ -446,6 +457,8 @@ def SetCentre(xcoord, ycoord, bank='rear'):
     :param bank: The selected bank ('rear' - low angle or 'front' - high angle)
     Introduced #5942
     """
+    xcoord = float(xcoord)
+    ycoord = float(ycoord)
     print_message('SetCentre(' + str(xcoord) + ', ' + str(ycoord) + ')')
     detector_type = convert_bank_name_to_detector_type_isis(bank)
     centre_command = NParameterCommand(command_id=NParameterCommandId.centre, values=[xcoord, ycoord, detector_type])
@@ -464,6 +477,8 @@ def SetPhiLimit(phimin, phimax, use_mirror=True):
     """
     print_message("SetPhiLimit(" + str(phimin) + ', ' + str(phimax) + ',use_mirror=' + str(use_mirror) + ')')
     # a beam centre of [0,0,0] makes sense if the detector has been moved such that beam centre is at [0,0,0]
+    phimin = float(phimin)
+    phimax = float(phimax)
     centre_command = NParameterCommand(command_id=NParameterCommandId.phi_limit, values=[phimin, phimax, use_mirror])
     director.add_command(centre_command)
 
@@ -533,8 +548,10 @@ def TransFit(mode, lambdamin=None, lambdamax=None, selector='BOTH'):
     # Output message
     message = mode
     if lambdamin:
+        lambdamin = float(lambdamin)
         message += ', ' + str(lambdamin)
     if lambdamax:
+        lambdamax = float(lambdamax)
         message += ', ' + str(lambdamax)
     message += ', selector=' + selector
     print_message("TransFit(\"" + message + "\")")
@@ -556,6 +573,8 @@ def LimitsR(rmin, rmax, quiet=False, reducer=None):
     @param reducer: legacy parameter
     """
     _ = reducer
+    rmin = float(rmin)
+    rmax = float(rmax)
     if not quiet:
         print_message('LimitsR(' + str(rmin) + ', ' + str(rmax) + ')', reducer)
     rmin /= 1000.
@@ -573,6 +592,10 @@ def LimitsWav(lmin, lmax, step, bin_type):
     @param step: the wavelength step.
     @param bin_type: teh bin type, ie linear or logarithmic. Accepted strings are "LINEAR" and "LOGARITHMIC"
     """
+    lmin = float(lmin)
+    lmax = float(lmax)
+    step = float(step)
+
     print_message('LimitsWav(' + str(lmin) + ', ' + str(lmax) + ', ' + str(step) + ', ' + bin_type + ')')
 
     rebin_string = bin_type.strip().upper()
@@ -591,6 +614,10 @@ def LimitsQXY(qmin, qmax, step, type):
         @param step: bin width
         @param type: pass LOG for logarithmic binning
     """
+    qmin = float(qmin)
+    qmax = float(qmax)
+    step = float(step)
+
     print_message('LimitsQXY(' + str(qmin) + ', ' + str(qmax) + ', ' + str(step) + ', ' + str(type) + ')')
     step_type_string = type.strip().upper()
     if step_type_string == "LOGARITHMIC" or step_type_string == "LOG":
@@ -617,6 +644,14 @@ def SetFrontDetRescaleShift(scale=1.0, shift=0.0, fitScale=False, fitShift=False
         @param qMax: When set to None (default) then for fitting use the overlapping q region of
                      front and rear detectors
     """
+    scale = float(scale)
+    shift = float(shift)
+
+    if qMin:
+        qMin = float(qMin)
+    if qMax:
+        qMax = float(qMax)
+
     print_message('Set front detector rescale/shift values to {0} and {1}'.format(scale, shift))
     front_command = NParameterCommand(command_id=NParameterCommandId.front_detector_rescale, values=[scale, shift,
                                                                                                      fitScale, fitShift,
@@ -647,6 +682,15 @@ def SetDetectorOffsets(bank, x, y, z, rot, radius, side, xtilt=0.0, ytilt=0.0):
         @param xtilt: xtilt in degrees
         @param ytilt: ytilt in degrees
     """
+    x = float(x)
+    y = float(y)
+    z = float(z)
+    rot = float(rot)
+    radius = float(radius)
+    side = float(side)
+    xtilt = float(xtilt)
+    ytilt = float(ytilt)
+
     print_message("SetDetectorOffsets(" + str(bank) + ', ' + str(x)
                   + ',' + str(y) + ',' + str(z) + ',' + str(rot)
                   + ',' + str(radius) + ',' + str(side) + ',' + str(xtilt) + ',' + str(ytilt) + ')')
@@ -712,6 +756,12 @@ def WavRangeReduction(wav_start=None, wav_end=None, full_trans_wav=None, name_su
     else:
         raise RuntimeError("WavRangeReduction: The combineDet input parameter was given a value of {0}. rear, front,"
                            " both, merged and no input are allowed".format(combineDet))
+
+    if wav_start:
+        wav_start = float(wav_start)
+
+    if wav_end:
+        wav_end = float(wav_end)
 
     wavelength_command = NParameterCommand(command_id=NParameterCommandId.wavrange_settings,
                                            values=[wav_start, wav_end, full_trans_wav, reduction_mode])
@@ -886,6 +936,10 @@ def CompWavRanges(wavelens, plot=True, combineDet=None, resetSetup=True):
 
     # Perform a reduction over the full wavelength range which was specified
     reduced_workspace_names = []
+
+    for index in range(len(wavelens)):
+        wavelens[index] = float(wavelens[index])
+
     full_reduction_name = WavRangeReduction(wav_start=wavelens[0], wav_end=wavelens[- 1],
                                             combineDet=combineDet, resetSetup=False)
     reduced_workspace_names.append(full_reduction_name)
@@ -919,6 +973,7 @@ def PhiRanges(phis, plot=True):
 
     reduced_workspace_names = []
     for i in range(0, len(phis), 2):
+        SetPhiLimit(phis[i], phis[i + 1])
         reduced_workspace_name = WavRangeReduction()
         reduced_workspace_names.append(reduced_workspace_name)
 
@@ -957,3 +1012,41 @@ def PlotResult(workspace, canvas=None):
         print_message('Plot functions are not available, is this being run from outside Mantidplot?')
 
 
+
+def AddRuns(runs, instrument='sans2d', saveAsEvent=False, binning="Monitors", isOverlay=False, time_shifts=None,
+            defType='.nxs', rawTypes=('.raw', '.s*', 'add', '.RAW'), lowMem=False):
+    '''
+    Method to expose the add_runs functionality for custom scripting.
+    @param runs: a list with the requested run numbers
+    @param instrument: the name of the selected instrument
+    @param saveAsEvent: when adding event-type data, then this can be stored as event-type data
+    @param binning: where to get the binnings from. This is relevant when adding Event-type data.
+                    The property can be set to "Monitors" in order to emulate the binning of the monitors or to a
+                    string list with the same format that is used for the Rebin algorithm. This property is ignored
+                    when saving as event data.
+    @param isOverlay: sets if the the overlay mechanism should be used when the saveAsEvent flag is set
+    @param time_shifts: provides additional time shifts if the isOverlay flag is specified. The time shifts are specifed
+                        in a string list. Either time_shifts is not used or a list with times in secomds. Note that there
+                        has to be one entry fewer than the number of workspaces to add.
+    @param defType: the file type
+    @param rawTypes: the raw types
+    @param lowMem: if the lowMem option should be used
+    @returns a success message
+    '''
+    # Need at least two runs to work
+    if len(runs) < 1:
+        print_message("AddRuns issue: A list with at least two runs needs to be provided.")
+        return
+
+    if time_shifts is None:
+        time_shifts = []
+
+    return add_runs(runs=runs,
+                    inst=instrument,
+                    defType=defType,
+                    rawTypes=rawTypes,
+                    lowMem=lowMem,
+                    binning=binning,
+                    saveAsEvent=saveAsEvent,
+                    isOverlay=isOverlay,
+                    time_shifts=time_shifts)

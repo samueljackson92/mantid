@@ -137,7 +137,7 @@ class CommandInterfaceStateDirector(object):
 
     def _get_data_state(self):
         # Get the data commands
-        data_commands = self._extract_data_commands()
+        data_commands = self._get_data_commands()
 
         # Build the state data
         data_builder = get_data_builder(self._facility)
@@ -157,7 +157,7 @@ class CommandInterfaceStateDirector(object):
 
         return data_builder.build()
 
-    def _extract_data_commands(self):
+    def _get_data_commands(self):
         """
         Grabs and removes the data commands from the command queue.
 
@@ -165,9 +165,6 @@ class CommandInterfaceStateDirector(object):
         """
         # Grab the data commands
         data_commands = [element for element in self._commands if isinstance(element, DataCommand)]
-        # Remove the data commands from the old list
-        for element in data_commands:
-            self._commands.remove(element)
         return data_commands
 
     def _set_data_element(self, data_builder_file_setter, data_builder_period_setter, command_id, commands):
@@ -185,11 +182,15 @@ class CommandInterfaceStateDirector(object):
         if len(data_elements) == 0:
             return
 
-        # If there is more than one element, then that is not right
-        if len(data_elements) > 1:
-            raise RuntimeError("Specified too many data elements for {0}".format(command_id))
-
-        data_element = data_elements[0]
+        # If there is more than one element, then we are only interested in the last element. The user could
+        # have overriden his wishes, e.g.
+        # ...
+        # AssignSample('SANS2D1234')
+        # ...
+        # AssignSample('SANS2D4321')
+        # ...
+        # We select therefore the last element
+        data_element = data_elements[-1]
         file_name = data_element.file_name
         period = data_element.period
         data_builder_file_setter(file_name)
@@ -215,8 +216,11 @@ class CommandInterfaceStateDirector(object):
         """
         self._user_file_state_director = UserFileStateDirectorISIS(data_state)
 
-        # Evaluate all commands which adds them to the _processed_state_settings dictionary.
+        # Evaluate all commands which adds them to the _processed_state_settings dictionary,
+        # except for DataCommands which we deal with separately
         for command in self._commands:
+            if isinstance(command, DataCommand):
+                continue
             command_id = command.command_id
             process_function = self._method_map[command_id]
             process_function(command)
