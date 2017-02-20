@@ -14,7 +14,7 @@ New
 
 Improved
 ########
-
+- :ref`RawFileInfo <algm-RawFileInfo-v1>` now provides sample information.
 
 Deprecated
 ##########
@@ -30,6 +30,8 @@ CurveFitting
 
 Improved
 ########
+
+- :ref:`UserFunction <func-UserFunction>` now supports :math:`erf` and :math:`erfc`.
 
 Python
 ------
