@@ -7,12 +7,18 @@
 #include "MantidAPI/AnalysisDataService.h"
 #include "MantidAPI/Axis.h"
 #include "MantidAPI/DetectorInfo.h"
+#include "MantidAPI/FileFinder.h"
 #include "MantidAPI/FrameworkManager.h"
 #include "MantidDataObjects/OffsetsWorkspace.h"
 #include "MantidKernel/UnitFactory.h"
+#include "MantidTestHelpers/FileComparisonHelper.h"
 #include "MantidTestHelpers/WorkspaceCreationHelper.h"
 
+#include <Poco/File.h>
+#include <Poco/Path.h>
+
 #include <cxxtest/TestSuite.h>
+#include <iostream>
 
 using namespace Mantid::API;
 using Mantid::Algorithms::GetDetectorOffsets;
@@ -159,7 +165,61 @@ public:
     TS_ASSERT(!mask->detectorInfo().isMasked(0));
   }
 
+  void test_groupingFile() {
+    // Setup various paths we will be using
+    const std::string referenceFileName("GetDetectorsOffsetReference.cal");
+    const std::string outFileName("GetDetectorsOffsetTest.cal");
+
+    auto fileHandle = getOutFileHandle(outFileName);
+    const std::string fullRefPath =
+        FileFinder::Instance().getFullPath(referenceFileName);
+
+    TSM_ASSERT_DIFFERS("Reference file not found", fullRefPath, "");
+
+    // Create workspace with 10 detectors and 200 bins each
+    MatrixWorkspace_sptr ws =
+        WorkspaceCreationHelper::create2DWorkspaceWithFullInstrument(
+            10, 200, false, false, true, "POLARIS");
+    ws->getAxis(0)->unit() =
+        Mantid::Kernel::UnitFactory::Instance().create("dSpacing");
+
+    populateWsWithData(ws.get());
+
+    const std::string outputWS("offsetsped");
+    const std::string maskWS("masksped");
+
+    GetDetectorOffsets alg;
+    setupCommonAlgProperties(alg, ws, outputWS, maskWS);
+    alg.setProperty("GroupingFileName", fileHandle.path());
+    TS_ASSERT_THROWS_NOTHING(alg.execute());
+    TS_ASSERT(calFileEqualityCheck(fullRefPath, fileHandle.path()));
+    fileHandle.remove();
+  }
+
 private:
+  Poco::File getOutFileHandle(const std::string &outName) {
+    Poco::Path tempPath(Poco::Path::temp());
+    tempPath.append(outName);
+    Poco::File tempFile(tempPath.toString());
+    return tempFile;
+  }
+
+  bool calFileEqualityCheck(const std::string &refFilePath,
+                            const std::string &outFile) {
+    // Have to skip first line as it contains a date-time stamp
+    std::ifstream refStream(refFilePath);
+    std::ifstream outStream(outFile);
+
+    auto skipLine = [](std::ifstream &s) {
+      s.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    };
+
+    skipLine(refStream);
+    skipLine(outStream);
+
+    return FileComparisonHelper::compareFileStreams(refStream, outStream);
+  }
+
   void GetDetectorOffsetsTest::populateWsWithData(MatrixWorkspace *ws) {
     auto xvals = ws->points(0);
     // loop through xvals, calculate and set to Y
@@ -184,6 +244,7 @@ private:
     TS_ASSERT_THROWS_NOTHING(alg.setPropertyValue("DReference", "1.00"));
     TS_ASSERT_THROWS_NOTHING(alg.setPropertyValue("XMin", "-20"));
     TS_ASSERT_THROWS_NOTHING(alg.setPropertyValue("XMax", "20"));
+    alg.setRethrows(true);
   }
 };
 
