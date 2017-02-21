@@ -1,11 +1,15 @@
 #include "MantidAPI/FileProperty.h"
+#include "MantidAPI/Run.h"
+#include "MantidAPI/Sample.h"
 #include "MantidCrystal/SaveHKL.h"
 #include "MantidGeometry/Instrument/RectangularDetector.h"
 #include "MantidKernel/Utils.h"
 #include "MantidKernel/BoundedValidator.h"
 #include "MantidKernel/Material.h"
+#include "MantidKernel/Unit.h"
 #include "MantidKernel/UnitFactory.h"
 #include "MantidKernel/ListValidator.h"
+#include "MantidKernel/Strings.h"
 #include "MantidCrystal/AnvredCorrection.h"
 #include "MantidGeometry/Crystal/OrientedLattice.h"
 #include <fstream>
@@ -26,7 +30,6 @@ namespace Crystal {
 // Register the algorithm into the AlgorithmFactory
 DECLARE_ALGORITHM(SaveHKL)
 
-//----------------------------------------------------------------------------------------------
 /** Initialize the algorithm's properties.
  */
 void SaveHKL::init() {
@@ -92,7 +95,6 @@ void SaveHKL::init() {
                   "DirectionCosines.");
 }
 
-//----------------------------------------------------------------------------------------------
 /** Execute the algorithm.
  */
 void SaveHKL::exec() {

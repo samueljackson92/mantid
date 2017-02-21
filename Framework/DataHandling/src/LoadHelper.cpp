@@ -4,8 +4,10 @@
 
 #include "MantidDataHandling/LoadHelper.h"
 
+#include "MantidAPI/DetectorInfo.h"
 #include "MantidAPI/MatrixWorkspace.h"
 #include "MantidGeometry/Instrument/ComponentHelper.h"
+#include "MantidKernel/PhysicalConstants.h"
 
 #include <nexus/napi.h>
 
@@ -101,25 +103,6 @@ double LoadHelper::calculateTOF(double distance, double wavelength) {
                                             wavelength * 1e-10); // m/s
 
   return distance / velocity;
-}
-
-double LoadHelper::getL1(const API::MatrixWorkspace_sptr &workspace) {
-  Geometry::Instrument_const_sptr instrument = workspace->getInstrument();
-  Geometry::IComponent_const_sptr sample = instrument->getSample();
-  double l1 = instrument->getSource()->getDistance(*sample);
-  return l1;
-}
-
-double LoadHelper::getL2(const API::MatrixWorkspace_sptr &workspace,
-                         int detId) {
-  // Get a pointer to the instrument contained in the workspace
-  Geometry::Instrument_const_sptr instrument = workspace->getInstrument();
-  // Get the distance between the source and the sample (assume in metres)
-  Geometry::IComponent_const_sptr sample = instrument->getSample();
-  // Get the sample-detector distance for this detector (in metres)
-  double l2 =
-      workspace->getDetector(detId)->getPos().distance(sample->getPos());
-  return l2;
 }
 
 /*
@@ -307,8 +290,9 @@ void LoadHelper::recurseAndAddNexusFieldsToWsRun(NXhandle nxfileID,
             int units_len = NX_MAXNAMELEN;
             int units_type = NX_CHAR;
 
-            units_status = NXgetattr(nxfileID, "units", units_sbuf, &units_len,
-                                     &units_type);
+            char unitsAttrName[] = "units";
+            units_status = NXgetattr(nxfileID, unitsAttrName, units_sbuf,
+                                     &units_len, &units_type);
             if (units_status != NX_ERROR) {
               g_log.debug() << indent_str << "[ " << property_name
                             << " has unit " << units_sbuf << " ]\n";
@@ -418,11 +402,28 @@ void LoadHelper::dumpNexusAttributes(NXhandle nxfileID,
   // Attributes
   NXname pName;
   int iLength, iType;
+#ifndef NEXUS43
+  int rank;
+  int dims[4];
+#endif
   int nbuff = 127;
   boost::shared_array<char> buff(new char[nbuff + 1]);
 
+#ifdef NEXUS43
   while (NXgetnextattr(nxfileID, pName, &iLength, &iType) != NX_EOD) {
+#else
+  while (NXgetnextattra(nxfileID, pName, &rank, dims, &iType) != NX_EOD) {
     g_log.debug() << indentStr << '@' << pName << " = ";
+    if (rank > 1) { // mantid only supports single value attributes
+      throw std::runtime_error(
+          "Encountered attribute with multi-dimensional array value");
+    }
+    iLength = dims[0]; // to clarify things
+    if (iType != NX_CHAR && iLength != 1) {
+      throw std::runtime_error("Encountered attribute with array value");
+    }
+#endif
+
     switch (iType) {
     case NX_CHAR: {
       if (iLength > nbuff + 1) {
@@ -489,16 +490,11 @@ void LoadHelper::moveComponent(API::MatrixWorkspace_sptr ws,
                                const V3D &newPos) {
 
   try {
-
     Geometry::Instrument_const_sptr instrument = ws->getInstrument();
     Geometry::IComponent_const_sptr component =
         instrument->getComponentByName(componentName);
 
-    // g_log.debug() << tube->getName() << " : t = " << theta << " ==> t = " <<
-    // newTheta << "\n";
-    Geometry::ParameterMap &pmap = ws->instrumentParameters();
-    Geometry::ComponentHelper::moveComponent(
-        *component, pmap, newPos, Geometry::ComponentHelper::Absolute);
+    ws->mutableDetectorInfo().setPosition(*component, newPos);
 
   } catch (Mantid::Kernel::Exception::NotFoundError &) {
     throw std::runtime_error("Error when trying to move the " + componentName +
@@ -514,16 +510,11 @@ void LoadHelper::rotateComponent(API::MatrixWorkspace_sptr ws,
                                  const Kernel::Quat &rot) {
 
   try {
-
     Geometry::Instrument_const_sptr instrument = ws->getInstrument();
     Geometry::IComponent_const_sptr component =
         instrument->getComponentByName(componentName);
 
-    // g_log.debug() << tube->getName() << " : t = " << theta << " ==> t = " <<
-    // newTheta << "\n";
-    Geometry::ParameterMap &pmap = ws->instrumentParameters();
-    Geometry::ComponentHelper::rotateComponent(
-        *component, pmap, rot, Geometry::ComponentHelper::Absolute);
+    ws->mutableDetectorInfo().setRotation(*component, rot);
 
   } catch (Mantid::Kernel::Exception::NotFoundError &) {
     throw std::runtime_error("Error when trying to move the " + componentName +

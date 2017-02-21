@@ -21,6 +21,7 @@
 #include "MantidQtCustomInterfaces/Muon/MuonAnalysisHelper.h"
 
 #include <map>
+#include <boost/optional/optional.hpp>
 
 namespace MantidQt {
 namespace MantidWidgets {
@@ -199,7 +200,11 @@ private slots:
   /// Checks if the plot for the workspace does exist.
   bool plotExists(const QString &wsName);
 
-  /// Enable PP tool for the plot of the given WS
+  /// Enable PP tool for the plot of the given WS and optional filepath
+  void selectMultiPeak(const QString &wsName,
+                       const boost::optional<QString> &filePath);
+
+  /// Enable PP tool for the plot of the given WS overload to take just a ws
   void selectMultiPeak(const QString &wsName);
 
   /// Disable tools for all the graphs within MantidPlot
@@ -241,8 +246,8 @@ private slots:
   /// Called when selected workspace/groups/periods to fit changes
   void dataToFitChanged();
 
-  /// Called when compatibility mode is turned on/off
-  void compatibilityModeChanged(int state);
+  /// Called when "enable multi fit" checkbox is turned on/off
+  void multiFitCheckboxChanged(int state);
 
   /// Called when "overwrite" is changed
   void updateDataPresenterOverwrite(int state);
@@ -455,6 +460,9 @@ private:
   /// conversion from QString to int
   void getFullCode(int originalSize, QString &run);
 
+  /// Sets the fitting ranges
+  void setFittingRanges(double xmin, double xmax);
+
   /// Setup the signals for updating
   void connectAutoUpdate();
 
@@ -546,6 +554,12 @@ private:
 
   /// Enable/disable "load current run" - if allowed
   void setLoadCurrentRunEnabled(bool enabled);
+
+  /// Check if next/previous run should be appended
+  void checkAppendingRun(const int direction);
+
+  /// Set the Grouping and Data Analysis tabs enabled/disabled
+  void setAnalysisTabsEnabled(const bool enabled);
 };
 }
 }

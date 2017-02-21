@@ -1,4 +1,3 @@
-#pylint: disable=no-init, too-many-instance-attributes
 from __future__ import (absolute_import, division, print_function)
 from mantid.simpleapi import *
 from mantid.api import *
@@ -7,8 +6,8 @@ from mantid import config
 
 import os
 
-class VesuvioDiffractionReduction(DataProcessorAlgorithm):
 
+class VesuvioDiffractionReduction(DataProcessorAlgorithm):
     _workspace_names = None
     _chopped_data = None
     _output_ws = None
@@ -22,14 +21,11 @@ class VesuvioDiffractionReduction(DataProcessorAlgorithm):
     _ipf_filename = None
     _sum_files = None
 
-
     def category(self):
         return 'Diffraction\\Reduction'
 
-
     def summary(self):
         return 'Performs diffraction reduction for VESUVIO'
-
 
     def PyInit(self):
         self.declareProperty(StringArrayProperty('InputFiles'),
@@ -57,7 +53,6 @@ class VesuvioDiffractionReduction(DataProcessorAlgorithm):
                                                     direction=Direction.Output),
                              doc='Group name for the result workspaces.')
 
-
     def validateInputs(self):
         """
         Checks for issues with user input.
@@ -79,7 +74,6 @@ class VesuvioDiffractionReduction(DataProcessorAlgorithm):
 
         return issues
 
-
     def PyExec(self):
         from IndirectReductionCommon import (load_files,
                                              get_multi_frame_rebin,
@@ -98,10 +92,21 @@ class VesuvioDiffractionReduction(DataProcessorAlgorithm):
         load_opts = dict()
         load_opts['Mode'] = 'FoilOut'
         load_opts['InstrumentParFile'] = self._par_filename
+        # Load monitors as True so monitors will not be loaded separately in LoadVesuvio
+        load_opts['LoadMonitors'] = True
 
         prog_reporter = Progress(self, start=0.0, end=1.0, nreports=1)
 
         prog_reporter.report("Loading Files")
+
+        # Split up runs as LoadVesuvio sums multiple runs
+        input_files = self._data_files
+        for run in input_files:
+            try:
+                number_generator = IntArrayProperty('array_generator', run)
+                self._data_files = number_generator.value.tolist()
+            except RuntimeError:
+                raise RuntimeError("Could not generate run numbers from this input: " + run)
 
         self._workspace_names, self._chopped_data = load_files(self._data_files,
                                                                ipf_filename=self._ipf_filename,
@@ -109,7 +114,6 @@ class VesuvioDiffractionReduction(DataProcessorAlgorithm):
                                                                spec_max=self._spectra_range[1],
                                                                sum_files=self._sum_files,
                                                                load_opts=load_opts)
-
 
         prog_reporter.resetNumSteps(self._workspace_names.__len__(), 0.0, 1.0)
 
@@ -165,7 +169,6 @@ class VesuvioDiffractionReduction(DataProcessorAlgorithm):
                               masked_detectors,
                               self._grouping_method)
 
-
             if is_multi_frame:
                 fold_chopped(c_ws_name)
 
@@ -179,7 +182,6 @@ class VesuvioDiffractionReduction(DataProcessorAlgorithm):
                         OutputWorkspace=self._output_ws)
 
         self.setProperty('OutputWorkspace', self._output_ws)
-
 
     def _setup(self):
         """
@@ -202,7 +204,7 @@ class VesuvioDiffractionReduction(DataProcessorAlgorithm):
         self._ipf_filename = self._instrument_name + '_diffraction_' + self._mode + '_Parameters.xml'
         if not os.path.exists(self._ipf_filename):
             self._ipf_filename = os.path.join(config['instrumentDefinition.directory'], self._ipf_filename)
-        logger.information('IPF filename is: %s' % (self._ipf_filename))
+        logger.information('IPF filename is: %s' % self._ipf_filename)
 
         # Only enable sum files if we actually have more than one file
         sum_files = self.getProperty('SumFiles').value

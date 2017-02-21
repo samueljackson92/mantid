@@ -1,6 +1,3 @@
-//----------------------
-// Includes
-//----------------------
 #include "MantidQtCustomInterfaces/Muon/MuonAnalysis.h"
 #include "MantidAPI/AlgorithmManager.h"
 #include "MantidAPI/AnalysisDataService.h"
@@ -17,11 +14,10 @@
 #include "MantidGeometry/Instrument/DetectorGroup.h"
 #include "MantidKernel/ConfigService.h"
 #include "MantidKernel/Exception.h"
-#include "MantidKernel/Exception.h"
 #include "MantidKernel/FacilityInfo.h"
 #include "MantidKernel/Logger.h"
+#include "MantidKernel/Strings.h"
 #include "MantidKernel/cow_ptr.h"
-#include "MantidQtAPI/FileDialogHandler.h"
 #include "MantidQtAPI/HelpWindow.h"
 #include "MantidQtAPI/ManageUserDirectories.h"
 #include "MantidQtCustomInterfaces/Muon/MuonAnalysisFitDataPresenter.h"
@@ -564,8 +560,8 @@ void MuonAnalysis::runSaveGroupButton() {
 
   QString filter;
   filter.append("Files (*.xml *.XML)");
-  filter += ";;AllFiles (*.*)";
-  QString groupingFile = MantidQt::API::FileDialogHandler::getSaveFileName(
+  filter += ";;AllFiles (*)";
+  QString groupingFile = QFileDialog::getSaveFileName(
       this, "Save Grouping file as", prevPath, filter);
 
   // Add extension if the groupingFile specified doesn't have one. (Solving
@@ -603,7 +599,7 @@ void MuonAnalysis::runLoadGroupButton() {
 
   QString filter;
   filter.append("Files (*.xml *.XML)");
-  filter += ";;AllFiles (*.*)";
+  filter += ";;AllFiles (*)";
   QString groupingFile = QFileDialog::getOpenFileName(
       this, "Load Grouping file", prevPath, filter);
   if (groupingFile.isEmpty() || QFileInfo(groupingFile).isDir())
@@ -648,19 +644,20 @@ void MuonAnalysis::runClearGroupingButton() { clearTablesAndCombo(); }
 
 /**
  * Load current (slot)
+ * N.B. This method will only work if
+ * - using Windows
+ * - connected to the ISIS network
  */
 void MuonAnalysis::runLoadCurrent() {
   QString instname = m_uiForm.instrSelector->currentText().toUpper();
 
   if (instname == "EMU" || instname == "HIFI" || instname == "MUSR" ||
       instname == "CHRONUS" || instname == "ARGUS") {
-    QString instDirectory = instname;
-    if (instname == "CHRONUS")
-      instDirectory = "NDW1030";
+    const QString instDirectory = instname == "CHRONUS" ? "NDW1030" : instname;
     std::string autosavePointsTo = "";
-    std::string autosaveFile =
+    const std::string autosaveFile =
         "\\\\" + instDirectory.toStdString() + "\\data\\autosave.run";
-    Poco::File pathAutosave(autosaveFile);
+    const Poco::File pathAutosave(autosaveFile);
 
     try // check if exists
     {
@@ -668,7 +665,7 @@ void MuonAnalysis::runLoadCurrent() {
         std::ifstream autofileIn(autosaveFile.c_str(), std::ifstream::in);
         autofileIn >> autosavePointsTo;
       }
-    } catch (Poco::Exception &) {
+    } catch (const Poco::Exception &) {
       QString message("Can't read from the selected directory, either the "
                       "computer you are trying"
                       "\nto access is down or your computer is not "
@@ -678,6 +675,12 @@ void MuonAnalysis::runLoadCurrent() {
       return;
     }
 
+    // If this directory is not in Mantid's data search list, add it now
+    // Must use forward slash format for this list, even on Windows
+    const std::string autosaveDir =
+        "//" + instDirectory.toStdString() + "/data";
+    Mantid::Kernel::ConfigService::Instance().appendDataSearchDir(autosaveDir);
+
     QString psudoDAE;
     if (autosavePointsTo.empty())
       psudoDAE =
@@ -685,7 +688,7 @@ void MuonAnalysis::runLoadCurrent() {
     else
       psudoDAE = "\\\\" + instDirectory + "\\data\\" + autosavePointsTo.c_str();
 
-    Poco::File l_path(psudoDAE.toStdString());
+    const Poco::File l_path(psudoDAE.toStdString());
     try {
       if (!l_path.exists()) {
         QMessageBox::warning(this, "Mantid - MuonAnalysis",
@@ -694,7 +697,7 @@ void MuonAnalysis::runLoadCurrent() {
                                  QString("does not seem to exist"));
         return;
       }
-    } catch (Poco::Exception &) {
+    } catch (const Poco::Exception &) {
       QMessageBox::warning(this, "Mantid - MuonAnalysis",
                            QString("Can't load ") + "Current data since\n" +
                                psudoDAE + QString("\n") +
@@ -1795,8 +1798,12 @@ bool MuonAnalysis::plotExists(const QString &wsName) {
 /**
  * Enable PP tool for the plot of the given WS.
  * @param wsName Name of the WS which plot PP tool will be attached to.
+ * @param filePath :: [input] Optional path to file that is actually used. This
+ * is for "load current run" where the data file has a temporary name like
+ * MUSRauto_E.tmp
  */
-void MuonAnalysis::selectMultiPeak(const QString &wsName) {
+void MuonAnalysis::selectMultiPeak(const QString &wsName,
+                                   const boost::optional<QString> &filePath) {
   disableAllTools();
 
   if (!plotExists(wsName)) {
@@ -1818,7 +1825,7 @@ void MuonAnalysis::selectMultiPeak(const QString &wsName) {
     m_dataSelector->setNumPeriods(m_numPeriods);
 
     // Set the selected run, group/pair and period
-    m_fitDataPresenter->setAssignedFirstRun(wsName);
+    m_fitDataPresenter->setAssignedFirstRun(wsName, filePath);
   }
 
   QString code;
@@ -1830,6 +1837,16 @@ void MuonAnalysis::selectMultiPeak(const QString &wsName) {
                                    "  selectMultiPeak(g)\n";
 
   runPythonCode(code);
+}
+
+/**
+ * Pass through to selectMultiPeak(wsName, filePath) where filePath is set
+ * to blank. Enables connection as a slot without Qt understanding
+ * boost::optional.
+ * @param wsName Name of the selected workspace
+ */
+void MuonAnalysis::selectMultiPeak(const QString &wsName) {
+  selectMultiPeak(wsName, boost::optional<QString>());
 }
 
 /**
@@ -1933,10 +1950,13 @@ void MuonAnalysis::startUpLook() {
       m_uiForm.groupTable->setItem(i, 0, it);
     }
   }
+
+  // When first started, no data has yet been loaded
+  noDataAvailable();
 }
 
 /**
-* Time zero returend in ms
+* Time zero returned in ms
 */
 double MuonAnalysis::timeZero() {
   return getValidatedDouble(m_uiForm.timeZeroFront, TIME_ZERO_DEFAULT,
@@ -2084,9 +2104,9 @@ void MuonAnalysis::loadFittings() {
   connect(m_uiForm.plotCreation, SIGNAL(currentIndexChanged(int)), this,
           SLOT(updateDataPresenterOverwrite(int)));
   m_fitDataPresenter->setOverwrite(isOverwriteEnabled());
-  // Set compatibility mode on/off as appropriate
-  const bool isCompMode = m_optionTab->getCompatibilityMode();
-  m_fitFunctionPresenter->setCompatibilityMode(isCompMode);
+  // Set multi fit mode on/off as appropriate
+  const auto &multiFitState = m_optionTab->getMultiFitState();
+  m_fitFunctionPresenter->setMultiFitState(multiFitState);
 }
 
 /**
@@ -2103,36 +2123,32 @@ void MuonAnalysis::allowLoading(bool enabled) {
 *   Check to see if the appending option is true when the previous button has
 * been pressed and acts accordingly
 */
-void MuonAnalysis::checkAppendingPreviousRun() {
-  if (m_uiForm.mwRunFiles->getText().isEmpty()) {
-    return;
-  }
-
-  allowLoading(false);
-
-  if (m_uiForm.mwRunFiles->getText().contains("-")) {
-    setAppendingRun(-1);
-  } else {
-    // Subtact one from the current run and load
-    changeRun(-1);
-  }
-}
+void MuonAnalysis::checkAppendingPreviousRun() { checkAppendingRun(-1); }
 
 /**
 *   Check to see if the appending option is true when the next button has been
 * pressed and acts accordingly
 */
-void MuonAnalysis::checkAppendingNextRun() {
-  if (m_uiForm.mwRunFiles->getText().isEmpty())
+void MuonAnalysis::checkAppendingNextRun() { checkAppendingRun(1); }
+
+/**
+ * Check to see if the appending option is true when the next/previous button
+ * has been pressed, and load accordingly
+ * @param direction :: +1 for "next", -1 for "previous"
+ */
+void MuonAnalysis::checkAppendingRun(const int direction) {
+  const auto &runPath = m_uiForm.mwRunFiles->getText();
+  if (runPath.isEmpty()) {
     return;
+  }
 
+  const int sign = direction < 0 ? -1 : 1;
   allowLoading(false);
-
-  if (m_uiForm.mwRunFiles->getText().contains("-")) {
-    setAppendingRun(1);
+  const auto runString = runPath.split(Poco::Path::separator()).last();
+  if (runString.contains("-")) {
+    setAppendingRun(sign); // append next/previous run
   } else {
-    // Add one to current run and laod
-    changeRun(1);
+    changeRun(sign); // replace with next/previous run
   }
 }
 
@@ -2209,8 +2225,20 @@ void MuonAnalysis::setAppendingRun(int inc) {
 void MuonAnalysis::changeRun(int amountToChange) {
   QString filePath("");
   QString currentFile = m_uiForm.mwRunFiles->getFirstFilename();
-  if ((currentFile.isEmpty()))
-    currentFile = m_previousFilenames[0];
+  if ((currentFile.isEmpty())) {
+    if (m_previousFilenames.isEmpty()) {
+      // not a valid file, and no previous valid files
+      QMessageBox::warning(this, tr("Muon Analysis"),
+                           tr("Unable to open the file.\n"
+                              "and no previous valid files available."),
+                           QMessageBox::Ok, QMessageBox::Ok);
+      allowLoading(true);
+      return;
+    } else {
+      // blank box - use previous run
+      currentFile = m_previousFilenames[0];
+    }
+  }
 
   QString run("");
   int runSize(-1);
@@ -2306,6 +2334,37 @@ void MuonAnalysis::getFullCode(int originalSize, QString &run) {
 }
 
 /**
+* Sets the fitting ranges on the dataselectot and fitbrowser
+*
+* @param xmin :: The minimum x value
+* @param xmax :: The maximum x value
+*/
+void MuonAnalysis::setFittingRanges(double xmin, double xmax) {
+  if (xmin == 0.0 && xmax == 0.0) {
+    // A previous fitting range of [0,0] means this is the first time the
+    // user goes to "Data Analysis" tab
+    // We have to initialise the fitting range
+    m_dataSelector->setStartTime(
+        m_uiForm.timeAxisStartAtInput->text().toDouble());
+    m_dataSelector->setEndTime(
+        m_uiForm.timeAxisFinishAtInput->text().toDouble());
+    m_uiForm.fitBrowser->setStartX(
+        m_uiForm.timeAxisStartAtInput->text().toDouble());
+    m_uiForm.fitBrowser->setEndX(
+        m_uiForm.timeAxisFinishAtInput->text().toDouble());
+
+  }
+  // or set it to the previous values provided by the user:
+  else {
+    // A previous fitting range already exists, so we use it
+    m_dataSelector->setStartTime(xmin);
+    m_dataSelector->setEndTime(xmax);
+    m_uiForm.fitBrowser->setStartX(xmin);
+    m_uiForm.fitBrowser->setEndX(xmax);
+  }
+}
+
+/**
  * Is called every time when tab gets changed
  *
  * @param newTabIndex :: The index of the tab we switch to
@@ -2351,36 +2410,26 @@ void MuonAnalysis::changeTab(int newTabIndex) {
         ConfigService::Instance().getString(PEAK_RADIUS_CONFIG);
     ConfigService::Instance().setString(PEAK_RADIUS_CONFIG, "99");
 
-    // setFitPropertyBrowser() above changes the fitting range, so we have to
-    // either initialise it to the correct values:
-    if (xmin == 0.0 && xmax == 0.0) {
-      // A previous fitting range of [0,0] means this is the first time the
-      // user goes to "Data Analysis" tab
-      // We have to initialise the fitting range
-      m_dataSelector->setStartTime(
-          m_uiForm.timeAxisStartAtInput->text().toDouble());
-      m_dataSelector->setEndTime(
-          m_uiForm.timeAxisFinishAtInput->text().toDouble());
-    }
-    // or set it to the previous values provided by the user:
-    else {
-      // A previous fitting range already exists, so we use it
-      m_dataSelector->setStartTime(xmin);
-      m_dataSelector->setEndTime(xmax);
-    }
+    setFittingRanges(xmin, xmax);
 
     // If a workspace is selected:
     // - Show connected plot and attach PP tool to it (if has been assigned)
     // - Set input of data selector to selected workspace
     if (m_currentDataName != NOT_AVAILABLE) {
-      m_fitDataPresenter->setSelectedWorkspace(m_currentDataName);
-      selectMultiPeak(m_currentDataName);
+      const boost::optional<QString> filePath =
+          m_uiForm.mwRunFiles->getUserInput().toString();
+      m_fitDataPresenter->setSelectedWorkspace(m_currentDataName, filePath);
+      selectMultiPeak(m_currentDataName, filePath);
     }
 
     // In future, when workspace gets changed, show its plot and attach PP tool
     // to it
     connect(m_uiForm.fitBrowser, SIGNAL(workspaceNameChanged(const QString &)),
             this, SLOT(selectMultiPeak(const QString &)), Qt::QueuedConnection);
+
+    // repeat setting the fitting ranges as the above code can set them to an
+    // unwanted default value
+    setFittingRanges(xmin, xmax);
   } else if (newTab == m_uiForm.ResultsTable) {
     m_resultTableTab->refresh();
   }
@@ -2425,8 +2474,8 @@ void MuonAnalysis::connectAutoUpdate() {
           SLOT(settingsTabUpdatePlot()));
   connect(m_optionTab, SIGNAL(plotStyleChanged()), this,
           SLOT(updateCurrentPlotStyle()));
-  connect(m_optionTab, SIGNAL(compatibilityModeChanged(int)), this,
-          SLOT(compatibilityModeChanged(int)));
+  connect(m_optionTab, SIGNAL(multiFitStateChanged(int)), this,
+          SLOT(multiFitCheckboxChanged(int)));
 }
 
 /**
@@ -2827,6 +2876,7 @@ void MuonAnalysis::noDataAvailable() {
   m_uiForm.groupTablePlotButton->setEnabled(false);
   m_uiForm.pairTablePlotButton->setEnabled(false);
   m_uiForm.guessAlphaButton->setEnabled(false);
+  setAnalysisTabsEnabled(false);
 }
 
 /**
@@ -2837,6 +2887,7 @@ void MuonAnalysis::nowDataAvailable() {
   m_uiForm.groupTablePlotButton->setEnabled(true);
   m_uiForm.pairTablePlotButton->setEnabled(true);
   m_uiForm.guessAlphaButton->setEnabled(true);
+  setAnalysisTabsEnabled(true);
 }
 
 void MuonAnalysis::openDirectoryDialog() {
@@ -2903,7 +2954,7 @@ std::string MuonAnalysis::getSubtractedPeriods() const {
  * Pass this information to the fit helper
  */
 void MuonAnalysis::dataToFitChanged() {
-  if (m_fitDataPresenter) {
+  if (m_fitDataPresenter && m_loaded) { // Only act if some data is loaded
     m_fitDataPresenter->setGrouping(m_groupingHelper.parseGroupingTable());
     m_fitDataPresenter->setPlotType(parsePlotType(m_uiForm.frontPlotFuncs));
     // Set busy cursor while workspaces are being created
@@ -2963,12 +3014,14 @@ void MuonAnalysis::setLoadCurrentRunEnabled(bool enabled) {
 }
 
 /**
- * Called when the "compatibility mode" checkbox is changed on the settings tab.
+ * Called when the "enable multiple fitting" checkbox is changed (settings tab.)
  * Forward this to the fit function presenter.
  */
-void MuonAnalysis::compatibilityModeChanged(int state) {
-  m_fitFunctionPresenter->setCompatibilityMode(state ==
-                                               Qt::CheckState::Checked);
+void MuonAnalysis::multiFitCheckboxChanged(int state) {
+  const Muon::MultiFitState multiFitState = state == Qt::CheckState::Checked
+                                                ? Muon::MultiFitState::Enabled
+                                                : Muon::MultiFitState::Disabled;
+  m_fitFunctionPresenter->setMultiFitState(multiFitState);
 }
 
 /**
@@ -2979,6 +3032,22 @@ void MuonAnalysis::updateDataPresenterOverwrite(int state) {
   Q_UNUSED(state);
   if (m_fitDataPresenter) {
     m_fitDataPresenter->setOverwrite(isOverwriteEnabled());
+  }
+}
+
+/**
+ * Set the following tabs enabled/disabled:
+ * - Grouping Options
+ * - Data Analysis
+ * (based on whether data is available or not)
+ * @param enabled :: [input] Whether to enable or disable tabs
+ */
+void MuonAnalysis::setAnalysisTabsEnabled(const bool enabled) {
+  const std::vector<QWidget *> tabs{m_uiForm.DataAnalysis,
+                                    m_uiForm.GroupingOptions};
+  for (auto *tab : tabs) {
+    const auto &index = m_uiForm.tabWidget->indexOf(tab);
+    m_uiForm.tabWidget->setTabEnabled(index, enabled);
   }
 }
 

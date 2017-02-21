@@ -2,21 +2,23 @@
 #include "MantidAPI/Algorithm.h"
 #include "MantidAPI/FileProperty.h"
 #include "MantidAPI/MatrixWorkspace.h"
+#include "MantidAPI/Run.h"
+#include "MantidAPI/SpectrumInfo.h"
 #include "MantidDataObjects/GroupingWorkspace.h"
 #include "MantidDataObjects/MaskWorkspace.h"
 #include "MantidDataObjects/OffsetsWorkspace.h"
 #include "MantidDataObjects/Workspace2D.h"
-#include "MantidKernel/System.h"
-#include "MantidKernel/ListValidator.h"
 #include "MantidKernel/ArrayProperty.h"
-#include <fstream>
+#include "MantidKernel/ListValidator.h"
+#include "MantidKernel/System.h"
 #include <Poco/Path.h>
-
-#include <sstream>
 #include <fstream>
 
-#include <boost/algorithm/string/trim.hpp>
+#include <fstream>
+#include <sstream>
+
 #include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/trim.hpp>
 
 using Mantid::Geometry::Instrument_const_sptr;
 using namespace Mantid::Kernel;
@@ -35,7 +37,6 @@ const size_t NUMBERDETECTORPERMODULE = 1232;
 // Number of reserved detectors per module/bank
 const size_t NUMBERRESERVEDPERMODULE = 1250;
 
-//----------------------------------------------------------------------------------------------
 /** Initialize the algorithm's properties.
  */
 void LoadVulcanCalFile::init() {
@@ -85,7 +86,6 @@ void LoadVulcanCalFile::init() {
       "It serves as a verifying tool, and will be removed after test. ");
 }
 
-//----------------------------------------------------------------------------------------------
 /** Execute the algorithm.
  */
 void LoadVulcanCalFile::exec() {
@@ -106,7 +106,6 @@ void LoadVulcanCalFile::exec() {
     setProperty("EventWorkspace", m_eventWS);
 }
 
-//----------------------------------------------------------------------------------------------
 /** Process input and output
   */
 void LoadVulcanCalFile::processInOutProperites() {
@@ -202,7 +201,6 @@ void LoadVulcanCalFile::processInOutProperites() {
     m_doAlignEventWS = false;
 }
 
-//----------------------------------------------------------------------------------------------
 /** Set up grouping workspace
   */
 void LoadVulcanCalFile::setupGroupingWorkspace() {
@@ -253,13 +251,12 @@ void LoadVulcanCalFile::setupGroupingWorkspace() {
   setProperty("OutputGroupingWorkspace", m_groupWS);
 }
 
-//----------------------------------------------------------------------------------------------
 /** Set up masking workspace
   */
 void LoadVulcanCalFile::setupMaskWorkspace() {
 
   // Skip if bad pixel file is not given
-  if (m_badPixFilename.size() == 0)
+  if (m_badPixFilename.empty())
     return;
 
   // Open file
@@ -292,18 +289,19 @@ void LoadVulcanCalFile::setupMaskWorkspace() {
 
   // Mask workspace index
   std::ostringstream msg;
+  auto &spectrumInfo = m_maskWS->mutableSpectrumInfo();
   for (size_t i = 0; i < m_maskWS->getNumberHistograms(); ++i) {
-    if (m_maskWS->readY(i)[0] > 0.5) {
-      m_maskWS->maskWorkspaceIndex(i);
-      m_maskWS->dataY(i)[0] = 1.0;
-      msg << "Spectrum " << i << " is masked. DataY = " << m_maskWS->readY(i)[0]
+    if (m_maskWS->y(i)[0] > 0.5) {
+      m_maskWS->getSpectrum(i).clearData();
+      spectrumInfo.setMasked(i, true);
+      m_maskWS->mutableY(i)[0] = 1.0;
+      msg << "Spectrum " << i << " is masked. DataY = " << m_maskWS->y(i)[0]
           << "\n";
     }
   }
   g_log.information(msg.str());
 }
 
-//----------------------------------------------------------------------------------------------
 /** Generate offset workspace
   */
 void LoadVulcanCalFile::generateOffsetsWorkspace() {
@@ -323,7 +321,6 @@ void LoadVulcanCalFile::generateOffsetsWorkspace() {
   convertOffsets();
 }
 
-//----------------------------------------------------------------------------------------------
 /** Read VULCAN's offset file
   */
 void LoadVulcanCalFile::readOffsetFile(
@@ -348,7 +345,6 @@ void LoadVulcanCalFile::readOffsetFile(
   }
 }
 
-//----------------------------------------------------------------------------------------------
 /** Process offsets by generating maps
   * Output: Offset workspace : 10^(xi_0 + xi_1 + xi_2)
   */
@@ -472,11 +468,10 @@ void LoadVulcanCalFile::processOffsets(
       throw runtime_error("It cannot happen!");
 
     double offset = offsetiter->second + bankcorriter->second;
-    m_tofOffsetsWS->dataY(iws)[0] = pow(10., offset);
+    m_tofOffsetsWS->mutableY(iws)[0] = pow(10., offset);
   }
 }
 
-//----------------------------------------------------------------------------------------------
 /** Align the input EventWorkspace
   */
 void LoadVulcanCalFile::alignEventWorkspace() {
@@ -491,7 +486,7 @@ void LoadVulcanCalFile::alignEventWorkspace() {
     PARALLEL_START_INTERUPT_REGION
 
     // Compute the conversion factor
-    double factor = m_tofOffsetsWS->readY(i)[0];
+    double factor = m_tofOffsetsWS->y(i)[0];
 
     // Perform the multiplication on all events
     m_eventWS->getSpectrum(i).convertTof(1. / factor);
@@ -501,7 +496,6 @@ void LoadVulcanCalFile::alignEventWorkspace() {
   PARALLEL_CHECK_INTERUPT_REGION
 }
 
-//----------------------------------------------------------------------------------------------
 /** Translate the VULCAN's offset to Mantid
   * Input Offset workspace : 10^(xi_0 + xi_1 + xi_2)
   *
@@ -565,15 +559,14 @@ void LoadVulcanCalFile::convertOffsets() {
     double totL = l1 + l2;
 
     // Calcualte converted offset
-    double vuloffset = m_tofOffsetsWS->readY(iws)[0];
+    double vuloffset = m_tofOffsetsWS->y(iws)[0];
     double manoffset = (totL * sin(twotheta * 0.5 * M_PI / 180.)) /
                            (effL * sin(effTheta * M_PI / 180.)) / vuloffset -
                        1.;
-    m_offsetsWS->dataY(iws)[0] = manoffset;
+    m_offsetsWS->mutableY(iws)[0] = manoffset;
   }
 }
 
-//----------------------------------------------------------------------------------------------
 /** Get a pointer to an instrument in one of 3 ways: InputWorkspace,
  * InstrumentName, InstrumentFilename
   */
@@ -596,7 +589,6 @@ Geometry::Instrument_const_sptr LoadVulcanCalFile::getInstrument() {
   return inst;
 }
 
-//-----------------------------------------------------------------------
 /** Reads the calibration file.
  *
  * @param calFileName :: path to the old .cal file
@@ -639,6 +631,9 @@ void LoadVulcanCalFile::readCalFile(const std::string &calFileName,
   int n, udet, select, group;
   double n_d, udet_d, offset, select_d, group_d;
 
+  SpectrumInfo *maskSpectrumInfo{nullptr};
+  if (maskWS)
+    maskSpectrumInfo = &maskWS->mutableSpectrumInfo();
   std::string str;
   while (getline(grFile, str)) {
     if (str.empty() || str[0] == '#')
@@ -685,11 +680,12 @@ void LoadVulcanCalFile::readCalFile(const std::string &calFileName,
 
         if (select <= 0) {
           // Not selected, then mask this detector
-          maskWS->maskWorkspaceIndex(wi);
-          maskWS->dataY(wi)[0] = 1.0;
+          maskWS->getSpectrum(wi).clearData();
+          maskSpectrumInfo->setMasked(wi, true);
+          maskWS->mutableY(wi)[0] = 1.0;
         } else {
           // Selected, set the value to be 0
-          maskWS->dataY(wi)[0] = 0.0;
+          maskWS->mutableY(wi)[0] = 0.0;
           if (!hasUnmasked)
             hasUnmasked = true;
         }

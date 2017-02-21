@@ -1,30 +1,19 @@
 #ifndef MANTID_GEOMETRY_Component_H_
 #define MANTID_GEOMETRY_Component_H_
 
-//----------------------------------------------------------------------
-// Includes
-//----------------------------------------------------------------------
 #include "MantidGeometry/DllConfig.h"
 #include "MantidGeometry/Instrument/ParameterMap.h"
+
 #include <string>
-#include <sstream>
 #include <typeinfo>
 #include <vector>
-#include <Poco/SAX/Attributes.h>
-#ifdef _MSC_VER
-// Disable a flood of warnings from Poco about inheriting from
-// std::basic_istream
-// See
-// http://connect.microsoft.com/VisualStudio/feedback/details/733720/inheriting-from-std-fstream-produces-c4250-warning
-#pragma warning(push)
-#pragma warning(disable : 4250)
-#endif
 
-#include <Poco/XML/XMLWriter.h>
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
+namespace Poco {
+namespace XML {
+class Attributes;
+class XMLWriter;
+}
+}
 
 namespace Mantid {
 namespace Kernel {

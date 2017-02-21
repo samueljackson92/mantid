@@ -137,7 +137,8 @@ void Histogram::setSharedY(const Kernel::cow_ptr<HistogramY> &y) & {
   if (yMode() == YMode::Uninitialized)
     throw std::logic_error(
         "Histogram::setSharedY: YMode is not set and cannot be determined");
-  checkSize(*y);
+  if (y)
+    checkSize(*y);
   m_y = y;
 }
 
@@ -145,7 +146,8 @@ void Histogram::setSharedY(const Kernel::cow_ptr<HistogramY> &y) & {
 
   Throws if the size does not match the current size. */
 void Histogram::setSharedE(const Kernel::cow_ptr<HistogramE> &e) & {
-  checkSize(*e);
+  if (e)
+    checkSize(*e);
   m_e = e;
 }
 
@@ -232,15 +234,15 @@ void Histogram::setUncertainties(const FrequencyStandardDeviations &e) {
 
 void Histogram::checkAndSetYModeCounts() {
   if (yMode() == YMode::Frequencies)
-    throw std::logic_error("Histogram: Y is storing Counts, modifying "
-                           "Frequencies is not possible.");
+    throw std::logic_error("Histogram: Y is storing Frequencies, modifying "
+                           "Counts is not possible.");
   m_yMode = YMode::Counts;
 }
 
 void Histogram::checkAndSetYModeFrequencies() {
   if (yMode() == YMode::Counts)
-    throw std::logic_error("Histogram: Y is storing Frequencies, modifying "
-                           "Counts is not possible.");
+    throw std::logic_error("Histogram: Y is storing Counts, modifying "
+                           "Frequencies is not possible.");
   m_yMode = YMode::Frequencies;
 }
 
@@ -251,6 +253,29 @@ template <> void Histogram::checkSize(const BinEdges &binEdges) const {
     target++;
   if (target != binEdges.size())
     throw std::logic_error("Histogram: size mismatch of BinEdges\n");
+}
+
+/** Resets the size of the internal x, dx, y, and e data structures
+
+  The argument refers to the requested y length. All other lengths are
+  then inferred automatically. The resize behaviour follows
+  std::vector::resize which either truncates the current values
+  or applies zero padding. */
+void Histogram::resize(size_t n) {
+  auto newXSize = xMode() == XMode::Points ? n : n + 1;
+
+  m_x.access().mutableRawData().resize(newXSize);
+  if (m_y) {
+    m_y.access().mutableRawData().resize(n);
+  }
+
+  if (m_e) {
+    m_e.access().mutableRawData().resize(n);
+  }
+
+  if (m_dx) {
+    m_dx.access().mutableRawData().resize(n);
+  }
 }
 
 } // namespace HistogramData
