@@ -3,8 +3,8 @@
 
 #include "MantidAPI/Algorithm.h"
 #include "MantidAPI/IFunction.h"
-#include "MantidKernel/System.h"
 #include "MantidDataObjects/OffsetsWorkspace.h"
+#include "MantidKernel/System.h"
 
 namespace Mantid {
 namespace Algorithms {

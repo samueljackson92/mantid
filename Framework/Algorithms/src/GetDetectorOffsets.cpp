@@ -1,4 +1,5 @@
 #include "MantidAlgorithms/GetDetectorOffsets.h"
+
 #include "MantidAPI/CompositeFunction.h"
 #include "MantidAPI/FileProperty.h"
 #include "MantidAPI/FunctionFactory.h"
