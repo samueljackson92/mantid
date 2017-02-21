@@ -27,14 +27,19 @@ public:
   }
   static void destroySuite(GetDetectorOffsetsTest *suite) { delete suite; }
 
-  GetDetectorOffsetsTest() { Mantid::API::FrameworkManager::Instance(); }
+  GetDetectorOffsetsTest() {
+    // We require the Framework manager to be started for these tests
+    Mantid::API::FrameworkManager::Instance();
+  }
 
   void testTheBasics() {
+    GetDetectorOffsets offsets;
     TS_ASSERT_EQUALS(offsets.name(), "GetDetectorOffsets");
     TS_ASSERT_EQUALS(offsets.version(), 1);
   }
 
   void testInit() {
+    GetDetectorOffsets offsets;
     TS_ASSERT_THROWS_NOTHING(offsets.initialize());
     TS_ASSERT(offsets.isInitialized());
   }
@@ -46,30 +51,16 @@ public:
     WS->getAxis(0)->unit() =
         Mantid::Kernel::UnitFactory::Instance().create("dSpacing");
 
-    auto xvals = WS->points(0);
-    // loop through xvals, calculate and set to Y
-    std::transform(
-        xvals.cbegin(), xvals.cend(), WS->mutableY(0).begin(),
-        [](const double x) { return exp(-0.5 * pow((x - 1) / 10.0, 2)); });
+    populateWsWithData(WS.get());
 
-    auto &E = WS->mutableE(0);
-    E.assign(E.size(), 0.001);
+    const std::string outputWS("offsetsped");
+    const std::string maskWS("masksped");
 
-    // ---- Run algo -----
-    if (!offsets.isInitialized())
-      offsets.initialize();
-    TS_ASSERT_THROWS_NOTHING(offsets.setProperty("InputWorkspace", WS));
-    std::string outputWS("offsetsped");
-    std::string maskWS("masksped");
-    TS_ASSERT_THROWS_NOTHING(
-        offsets.setPropertyValue("OutputWorkspace", outputWS));
-    TS_ASSERT_THROWS_NOTHING(offsets.setPropertyValue("MaskWorkspace", maskWS));
-    TS_ASSERT_THROWS_NOTHING(offsets.setPropertyValue("Step", "0.02"));
-    TS_ASSERT_THROWS_NOTHING(offsets.setPropertyValue("DReference", "1.00"));
-    TS_ASSERT_THROWS_NOTHING(offsets.setPropertyValue("XMin", "-20"));
-    TS_ASSERT_THROWS_NOTHING(offsets.setPropertyValue("XMax", "20"));
-    TS_ASSERT_THROWS_NOTHING(offsets.execute());
-    TS_ASSERT(offsets.isExecuted());
+    GetDetectorOffsets alg;
+    setupCommonAlgProperties(alg, WS, outputWS, maskWS);
+
+    TS_ASSERT_THROWS_NOTHING(alg.execute());
+    TS_ASSERT(alg.isExecuted());
 
     MatrixWorkspace_const_sptr output;
     TS_ASSERT_THROWS_NOTHING(
@@ -98,32 +89,17 @@ public:
     WS->getAxis(0)->unit() =
         Mantid::Kernel::UnitFactory::Instance().create("dSpacing");
 
-    auto xvals = WS->points(0);
-    // loop through xvals, calculate and set to Y
-    std::transform(
-        xvals.cbegin(), xvals.cend(), WS->mutableY(0).begin(),
-        [](const double x) { return exp(-0.5 * pow((x - 1) / 10.0, 2)); });
+    populateWsWithData(WS.get());
 
-    auto &E = WS->mutableE(0);
-    E.assign(E.size(), 0.001);
+    GetDetectorOffsets alg;
+    const std::string outputWS("offsetsped");
+    const std::string maskWS("masksped");
+    setupCommonAlgProperties(alg, WS, outputWS, maskWS);
 
-    // ---- Run algo -----
-    if (!offsets.isInitialized())
-      offsets.initialize();
-    TS_ASSERT_THROWS_NOTHING(offsets.setProperty("InputWorkspace", WS));
-    std::string outputWS("offsetsped");
-    std::string maskWS("masksped");
-    TS_ASSERT_THROWS_NOTHING(
-        offsets.setPropertyValue("OutputWorkspace", outputWS));
-    TS_ASSERT_THROWS_NOTHING(offsets.setPropertyValue("MaskWorkspace", maskWS));
-    TS_ASSERT_THROWS_NOTHING(offsets.setPropertyValue("Step", "0.02"));
-    TS_ASSERT_THROWS_NOTHING(offsets.setPropertyValue("DReference", "1.00"));
-    TS_ASSERT_THROWS_NOTHING(offsets.setPropertyValue("XMin", "-20"));
-    TS_ASSERT_THROWS_NOTHING(offsets.setPropertyValue("XMax", "20"));
-    TS_ASSERT_THROWS_NOTHING(offsets.execute());
-    TS_ASSERT(offsets.isExecuted());
+    TS_ASSERT_THROWS_NOTHING(alg.execute());
+    TS_ASSERT(alg.isExecuted());
 
-    OffsetsWorkspace_sptr output = offsets.getProperty("OutputWorkspace");
+    OffsetsWorkspace_sptr output = alg.getProperty("OutputWorkspace");
     if (!output)
       return;
 
@@ -149,33 +125,19 @@ public:
     WS->getAxis(0)->unit() =
         Mantid::Kernel::UnitFactory::Instance().create("dSpacing");
 
-    auto xvals = WS->points(0);
-    // loop through xvals, calculate and set to Y
-    std::transform(
-        xvals.cbegin(), xvals.cend(), WS->mutableY(0).begin(),
-        [](const double x) { return exp(-0.5 * pow((x - 1) / 10.0, 2)); });
-    auto &E = WS->mutableE(0);
-    E.assign(E.size(), 0.001);
+    populateWsWithData(WS.get());
 
-    // ---- Run algo -----
-    if (!offsets.isInitialized())
-      offsets.initialize();
-    TS_ASSERT_THROWS_NOTHING(offsets.setProperty("InputWorkspace", WS));
-    std::string outputWS("offsetsped");
-    std::string maskWS("masksped");
-    TS_ASSERT_THROWS_NOTHING(
-        offsets.setPropertyValue("OutputWorkspace", outputWS));
-    TS_ASSERT_THROWS_NOTHING(offsets.setPropertyValue("MaskWorkspace", maskWS));
-    TS_ASSERT_THROWS_NOTHING(offsets.setPropertyValue("Step", "0.02"));
-    TS_ASSERT_THROWS_NOTHING(offsets.setPropertyValue("DReference", "1.00"));
-    TS_ASSERT_THROWS_NOTHING(offsets.setPropertyValue("XMin", "-20"));
-    TS_ASSERT_THROWS_NOTHING(offsets.setPropertyValue("XMax", "20"));
-    TS_ASSERT_THROWS_NOTHING(offsets.setPropertyValue("MaxOffset", "10"));
-    TS_ASSERT_THROWS_NOTHING(
-        offsets.setPropertyValue("OffsetMode", "Absolute"));
-    TS_ASSERT_THROWS_NOTHING(offsets.setPropertyValue("DIdeal", "3.5"));
-    TS_ASSERT_THROWS_NOTHING(offsets.execute());
-    TS_ASSERT(offsets.isExecuted());
+    const std::string outputWS("offsetsped");
+    const std::string maskWS("masksped");
+
+    GetDetectorOffsets alg;
+    setupCommonAlgProperties(alg, WS, outputWS, maskWS);
+
+    TS_ASSERT_THROWS_NOTHING(alg.setPropertyValue("MaxOffset", "10"));
+    TS_ASSERT_THROWS_NOTHING(alg.setPropertyValue("OffsetMode", "Absolute"));
+    TS_ASSERT_THROWS_NOTHING(alg.setPropertyValue("DIdeal", "3.5"));
+    TS_ASSERT_THROWS_NOTHING(alg.execute());
+    TS_ASSERT(alg.isExecuted());
 
     MatrixWorkspace_const_sptr output;
     TS_ASSERT_THROWS_NOTHING(
@@ -198,7 +160,31 @@ public:
   }
 
 private:
-  GetDetectorOffsets offsets;
+  void GetDetectorOffsetsTest::populateWsWithData(MatrixWorkspace *ws) {
+    auto xvals = ws->points(0);
+    // loop through xvals, calculate and set to Y
+    std::transform(
+        xvals.cbegin(), xvals.cend(), ws->mutableY(0).begin(),
+        [](const double x) { return exp(-0.5 * pow((x - 1) / 10.0, 2)); });
+
+    auto &E = ws->mutableE(0);
+    E.assign(E.size(), 0.001);
+  }
+
+  void GetDetectorOffsetsTest::setupCommonAlgProperties(
+      GetDetectorOffsets &alg, const MatrixWorkspace_sptr &inputWS,
+      const std::string &outputWSName, const std::string maskedWSName) {
+    alg.initialize();
+    TS_ASSERT_THROWS_NOTHING(alg.setProperty("InputWorkspace", inputWS));
+    TS_ASSERT_THROWS_NOTHING(
+        alg.setPropertyValue("OutputWorkspace", outputWSName));
+    TS_ASSERT_THROWS_NOTHING(
+        alg.setPropertyValue("MaskWorkspace", maskedWSName));
+    TS_ASSERT_THROWS_NOTHING(alg.setPropertyValue("Step", "0.02"));
+    TS_ASSERT_THROWS_NOTHING(alg.setPropertyValue("DReference", "1.00"));
+    TS_ASSERT_THROWS_NOTHING(alg.setPropertyValue("XMin", "-20"));
+    TS_ASSERT_THROWS_NOTHING(alg.setPropertyValue("XMax", "20"));
+  }
 };
 
 class GetDetectorOffsetsTestPerformance : public CxxTest::TestSuite {
