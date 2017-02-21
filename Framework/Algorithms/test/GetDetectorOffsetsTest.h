@@ -220,7 +220,7 @@ private:
     return FileComparisonHelper::compareFileStreams(refStream, outStream);
   }
 
-  void GetDetectorOffsetsTest::populateWsWithData(MatrixWorkspace *ws) {
+  void populateWsWithData(MatrixWorkspace *ws) {
     auto xvals = ws->points(0);
     // loop through xvals, calculate and set to Y
     std::transform(
@@ -231,7 +231,7 @@ private:
     E.assign(E.size(), 0.001);
   }
 
-  void GetDetectorOffsetsTest::setupCommonAlgProperties(
+  void setupCommonAlgProperties(
       GetDetectorOffsets &alg, const MatrixWorkspace_sptr &inputWS,
       const std::string &outputWSName, const std::string maskedWSName) {
     alg.initialize();
