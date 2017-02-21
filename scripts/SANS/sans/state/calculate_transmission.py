@@ -29,7 +29,7 @@ class StateTransmissionFit(StateBase):
 
     def __init__(self):
         super(StateTransmissionFit, self).__init__()
-        self.fit_type = FitType.Linear
+        self.fit_type = FitType.Log
         self.polynomial_order = 0
 
     def validate(self):  # noqa

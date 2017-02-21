@@ -190,6 +190,24 @@ def get_instrument_paths_for_sans_file(file_name):
                        "available for {0}".format(str(idf_path)))
 
 
+def convert_to_shape(shape_flag):
+    """
+    Converts a shape flag to a shape object.
+
+    @param shape_flag: a geometry flag which can be 1, 2 or 3
+    @return: a shape object
+    """
+    if shape_flag == 1:
+        shape = SampleShape.CylinderAxisUp
+    elif shape_flag == 2:
+        shape = SampleShape.Cuboid
+    elif shape_flag == 3:
+        shape = SampleShape.CylinderAxisAlong
+    else:
+        shape = None
+    return shape
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 # Functions for ISIS Nexus
 # ----------------------------------------------------------------------------------------------------------------------
@@ -502,14 +520,7 @@ def get_geometry_information_isis_added_nexus(file_name):
         width = float(sample['geom_width'][0])
         thickness = float(sample['geom_thickness'][0])
         shape_id = int(sample['geom_id'][0])
-        if shape_id == 1:
-            shape = SampleShape.CylinderAxisUp
-        elif shape_id == 2:
-            shape = SampleShape.Cuboid
-        elif shape_id == 3:
-            shape = SampleShape.CylinderAxisAlong
-        else:
-            shape = None
+        shape = convert_to_shape(shape_id)
     return height, width, thickness, shape
 
 
@@ -633,6 +644,37 @@ def get_instrument(instrument_name):
     return instrument
 
 
+def get_geometry_information_raw(file_name):
+    """
+    Gets the geometry information form the table workspace with the spb information
+
+    @param file_name: the full file name to an existing raw file.
+    @return: height, width, thickness and shape
+    """
+    alg_info = AlgorithmManager.createUnmanaged("RawFileInfo")
+    alg_info.initialize()
+    alg_info.setChild(True)
+    alg_info.setProperty("Filename", file_name)
+    alg_info.setProperty("GetRunParameters", False)
+    alg_info.setProperty("GetSampleParameters", True)
+    alg_info.execute()
+
+    sample_parameters = alg_info.getProperty("SampleParameterTable").value
+    keys = sample_parameters.getColumnNames()
+
+    height_id = "e_height"
+    width_id = "e_width"
+    thickness_id = "e_thick"
+    shape_id = "e_geom"
+
+    height = sample_parameters.column(keys.index(height_id))[0]
+    width = sample_parameters.column(keys.index(width_id))[0]
+    thickness = sample_parameters.column(keys.index(thickness_id))[0]
+    shape_flag = sample_parameters.column(keys.index(shape_id))[0]
+    shape = convert_to_shape(shape_flag)
+    return height, width, thickness, shape
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 # SANS file Information
 # ----------------------------------------------------------------------------------------------------------------------
@@ -716,7 +758,7 @@ class SANSFileInformationISISNexus(SANSFileInformation):
         # Get geometry details
         height, width, thickness, shape = get_geometry_information_isis_nexus(self._full_file_name)
         self._height = height if height is not None else 1.
-        self._width = width if height is not None else 1.
+        self._width = width if width is not None else 1.
         self._thickness = thickness if thickness is not None else 1.
         self._shape = shape if shape is not None else SampleShape.CylinderAxisAlong
 
@@ -776,7 +818,7 @@ class SANSFileInformationISISAdded(SANSFileInformation):
         # Get geometry details
         height, width, thickness, shape = get_geometry_information_isis_added_nexus(self._full_file_name)
         self._height = height if height is not None else 1.
-        self._width = width if height is not None else 1.
+        self._width = width if width is not None else 1.
         self._thickness = thickness if thickness is not None else 1.
         self._shape = shape if shape is not None else SampleShape.CylinderAxisAlong
 
@@ -836,10 +878,11 @@ class SANSFileInformationRaw(SANSFileInformation):
 
         # Set geometry
         # Raw files don't have the sample information, so set to default
-        self._height = 1.
-        self._width = 1.
-        self._thickness = 1.
-        self._shape = SampleShape.CylinderAxisAlong
+        height, width, thickness, shape = get_geometry_information_raw(self._full_file_name)
+        self._height = height if height is not None else 1.
+        self._width = width if width is not None else 1.
+        self._thickness = thickness if thickness is not None else 1.
+        self._shape = shape if shape is not None else SampleShape.CylinderAxisAlong
 
     def get_file_name(self):
         return self._full_file_name

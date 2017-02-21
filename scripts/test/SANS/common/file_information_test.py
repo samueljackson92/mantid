@@ -47,8 +47,8 @@ class SANSFileInformationTest(unittest.TestCase):
         self.assertTrue(file_information.get_type() == FileType.ISISRaw)
         self.assertTrue(file_information.get_run_number() == 48094)
         self.assertFalse(file_information.is_added_data())
-        self.assertTrue(file_information.get_width() == 1.0)
-        self.assertTrue(file_information.get_height() == 1.0)
+        self.assertTrue(file_information.get_width() == 8.0)
+        self.assertTrue(file_information.get_height() == 8.0)
         self.assertTrue(file_information.get_thickness() == 1.0)
         self.assertTrue(file_information.get_shape() is SampleShape.CylinderAxisAlong)
 

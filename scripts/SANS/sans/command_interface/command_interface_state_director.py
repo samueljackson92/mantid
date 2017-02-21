@@ -118,8 +118,7 @@ class CommandInterfaceStateDirector(object):
         The execution strategy is:
         1. Find the data entries and great a SANSStateData object out of them
         2. Go sequentially through the commands in a FIFO manner (except for the data entries)
-        3. Clear commands
-        4. Returns the constructed state
+        3. Returns the constructed state
         @returns a list of valid SANSState object which can be used for data reductions or raises an exception.
         """
         # 1. Get a SANSStateData object.
@@ -128,11 +127,7 @@ class CommandInterfaceStateDirector(object):
         # 2. Go through
         state = self._process_command_queue(data_state)
 
-        # 3. Clear commands
-        self._commands = []
-        self._user_file_state_director = None
-
-        # 4. Provide the state
+        # 3. Provide the state
         return state
 
     def _get_data_state(self):
@@ -338,6 +333,7 @@ class CommandInterfaceStateDirector(object):
 
     def _process_clean(self, command):
         _ = command
+        self.clear_commands()
 
     def _process_reduction_dimensionality(self, command):
         _ = command
