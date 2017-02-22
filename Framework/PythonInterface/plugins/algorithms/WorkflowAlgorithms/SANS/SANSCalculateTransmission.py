@@ -155,7 +155,7 @@ class SANSCalculateTransmission(DataProcessorAlgorithm):
 
         trans_options.update({"FitMethod": fit_string})
         if fit_type is FitType.Polynomial:
-            polynomial_order = calculate_transmission_state.polynomial_order
+            polynomial_order = calculate_transmission_state.fit[DataType.to_string(data_type)].polynomial_order
             trans_options.update({"PolynomialOrder": polynomial_order})
 
         trans_alg = create_unmanaged_algorithm(trans_name, **trans_options)
