@@ -37,11 +37,10 @@ from sans.command_interface.ISISCommandInterface import (LOQ, Set1D, Detector, M
 #         return '54431main_1D_3.0_9.0','LOQCentreNoGravSearchCentreFixed.nxs'
 
 
-class LOQCentreNoGravDefineCentre(stresstesting.MantidStressTest):
+class LOQCentreNoGravDefineCentreTest_V2(stresstesting.MantidStressTest):
     def runTest(self):
-
+        UseCompatibilityMode()
         LOQ()
-
         Set1D()
         Detector("rear-detector")
         MaskFile('MASK.094AA')
@@ -56,11 +55,11 @@ class LOQCentreNoGravDefineCentre(stresstesting.MantidStressTest):
         WavRangeReduction(3, 9, DefaultTrans)
 
     def validate(self):
-    # Need to disable checking of the Spectra-Detector map becauseit isn't
-    # fully saved out to the nexus file (it's limited to the spectra that
-    # are actually present in the saved workspace).
+        # Need to disable checking of the Spectra-Detector map becauseit isn't
+        # fully saved out to the nexus file (it's limited to the spectra that
+        # are actually present in the saved workspace).
         self.disableChecking.append('SpectraMap')
         self.disableChecking.append('Axes')
         self.disableChecking.append('Instrument')
 
-        return '54431main_1D_3.0_9.0','LOQCentreNoGrav_V2.nxs'
+        return '54431main_1D_3.0_9.0', 'LOQCentreNoGrav_V2.nxs'

@@ -8,7 +8,7 @@ from sans.command_interface.ISISCommandInterface import (LOQ, Detector, Set1D, M
                                                          BatchReduce, UseCompatibilityMode)
 
 
-class SANSLOQBatch_V2(stresstesting.MantidStressTest):
+class SANSLOQBatchTest_V2(stresstesting.MantidStressTest):
 
     def runTest(self):
         UseCompatibilityMode()

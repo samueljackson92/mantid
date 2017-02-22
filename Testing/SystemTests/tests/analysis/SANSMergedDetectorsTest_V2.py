@@ -8,7 +8,7 @@ from sans.command_interface.ISISCommandInterface import (SANS2DTUBES, MaskFile, 
                                                          UseCompatibilityMode)
 
 
-class SANSMergedDetectorsTest(stresstesting.MantidStressTest):
+class SANSMergedDetectorsTest_V2(stresstesting.MantidStressTest):
     def __init__(self):
         stresstesting.MantidStressTest.__init__(self)
 

@@ -21,18 +21,18 @@ class SANS2DBatchTest_V2(stresstesting.MantidStressTest):
 
         csv_file = FileFinder.getFullPath('SANS2D_periodTests.csv')
 
-        BatchReduce(csv_file, 'nxs', plotresults=False, saveAlgs={'SaveCanSAS1D':'xml','SaveNexus':'nxs'})
-        os.remove(os.path.join(config['defaultsave.directory'],'5512p7_SANS2DBatch.xml'))
+        BatchReduce(csv_file, 'nxs', plotresults=False, saveAlgs={'SaveCanSAS1D': 'xml', 'SaveNexus': 'nxs'})
+        os.remove(os.path.join(config['defaultsave.directory'], '5512p7_SANS2DBatch.xml'))
 
     def validate(self):
         self.disableChecking.append('SpectraMap')
         self.disableChecking.append('Axes')
         self.disableChecking.append('Instrument')
 
-        return '5512p7_SANS2DBatch','SANS2DBatch.nxs'
+        return '5512p7_SANS2DBatch', 'SANS2DBatch.nxs'
 
 
-class SANS2DNewSettingsCarriedAcrossInBatchMode_V2(stresstesting.MantidStressTest):
+class SANS2DNewSettingsCarriedAcrossInBatchModeTest_V2(stresstesting.MantidStressTest):
     """
     We want to make sure that any settings saved in the PropertyManager objects
     are used across all iterations of the reduction in Batch mode.  The MASKFILE
@@ -70,7 +70,7 @@ class SANS2DNewSettingsCarriedAcrossInBatchMode_V2(stresstesting.MantidStressTes
         return "iteration_2", "SANS2DNewSettingsCarriedAcross.nxs"
 
 
-class SANS2DTUBESBatchWithZeroErrorCorrection_V2(stresstesting.MantidStressTest):
+class SANS2DTUBESBatchWithZeroErrorCorrectionTest_V2(stresstesting.MantidStressTest):
     """
     We want to make sure that the BatchMode can remove zero error values
     and replace them with a large default value.
@@ -87,7 +87,7 @@ class SANS2DTUBESBatchWithZeroErrorCorrection_V2(stresstesting.MantidStressTest)
 
         # Saves a file which produces an output file which does not contain any zero errors
         csv_file = FileFinder.getFullPath("SANS2DTUBES_ZeroErrorFree_batch.csv")
-        save_alg = {"SaveNexus" : "nxs"}
+        save_alg = {"SaveNexus": "nxs"}
         BatchReduce(csv_file, 'nxs', saveAlgs=save_alg, plotresults=False, save_as_zero_error_free=True)
         DeleteWorkspace('zero_free_out')
 

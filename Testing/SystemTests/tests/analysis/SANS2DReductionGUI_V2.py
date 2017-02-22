@@ -11,7 +11,7 @@ from mantid.api import (FileFinder)
 from mantid.simpleapi import RenameWorkspace
 from sans.command_interface.ISISCommandInterface import (BatchReduce, SANS2D, MaskFile, AssignSample, AssignCan,
                                                          TransmissionSample, TransmissionCan, WavRangeReduction,
-                                                         UseCompatibilityMode, Clear, Set1D)
+                                                         UseCompatibilityMode, Set1D)
 
 MASKFILE = FileFinder.getFullPath('MaskSANS2DReductionGUI.txt')
 BATCHFILE = FileFinder.getFullPath('sans2d_reduction_gui_batch.csv')
@@ -30,7 +30,7 @@ class SANS2DMinimalBatchReductionTest_V2(stresstesting.MantidStressTest):
         UseCompatibilityMode()
         SANS2D()
         MaskFile(MASKFILE)
-        BatchReduce(BATCHFILE,'.nxs', combineDet='rear')
+        BatchReduce(BATCHFILE, '.nxs', combineDet='rear')
 
     def validate(self):
         self.disableChecking.append('Instrument')
@@ -39,6 +39,12 @@ class SANS2DMinimalBatchReductionTest_V2(stresstesting.MantidStressTest):
 
 class SANS2DMinimalSingleReductionTest_V2(stresstesting.MantidStressTest):
     """Minimal script to perform full reduction in single mode"""
+
+    def __init__(self):
+        super(SANS2DMinimalSingleReductionTest_V2, self).__init__()
+        config['default.instrument'] = 'SANS2D'
+        self.tolerance_is_reller = True
+        self.tolerance = 1.0e-2
 
     def runTest(self):
         UseCompatibilityMode()

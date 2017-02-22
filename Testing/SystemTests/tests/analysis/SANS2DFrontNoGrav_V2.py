@@ -5,7 +5,7 @@ from sans.command_interface.ISISCommandInterface import (SANS2D, MaskFile, SetDe
                                                          UseCompatibilityMode, AssignSample, WavRangeReduction)
 
 
-class SANS2DFrontNoGrav_V2(stresstesting.MantidStressTest):
+class SANS2DFrontNoGravTest_V2(stresstesting.MantidStressTest):
 
     def runTest(self):
         UseCompatibilityMode()
@@ -27,7 +27,7 @@ class SANS2DFrontNoGrav_V2(stresstesting.MantidStressTest):
         return '2500front_1D_4.6_12.85', 'SANS2DFrontNoGrav.nxs'
 
 
-class SANS2DWithExtraLengthGravity_V2(stresstesting.MantidStressTest):
+class SANS2DWithExtraLengthGravityTest_V2(stresstesting.MantidStressTest):
     def runTest(self):
         UseCompatibilityMode()
         SANS2D()

@@ -10,9 +10,9 @@ from sans.command_interface.ISISCommandInterface import (SANS2D, Set1D, Detector
 # test batch mode with sans2d and selecting a period in batch mode
 
 
-class SANS2DMultiPeriodSingle_V2(stresstesting.MantidStressTest):
+class SANS2DMultiPeriodSingleTest_V2(stresstesting.MantidStressTest):
 
-    reduced=''
+    reduced = ''
 
     def runTest(self):
         pass
@@ -27,16 +27,16 @@ class SANS2DMultiPeriodSingle_V2(stresstesting.MantidStressTest):
         self.reduced = WavRangeReduction()
 
     def validate(self):
-    # Need to disable checking of the Spectra-Detector map because it isn't
-    # fully saved out to the nexus file (it's limited to the spectra that
-    # are actually present in the saved workspace).
+        # Need to disable checking of the Spectra-Detector map because it isn't
+        # fully saved out to the nexus file (it's limited to the spectra that
+        # are actually present in the saved workspace).
         self.disableChecking.append('SpectraMap')
         self.disableChecking.append('Axes')
         self.disableChecking.append('Instrument')
         return AnalysisDataService[self.reduced][6].name(),'SANS2DBatch.nxs'
 
 
-class SANS2DMultiPeriodBatch_V2(SANS2DMultiPeriodSingle_V2):
+class SANS2DMultiPeriodBatchTest_V2(SANS2DMultiPeriodSingleTest_V2):
 
     def runTest(self):
         UseCompatibilityMode()
@@ -52,13 +52,13 @@ class SANS2DMultiPeriodBatch_V2(SANS2DMultiPeriodSingle_V2):
         self.reduced = '5512_SANS2DBatch'
 
 
-class LARMORMultiPeriodEventModeLoading_V2(stresstesting.MantidStressTest):
+class LARMORMultiPeriodEventModeLoadingTest_V2(stresstesting.MantidStressTest):
     """
     This test checks if the positioning of all workspaces of a
     multi-period event-type file are the same.
     """
     def __init__(self):
-        super(LARMORMultiPeriodEventModeLoading_V2, self).__init__()
+        super(LARMORMultiPeriodEventModeLoadingTest_V2, self).__init__()
         self.success = True
 
     def _get_position_and_rotation(self, workspace):
