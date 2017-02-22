@@ -66,6 +66,16 @@ bool CompositePeaksPresenter::changeShownDim() {
   return result;
 }
 
+void CompositePeaksPresenter::setNonOrthogonal(bool nonOrthogonalEnabled) {
+  if (useDefault()) {
+    m_default->setNonOrthogonal(nonOrthogonalEnabled);
+  }
+  bool result = true;
+  for (auto it = m_subjects.begin(); it != m_subjects.end(); ++it) {
+    (*it)->setNonOrthogonal(nonOrthogonalEnabled);
+  }
+}
+
 /**
 Determine wheter a given axis label correponds to the free peak axis.
 @return True only if the label is that of the free peak axis.

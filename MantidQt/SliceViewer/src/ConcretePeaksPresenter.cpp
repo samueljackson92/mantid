@@ -156,7 +156,8 @@ ConcretePeaksPresenter::ConcretePeaksPresenter(
       m_transform(transformFactory->createDefaultTransform()), m_slicePoint(),
       m_owningPresenter(NULL), m_isHidden(false), m_editMode(SliceViewer::None),
       m_hasAddPeaksMode(
-          canAddPeaksTo(peaksWS.get(), m_transform->getCoordinateSystem())) {
+          canAddPeaksTo(peaksWS.get(), m_transform->getCoordinateSystem())),
+      m_NonOrthogonal(false) {
   // Check that the workspaces appear to be compatible. Log if otherwise.
   checkWorkspaceCompatibilities(mdWS);
   m_initMappingTransform = true;
@@ -265,6 +266,11 @@ bool ConcretePeaksPresenter::changeShownDim() {
     m_viewPeaks->movePosition(m_transform);
   }
   return transformSucceeded;
+}
+
+void ConcretePeaksPresenter::setNonOrthogonal(bool nonOrthogonalEnabled) {
+  m_NonOrthogonal = nonOrthogonalEnabled;
+  std::cout << "hitting here with " << nonOrthogonalEnabled << std::endl;
 }
 
 /**

@@ -734,6 +734,7 @@ void SliceViewer::setWorkspace(Mantid::API::IMDWorkspace_sptr ws) {
                    SLOT(switchQWTRaster(bool)));
   QObject::connect(ui.btnNonOrthogonalToggle, SIGNAL(toggled(bool)), this,
                    SLOT(setNonOrthogonalbtn()));
+
   m_firstNonOrthogonalWorkspaceOpen = true;
   m_data->setWorkspace(ws);
   m_plot->setWorkspace(ws);
@@ -2412,6 +2413,8 @@ void SliceViewer::setNonOrthogonalbtn() {
       ui.btnNonOrthogonalToggle->setToolTip(
           QString("NonOrthogonal view requires HKL axes"));
     }
+
+    m_peaksPresenter->setNonOrthogonal(ui.btnNonOrthogonalToggle->isChecked());
 
   emit disableOrthogonalAnalysisTools(ui.btnNonOrthogonalToggle->isChecked());
 }

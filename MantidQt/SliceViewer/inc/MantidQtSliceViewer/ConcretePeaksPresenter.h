@@ -36,6 +36,7 @@ public:
   ~ConcretePeaksPresenter() override;
   void update() override;
   void updateWithSlicePoint(const PeakBoundingBox &slicePoint) override;
+  void setNonOrthogonal(bool nonOrthogonalEnabled);
   bool changeShownDim() override;
   bool isLabelOfFreeAxis(const std::string &label) const override;
   SetPeaksWorkspaces presentedWorkspaces() const override;
@@ -88,6 +89,7 @@ private:
   bool m_initMappingTransform; // whether to use default transformation or not
   /// Configure peak transformations
   bool configureMappingTransform(bool m_initMappingTransform = false);
+  bool m_NonOrthogonal;
   /// Hide all views
   void hideAll();
   /// Show all views

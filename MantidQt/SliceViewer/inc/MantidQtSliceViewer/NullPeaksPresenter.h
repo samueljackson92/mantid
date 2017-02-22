@@ -17,6 +17,7 @@ public:
   void update() override {}
   void updateWithSlicePoint(const PeakBoundingBox &) override {}
   bool changeShownDim() override { return false; }
+  void setNonOrthogonal(bool nonOrthogonalEnabled) override {}
   bool isLabelOfFreeAxis(const std::string &) const override { return false; }
   SetPeaksWorkspaces presentedWorkspaces() const override {
     SetPeaksWorkspaces empty;
