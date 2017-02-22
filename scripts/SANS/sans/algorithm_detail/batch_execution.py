@@ -101,7 +101,7 @@ def single_reduction_for_batch(state, use_optimizations, output_mode):
 
         # Place the workspaces into the ADS as they come, provided that the user requested them to be placed into
         # the ADS. This will allow users to inspect workspaces for reductions which have slicing or a lot of periods
-        if output_mode == OutputMode.PublishToADS or output_mode == OutputMode.SaveToFile:
+        if output_mode is OutputMode.PublishToADS or output_mode is OutputMode.Both:
             output_workspaces_to_ads(reduction_package)
 
     # Once all reductions are completed we need to check if the user would like to save the reduced workspaces

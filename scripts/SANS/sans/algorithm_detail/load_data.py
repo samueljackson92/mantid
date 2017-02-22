@@ -371,13 +371,14 @@ def run_added_loader(loader, file_information, is_transmission, period):
         ws_monitor_collection = []
         if num_periods == 1 or (num_periods > 1 and selected_period is not StateData.ALL_PERIODS):
             # First get the added event data
+            period_to_load = selected_period if selected_period is not StateData.ALL_PERIODS else 1
             offset = num_periods
-            load_alg.setProperty("EntryNumber", selected_period)
+            load_alg.setProperty("EntryNumber", period_to_load)
             load_alg.execute()
             ws_collection.append(load_alg.getProperty("OutputWorkspace").value)
 
             # Second get the added monitor data
-            load_alg.setProperty("EntryNumber", selected_period + offset)
+            load_alg.setProperty("EntryNumber", period_to_load + offset)
             load_alg.execute()
             ws_monitor_collection.append(load_alg.getProperty("OutputWorkspace").value)
         else:

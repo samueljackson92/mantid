@@ -202,7 +202,8 @@ def do_apply_calibration(full_file_path, workspaces_to_calibrate, use_loaded, pu
     for workspaces in list(workspaces_to_calibrate.values()):
         # If it is already calibrated then don't do anything, We only need to check the first element, even for
         # GroupWorkspaces
-        if has_calibration_already_been_applied(workspaces[0], full_file_path):
+        to_check = workspaces[0]
+        if has_calibration_already_been_applied(to_check, full_file_path):
             continue
 
         # Apply calibration to workspace

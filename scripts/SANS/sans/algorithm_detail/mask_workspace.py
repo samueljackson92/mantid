@@ -301,7 +301,7 @@ def mask_beam_stop(mask_info, workspace, instrument):
             detector = workspace.getInstrument().getComponentByName('rear-detector')
             z_position = detector.getPos().getZ()
             start_point = [beam_stop_arm_pos1, beam_stop_arm_pos2, z_position]
-            line_mask = create_line_mask(start_point, 1e6, beam_stop_arm_width, beam_stop_arm_angle)
+            line_mask = create_line_mask(start_point, 100., beam_stop_arm_width, beam_stop_arm_angle)
 
             mask_name = "MaskDetectorsInShape"
             mask_options = {"Workspace": workspace,
