@@ -51,6 +51,8 @@ public:
   /// Move the peak overlay to a new position.
   virtual void
   movePosition(Mantid::Geometry::PeakTransform_sptr peakTransform) = 0;
+  virtual void movePositionNonOrthogonal(
+      Mantid::Geometry::PeakTransform_sptr peakTransform) = 0;
   /// Show the background radius
   virtual void showBackgroundRadius(const bool) {}
   /// Changes the size of the overlay to be the requested fraction of the

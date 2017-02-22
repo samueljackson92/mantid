@@ -87,6 +87,13 @@ void PeakView::movePosition(
   }
 }
 
+void PeakView::movePositionNonOrthogonal(
+    Mantid::Geometry::PeakTransform_sptr peakTransform) {
+  for (auto &peak : m_peaks) {
+    peak->movePositionNonOrthogonal(peakTransform);
+  }
+}
+
 void PeakView::showBackgroundRadius(const bool show) {
   for (const auto &peak : m_peaks) {
     peak->showBackgroundRadius(show);

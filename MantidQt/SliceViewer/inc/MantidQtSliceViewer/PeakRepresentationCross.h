@@ -50,6 +50,8 @@ public:
   /// Transform the coordinates.
   void
   movePosition(Mantid::Geometry::PeakTransform_sptr peakTransform) override;
+  void movePositionNonOrthogonal(
+      Mantid::Geometry::PeakTransform_sptr peakTransform) override;
   /// Get the bounding box.
   PeakBoundingBox getBoundingBox() const override;
   /// Set the size of the cross peak in the viewing plane

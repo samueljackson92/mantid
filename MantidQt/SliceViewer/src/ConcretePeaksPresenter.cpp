@@ -263,14 +263,17 @@ bool ConcretePeaksPresenter::changeShownDim() {
   // Apply the mapping tranform to move each peak overlay object.
 
   if (transformSucceeded) {
-    m_viewPeaks->movePosition(m_transform);
+    if (m_NonOrthogonal) {
+      m_viewPeaks->movePositionNonOrthogonal(m_transform);
+    } else {
+      m_viewPeaks->movePosition(m_transform);
+    }
   }
   return transformSucceeded;
 }
 
 void ConcretePeaksPresenter::setNonOrthogonal(bool nonOrthogonalEnabled) {
   m_NonOrthogonal = nonOrthogonalEnabled;
-  std::cout << "hitting here with " << nonOrthogonalEnabled << std::endl;
 }
 
 /**

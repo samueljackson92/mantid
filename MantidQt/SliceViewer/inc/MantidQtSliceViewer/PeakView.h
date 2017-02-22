@@ -60,6 +60,9 @@ public:
   void
   movePosition(Mantid::Geometry::PeakTransform_sptr peakTransform) override;
 
+  void movePositionNonOrthogonal(
+      Mantid::Geometry::PeakTransform_sptr peakTransform) override;
+
   /// Show the background radius
   void showBackgroundRadius(const bool show) override;
 

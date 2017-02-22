@@ -40,6 +40,11 @@ void PeakRepresentationCross::movePosition(
   m_origin = peakTransform->transform(m_originalOrigin);
 }
 
+void PeakRepresentationCross::movePositionNonOrthogonal(
+    Mantid::Geometry::PeakTransform_sptr peakTransform) {
+  m_origin = peakTransform->transform(m_originalOrigin);
+}
+
 /**
  *
  *@return bounding box for peak in natural coordinates.
