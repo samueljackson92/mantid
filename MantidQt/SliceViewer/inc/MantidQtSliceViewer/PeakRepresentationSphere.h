@@ -42,8 +42,9 @@ public:
   /// Transform the coordinates.
   void
   movePosition(Mantid::Geometry::PeakTransform_sptr peakTransform) override;
-  void movePositionNonOrthogonal(
-      Mantid::Geometry::PeakTransform_sptr peakTransform) override {
+  void
+  movePositionNonOrthogonal(Mantid::Geometry::PeakTransform_sptr peakTransform,
+                            Mantid::coord_t *m_fromHklToXyz) override {
     movePosition(peakTransform);
   }
   /// Get the bounding box.

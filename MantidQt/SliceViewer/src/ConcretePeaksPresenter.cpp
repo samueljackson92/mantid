@@ -157,10 +157,20 @@ ConcretePeaksPresenter::ConcretePeaksPresenter(
       m_owningPresenter(NULL), m_isHidden(false), m_editMode(SliceViewer::None),
       m_hasAddPeaksMode(
           canAddPeaksTo(peaksWS.get(), m_transform->getCoordinateSystem())),
-      m_NonOrthogonal(false) {
+      m_NonOrthogonal(false), m_initMappingTransform(true), m_dimX(0),
+      m_dimY(1), m_dimMissing(2) {
   // Check that the workspaces appear to be compatible. Log if otherwise.
   checkWorkspaceCompatibilities(mdWS);
-  m_initMappingTransform = true;
+  m_fromHklToXyz[0] = 1.0;
+  m_fromHklToXyz[1] = 0.0;
+  m_fromHklToXyz[2] = 0.0;
+  m_fromHklToXyz[3] = 0.0;
+  m_fromHklToXyz[4] = 1.0;
+  m_fromHklToXyz[5] = 0.0;
+  m_fromHklToXyz[6] = 0.0;
+  m_fromHklToXyz[7] = 0.0;
+  m_fromHklToXyz[8] = 1.0;
+
   this->initialize();
 }
 
@@ -264,7 +274,8 @@ bool ConcretePeaksPresenter::changeShownDim() {
 
   if (transformSucceeded) {
     if (m_NonOrthogonal) {
-      m_viewPeaks->movePositionNonOrthogonal(m_transform);
+      m_viewPeaks->movePositionNonOrthogonal(m_transform, m_fromHklToXyz,
+                                             m_dimX, m_dimY, m_dimMissing);
     } else {
       m_viewPeaks->movePosition(m_transform);
     }
@@ -274,6 +285,10 @@ bool ConcretePeaksPresenter::changeShownDim() {
 
 void ConcretePeaksPresenter::setNonOrthogonal(bool nonOrthogonalEnabled) {
   m_NonOrthogonal = nonOrthogonalEnabled;
+  if (m_NonOrthogonal) {
+    m_viewFactory->getNonOrthogonalInfo(*m_fromHklToXyz, m_dimX, m_dimY,
+                                        m_dimMissing);
+  }
 }
 
 /**

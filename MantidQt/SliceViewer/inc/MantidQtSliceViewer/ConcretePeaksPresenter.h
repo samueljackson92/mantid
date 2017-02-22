@@ -114,6 +114,11 @@ private:
   std::vector<size_t> findVisiblePeakIndexes(const PeakBoundingBox &box);
   /// Set the visible peak list.
   void setVisiblePeaks(const std::vector<size_t> &indexes);
+  // non orthogonal information
+  Mantid::coord_t m_fromHklToXyz[9];
+  size_t m_dimX;
+  size_t m_dimY;
+  size_t m_dimMissing;
 };
 }
 }

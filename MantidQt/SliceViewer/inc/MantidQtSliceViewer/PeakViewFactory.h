@@ -49,6 +49,8 @@ public:
       Mantid::Geometry::PeakTransform_const_sptr transform) const override;
   void swapPeaksWorkspace(
       boost::shared_ptr<Mantid::API::IPeaksWorkspace> &peaksWS) override;
+  void getNonOrthogonalInfo(Mantid::coord_t &skewMatrix, size_t &dimX,
+                            size_t &dimY, size_t &dimMissing) override;
 
 private:
   // Selector for the correct representation of a single peak

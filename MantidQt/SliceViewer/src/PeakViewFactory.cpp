@@ -9,6 +9,7 @@
 #include "MantidGeometry/MDGeometry/QSample.h"
 #include "MantidDataObjects/PeakShapeSpherical.h"
 #include "MantidDataObjects/PeakShapeEllipsoid.h"
+#include "MantidQtAPI/NonOrthogonal.h"
 
 namespace {
 struct ZMinAndMax {
@@ -196,6 +197,17 @@ void PeakViewFactory::setForegroundAndBackgroundColors(
       defaultPalette.backgroundIndexToColour(static_cast<int>(colourNumber));
   m_foregroundColor = peakColourEnum;
   m_backgroundColor = backColourEnum;
+}
+
+void PeakViewFactory::getNonOrthogonalInfo(Mantid::coord_t &skewMatrix,
+                                           size_t &dimX, size_t &dimY,
+                                           size_t &dimMissing) {
+  if (API::requiresSkewMatrix(m_mdWS)) {
+    Mantid::Kernel::DblMatrix skewMatrixDbl(3, 3, true);
+    API::provideSkewMatrix(skewMatrixDbl, m_mdWS);
+    skewMatrixDbl.Invert();
+    API::transformFromDoubleToCoordT(skewMatrixDbl, &skewMatrix);
+  }
 }
 }
 }

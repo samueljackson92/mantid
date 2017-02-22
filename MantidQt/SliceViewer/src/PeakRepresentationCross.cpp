@@ -3,6 +3,7 @@
 #include "MantidQtSliceViewer/PeakRepresentationCross.h"
 #include "MantidQtSliceViewer/PeakViewColor.h"
 #include "MantidKernel/V2D.h"
+#include "MantidQtAPI/NonOrthogonal.h"
 #include <QPainter>
 
 namespace MantidQt {
@@ -41,8 +42,14 @@ void PeakRepresentationCross::movePosition(
 }
 
 void PeakRepresentationCross::movePositionNonOrthogonal(
-    Mantid::Geometry::PeakTransform_sptr peakTransform) {
+    Mantid::Geometry::PeakTransform_sptr peakTransform,
+    Mantid::coord_t *m_fromHklToXyz) {
   m_origin = peakTransform->transform(m_originalOrigin);
+  size_t m_dimX = 0;
+  size_t m_dimY = 1;
+  size_t m_missingHKLdim = 2;
+  API::transformLookpointToWorkspaceCoordGeneric(
+      m_origin, m_fromHklToXyz, m_dimX, m_dimY, m_missingHKLdim);
 }
 
 /**
