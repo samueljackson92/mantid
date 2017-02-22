@@ -277,8 +277,16 @@ class SANSCalculateTransmission(DataProcessorAlgorithm):
         # ---------------------------------------
         # Convert to wavelength and rebin
         # ---------------------------------------
-        wavelength_low = calculate_transmission_state.wavelength_low
-        wavelength_high = calculate_transmission_state.wavelength_high
+        # The wavelength setting is reasonably complex.
+        # 1. Use full wavelength range
+        # 2. Use standard settings
+        if calculate_transmission_state.use_full_wavelength_range:
+            wavelength_low = calculate_transmission_state.wavelength_full_range_low
+            wavelength_high = calculate_transmission_state.wavelength_full_range_high
+        else:
+            wavelength_low = calculate_transmission_state.wavelength_low
+            wavelength_high = calculate_transmission_state.wavelength_high
+
         wavelength_step = calculate_transmission_state.wavelength_step
         rebin_type = calculate_transmission_state.rebin_type
         wavelength_step_type = calculate_transmission_state.wavelength_step_type
