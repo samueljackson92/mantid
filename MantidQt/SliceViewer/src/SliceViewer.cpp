@@ -2404,11 +2404,7 @@ void SliceViewer::setNonOrthogonalbtn() {
     ui.btnNonOrthogonalToggle->toggle();
     m_oldDimNonOrthogonal = false;
   }
-  if (ui.btnPeakOverlay->isChecked()) {
-    ui.btnNonOrthogonalToggle->setDisabled(true);
-    ui.btnNonOrthogonalToggle->setToolTip(
-        QString("NonOrthogonal view disabled when peakview enabled"));
-  } else {
+
     ui.btnNonOrthogonalToggle->setDisabled(!canShowSkewedWS);
     if (canShowSkewedWS) {
       ui.btnNonOrthogonalToggle->setToolTip(QString("NonOrthogonal axes view"));
@@ -2416,9 +2412,7 @@ void SliceViewer::setNonOrthogonalbtn() {
       ui.btnNonOrthogonalToggle->setToolTip(
           QString("NonOrthogonal view requires HKL axes"));
     }
-  };
 
-  // temporary to disable if peak overlay is on
   emit disableOrthogonalAnalysisTools(ui.btnNonOrthogonalToggle->isChecked());
 }
 
@@ -2444,20 +2438,16 @@ void SliceViewer::disableOrthogonalAnalysisTools(bool checked) {
         QString("Cut line is disabled in NonOrthogonal view"));
     ui.btnClearLine->setToolTip(
         QString("Cut line is disabled in NonOrthogonal view"));
-    ui.btnPeakOverlay->setToolTip(
-        QString("Peak overlay is disabled in NonOrthogonal view"));
 
   } else {
     ui.btnDoLine->setToolTip(QString("Draw a 1D cut line"));
     ui.btnSnapToGrid->setToolTip(QString("Snap to grid when drawing cut line"));
     ui.btnClearLine->setToolTip(QString("Remove the current cut line"));
-    ui.btnPeakOverlay->setToolTip(QString("Overlay Peaks"));
   }
 
   ui.btnDoLine->setDisabled(checked);
   ui.btnSnapToGrid->setDisabled(checked);
   ui.btnClearLine->setDisabled(checked);
-  ui.btnPeakOverlay->setDisabled(checked);
 
   if (m_lockAspectRatiosActionAll->isChecked() && checked) {
     m_lastRatioState = All;
