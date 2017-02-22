@@ -221,19 +221,24 @@ private:
   }
 
   void populateWsWithData(MatrixWorkspace *ws) {
-    auto xvals = ws->points(0);
-    // loop through xvals, calculate and set to Y
-    std::transform(
-        xvals.cbegin(), xvals.cend(), ws->mutableY(0).begin(),
-        [](const double x) { return exp(-0.5 * pow((x - 1) / 10.0, 2)); });
+    const size_t numHist = ws->getNumberHistograms();
 
-    auto &E = ws->mutableE(0);
-    E.assign(E.size(), 0.001);
+    for (size_t i = 0; i < numHist; i++) {
+      auto xvals = ws->points(i);
+      // loop through xvals, calculate and set to Y
+      std::transform(
+          xvals.cbegin(), xvals.cend(), ws->mutableY(i).begin(),
+          [](const double x) { return exp(-0.5 * pow((x - 1) / 10.0, 2)); });
+
+      auto &E = ws->mutableE(i);
+      E.assign(E.size(), 0.001);
+    }
   }
 
-  void setupCommonAlgProperties(
-      GetDetectorOffsets &alg, const MatrixWorkspace_sptr &inputWS,
-      const std::string &outputWSName, const std::string maskedWSName) {
+  void setupCommonAlgProperties(GetDetectorOffsets &alg,
+                                const MatrixWorkspace_sptr &inputWS,
+                                const std::string &outputWSName,
+                                const std::string maskedWSName) {
     alg.initialize();
     TS_ASSERT_THROWS_NOTHING(alg.setProperty("InputWorkspace", inputWS));
     TS_ASSERT_THROWS_NOTHING(
