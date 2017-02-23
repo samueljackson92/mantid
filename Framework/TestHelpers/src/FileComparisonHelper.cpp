@@ -8,7 +8,7 @@ namespace FileComparisonHelper {
 * Takes a pair of iterators and checks that all the values
 * those iterators point to are identical. If they differ in size
 * or value it will return false. If they are identical it will
-* return true.
+* return true. This accounts for EOL differences
 *
 * @param firstIter1:: The starting position of the first iterator to check
 * @param lastIter1:: The final position of the first iterator to check
@@ -22,9 +22,18 @@ bool areIteratorsEqual(iter1 firstIter1, iter1 lastIter1, iter2 firstIter2,
                        iter2 lastIter2) {
 
   while (firstIter1 != lastIter1 && firstIter2 != lastIter2) {
-    // Check individual values of iterators
+    // Check characters are identical
     if (*firstIter1 != *firstIter2) {
-      return false;
+      // Check if we need to account for EOL differences
+      if (*firstIter1 == '\r') {
+        std::advance(firstIter1, 2); // Consume CRLF
+        firstIter2++;
+      } else if (*firstIter2 == '\r') {
+        std::advance(firstIter2, 2); // Consume CRLF
+        firstIter1++;
+      } else {
+        return false;
+      }
     }
 
     firstIter1++;
@@ -36,7 +45,7 @@ bool areIteratorsEqual(iter1 firstIter1, iter1 lastIter1, iter2 firstIter2,
 
 /**
 * Checks the two files at the specified paths are equal in both
-* length and content. This does not take into account line endings
+* length and content. This takes into account line endings
 * i.e. CRLF and LF between Windows and Unix. If the files cannot
 * be opened it will throw. a runtime error.
 *
@@ -64,8 +73,8 @@ bool checkFilesAreEqual(const std::string &referenceFileFullPath,
 /**
 * Compares two file streams for equality and returns
 * true if these are equal, false if they differ in any way.
-* This does not account for line endings i.e. CRLF and LF
-* on Windows and Unix files would return false
+* This does accounts for line endings i.e. CRLF and LF
+* on Windows and Unix files would return true if it was the only difference
 *
 * @param referenceFileStream :: The ifstream to the reference file
 * @param fileToCheck :: The ifstream to the file to check
