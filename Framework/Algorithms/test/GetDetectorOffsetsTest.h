@@ -54,8 +54,6 @@ public:
     // ---- Create the simple workspace -------
     MatrixWorkspace_sptr WS =
         WorkspaceCreationHelper::create2DWorkspaceWithFullInstrument(1, 200);
-    WS->getAxis(0)->unit() =
-        Mantid::Kernel::UnitFactory::Instance().create("dSpacing");
 
     populateWsWithData(WS.get());
 
@@ -92,8 +90,6 @@ public:
     // --------- Workspace with summed spectra -------
     MatrixWorkspace_sptr WS =
         WorkspaceCreationHelper::createGroupedWorkspace2D(3, 200, 1.0);
-    WS->getAxis(0)->unit() =
-        Mantid::Kernel::UnitFactory::Instance().create("dSpacing");
 
     populateWsWithData(WS.get());
 
@@ -128,8 +124,6 @@ public:
     // ---- Create the simple workspace -------
     MatrixWorkspace_sptr WS =
         WorkspaceCreationHelper::create2DWorkspaceWithFullInstrument(1, 200);
-    WS->getAxis(0)->unit() =
-        Mantid::Kernel::UnitFactory::Instance().create("dSpacing");
 
     populateWsWithData(WS.get());
 
@@ -178,10 +172,82 @@ public:
 
     // Create workspace with 10 detectors and 200 bins each
     MatrixWorkspace_sptr ws =
-        WorkspaceCreationHelper::create2DWorkspaceWithFullInstrument(
-            10, 200, false, false, true, "POLARIS");
-    ws->getAxis(0)->unit() =
-        Mantid::Kernel::UnitFactory::Instance().create("dSpacing");
+        WorkspaceCreationHelper::create2DWorkspaceWithFullInstrument(10, 200);
+
+    populateWsWithData(ws.get());
+
+    const std::string outputWS("offsetsped");
+    const std::string maskWS("masksped");
+
+    GetDetectorOffsets alg;
+    setupCommonAlgProperties(alg, ws, outputWS, maskWS);
+    alg.setProperty("GroupingFileName", fileHandle.path());
+    TS_ASSERT_THROWS_NOTHING(alg.execute());
+    TS_ASSERT(calFileEqualityCheck(fullRefPath, fileHandle.path()));
+    fileHandle.remove();
+  }
+
+  void test_GroupingFileIsSorted() {
+    // Setup various paths we will be using - by default we should sort
+    // so use first reference file
+    const std::string referenceFileName("GetDetectorsOffsetReference.cal");
+    const std::string outFileName("GetDetectorsOffsetSortedTest.cal");
+
+    auto fileHandle = getOutFileHandle(outFileName);
+    const std::string fullRefPath =
+        FileFinder::Instance().getFullPath(referenceFileName);
+
+    TSM_ASSERT_DIFFERS("Reference file not found", fullRefPath, "");
+
+    // Create workspace with 10 detectors and 200 bins each
+    MatrixWorkspace_sptr ws =
+        WorkspaceCreationHelper::create2DWorkspaceWithFullInstrument(10, 200);
+
+    auto &firstSpectrum = ws->getSpectrum(0);
+    auto &secondSpectrum = ws->getSpectrum(1);
+
+    // Swap first and second detector IDs
+    const auto secondDetectorID = *secondSpectrum.getDetectorIDs().begin();
+    secondSpectrum.setDetectorID(*firstSpectrum.getDetectorIDs().begin());
+    firstSpectrum.setDetectorID(secondDetectorID);
+
+    populateWsWithData(ws.get());
+
+    const std::string outputWS("offsetsped");
+    const std::string maskWS("masksped");
+
+    GetDetectorOffsets alg;
+    setupCommonAlgProperties(alg, ws, outputWS, maskWS);
+    alg.setProperty("GroupingFileName", fileHandle.path());
+    TS_ASSERT_THROWS_NOTHING(alg.execute());
+    TS_ASSERT(calFileEqualityCheck(fullRefPath, fileHandle.path()));
+    fileHandle.remove();
+  }
+
+  void test_GroupingFileIsUnSorted() {
+    // Setup various paths we will be using - by default we should sort
+    // so use first reference file
+    const std::string referenceFileName(
+        "GetDetectorsOffsetUnsortedReference.cal");
+    const std::string outFileName("GetDetectorsOffsetUnsortedTest.cal");
+
+    auto fileHandle = getOutFileHandle(outFileName);
+    const std::string fullRefPath =
+        FileFinder::Instance().getFullPath(referenceFileName);
+
+    TSM_ASSERT_DIFFERS("Reference file not found", fullRefPath, "");
+
+    // Create workspace with 10 detectors and 200 bins each
+    MatrixWorkspace_sptr ws =
+        WorkspaceCreationHelper::create2DWorkspaceWithFullInstrument(10, 200);
+
+    auto &firstSpectrum = ws->getSpectrum(0);
+    auto &secondSpectrum = ws->getSpectrum(1);
+
+    // Swap first and second detector IDs
+    const auto secondDetectorID = *secondSpectrum.getDetectorIDs().begin();
+    secondSpectrum.setDetectorID(*firstSpectrum.getDetectorIDs().begin());
+    firstSpectrum.setDetectorID(secondDetectorID);
 
     populateWsWithData(ws.get());
 
@@ -221,6 +287,8 @@ private:
   }
 
   void populateWsWithData(MatrixWorkspace *ws) {
+    ws->getAxis(0)->unit() =
+        Mantid::Kernel::UnitFactory::Instance().create("dSpacing");
     const size_t numHist = ws->getNumberHistograms();
 
     for (size_t i = 0; i < numHist; i++) {
