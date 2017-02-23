@@ -137,25 +137,28 @@ void GetDetectorOffsets::exec() {
     outputW->getSpectrum(wi).setDetectorIDs(dets);
     // Most of the exec time is in FitSpectra, so this critical block should not
     // be a problem.
-    PARALLEL_CRITICAL(GetDetectorOffsets_setValue) {
-      // Use the same offset for all detectors from this pixel
-      for (const auto &det : dets) {
+
+    // Use the same offset for all detectors from this pixel
+    for (const auto &det : dets) {
+      PARALLEL_CRITICAL(GetDetectorOffsets_setValue) {
         outputW->setValue(det, offset);
-        const auto mapEntry = pixel_to_wi.find(det);
-        if (mapEntry == pixel_to_wi.end())
-          continue;
-        const size_t workspaceIndex = mapEntry->second;
-        if (mask == true) {
-          // Being masked
-          maskWS->getSpectrum(workspaceIndex).clearData();
-          spectrumInfo.setMasked(workspaceIndex, true);
-          maskWS->mutableY(workspaceIndex)[0] = 1.0;
-        } else {
-          // Using the detector
-          maskWS->mutableY(workspaceIndex)[0] = 0.0;
-        }
+      }
+
+      const auto mapEntry = pixel_to_wi.find(det);
+      if (mapEntry == pixel_to_wi.end())
+        continue;
+      const size_t workspaceIndex = mapEntry->second;
+      if (mask == true) {
+        // Being masked
+        maskWS->getSpectrum(workspaceIndex).clearData();
+        spectrumInfo.setMasked(workspaceIndex, true);
+        maskWS->mutableY(workspaceIndex)[0] = 1.0;
+      } else {
+        // Using the detector indicated with 0 value
+        maskWS->mutableY(workspaceIndex)[0] = 0.0;
       }
     }
+
     prog.report();
     PARALLEL_END_INTERUPT_REGION
   }
