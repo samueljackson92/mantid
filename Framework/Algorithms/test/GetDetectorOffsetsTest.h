@@ -190,7 +190,7 @@ public:
   void test_GroupingFileIsSorted() {
     // Setup various paths we will be using - by default we should sort
     // so use first reference file
-    const std::string referenceFileName("GetDetectorsOffsetReference.cal");
+    const std::string referenceFileName("GetDetectorsOffsetSortedReference.cal");
     const std::string outFileName("GetDetectorsOffsetSortedTest.cal");
 
     auto fileHandle = getOutFileHandle(outFileName);
@@ -203,15 +203,17 @@ public:
     MatrixWorkspace_sptr ws =
         WorkspaceCreationHelper::create2DWorkspaceWithFullInstrument(10, 200);
 
+    // Swap first and second detector IDs
     auto &firstSpectrum = ws->getSpectrum(0);
     auto &secondSpectrum = ws->getSpectrum(1);
-
-    // Swap first and second detector IDs
     const auto secondDetectorID = *secondSpectrum.getDetectorIDs().begin();
     secondSpectrum.setDetectorID(*firstSpectrum.getDetectorIDs().begin());
     firstSpectrum.setDetectorID(secondDetectorID);
 
     populateWsWithData(ws.get());
+    // Make the second spectrum 0 data so we can check offsets are swapped
+    auto &yData = ws->mutableY(1);
+    std::fill(yData.begin(), yData.end(), 0);
 
     const std::string outputWS("offsetsped");
     const std::string maskWS("masksped");
@@ -241,15 +243,17 @@ public:
     MatrixWorkspace_sptr ws =
         WorkspaceCreationHelper::create2DWorkspaceWithFullInstrument(10, 200);
 
+    // Swap first and second detector IDs
     auto &firstSpectrum = ws->getSpectrum(0);
     auto &secondSpectrum = ws->getSpectrum(1);
-
-    // Swap first and second detector IDs
     const auto secondDetectorID = *secondSpectrum.getDetectorIDs().begin();
     secondSpectrum.setDetectorID(*firstSpectrum.getDetectorIDs().begin());
     firstSpectrum.setDetectorID(secondDetectorID);
 
     populateWsWithData(ws.get());
+    // Make the second spectrum 0 data so we can check offsets are swapped
+    auto &yData = ws->mutableY(1);
+    std::fill(yData.begin(), yData.end(), 0);
 
     const std::string outputWS("offsetsped");
     const std::string maskWS("masksped");

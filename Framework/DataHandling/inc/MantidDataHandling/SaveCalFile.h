@@ -45,6 +45,11 @@ private:
   /// Run the algorithm
   void exec() override;
 
+  /// Adds the detectorIDs and the corresponding spectrum index to a new vector
+  template <typename T>
+  std::vector<std::pair<Mantid::detid_t, size_t>>
+  createDetectorToSpectrumMapping(const T *ws);
+
   /// Offset precision
   int m_precision{7};
 };

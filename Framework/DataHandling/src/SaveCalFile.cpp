@@ -40,6 +40,12 @@ void SaveCalFile::init() {
       make_unique<FileProperty>("Filename", "", FileProperty::Save, ".cal"),
       "Path to the .cal file that will be created.");
 
+  declareProperty<bool>("Sort Detector IDs", true,
+                        "If true this sorts the output calibration file by "
+                        "detector ID (default). If set to false it preserves "
+                        "the detector ID order found in the workspace",
+                        Direction::Input);
+
   auto offsetprecision = boost::make_shared<BoundedValidator<int>>();
   offsetprecision->setLower(7);
   offsetprecision->setUpper(11);
@@ -61,6 +67,30 @@ void SaveCalFile::exec() {
   SaveCalFile::saveCalFile(Filename, groupWS, offsetsWS, maskWS);
 }
 
+/**
+  * Gets the detector IDs and associated spectrum index for them
+  * and stores them in a vector of pairs
+  *
+  * @param ws :: The workspace to pull detector IDs from
+  *
+  * @return :: A vector containing pairs of detector IDs and their spectrum
+  *index position
+  */
+template <typename T>
+std::vector<std::pair<Mantid::detid_t, size_t>>
+SaveCalFile::createDetectorToSpectrumMapping(const T *ws) {
+  const size_t numHisto = ws->getNumberHistograms();
+  std::vector<std::pair<Mantid::detid_t, size_t>> detectorToSpectrumMap;
+  detectorToSpectrumMap.reserve(numHisto);
+
+  for (size_t spectra_index = 0; spectra_index < numHisto; spectra_index++) {
+    const auto &detectorIDs = ws->getSpectrum(spectra_index).getDetectorIDs();
+    for (const auto detID : detectorIDs) {
+      detectorToSpectrumMap.push_back(std::make_pair(detID, spectra_index));
+    }
+  }
+  return detectorToSpectrumMap;
+}
 //-----------------------------------------------------------------------
 /** Reads the calibration file.
  *
@@ -76,17 +106,22 @@ void SaveCalFile::saveCalFile(const std::string &calFileName,
                               GroupingWorkspace_sptr groupWS,
                               OffsetsWorkspace_sptr offsetsWS,
                               MaskWorkspace_sptr maskWS) {
+
   Instrument_const_sptr inst;
+  using det2SpecPair = std::pair<Mantid::detid_t, size_t>;
+  std::vector<det2SpecPair> detId2SpecIndex;
 
   bool doGroup = false;
   if (groupWS) {
     doGroup = true;
+    detId2SpecIndex = createDetectorToSpectrumMapping(groupWS.get());
     inst = groupWS->getInstrument();
   }
 
   bool doOffsets = false;
   if (offsetsWS) {
     doOffsets = true;
+    detId2SpecIndex = createDetectorToSpectrumMapping(offsetsWS.get());
     inst = offsetsWS->getInstrument();
   }
 
@@ -104,9 +139,25 @@ void SaveCalFile::saveCalFile(const std::string &calFileName,
                       << " doOffsets = " << doOffsets << " doMask = " << doMask
                       << "\n";
 
-  if (!inst)
+  if (!inst || detId2SpecIndex.empty())
     throw std::invalid_argument("You must give at least one of the grouping, "
                                 "offsets or masking workspaces.");
+
+  if (getProperty("Sort Detector IDs")) {
+    // Sort by detector ID
+    std::sort(detId2SpecIndex.begin(), detId2SpecIndex.end(),
+              [](const det2SpecPair &a, const det2SpecPair &b) {
+                // First element is detector ID
+                return a.first < b.first;
+              });
+  } else {
+    // Sort by spectrum index
+    std::sort(detId2SpecIndex.begin(), detId2SpecIndex.end(),
+              [](const det2SpecPair &a, const det2SpecPair &b) {
+                // Second element is spectrum index
+                return a.second < b.second;
+              });
+  }
 
   // Header of the file
   std::ofstream fout(calFileName.c_str());
@@ -115,15 +166,10 @@ void SaveCalFile::saveCalFile(const std::string &calFileName,
        << ".\n";
   fout << "# Format: number    UDET         offset    select    group\n";
 
-  // Get all the detectors
-  detid2det_map allDetectors;
-  inst->getDetectors(allDetectors);
-  int64_t number = 0;
+  size_t number = 0;
 
-  detid2det_map::const_iterator it;
-  for (it = allDetectors.begin(); it != allDetectors.end(); ++it) {
-    detid_t detectorID = it->first;
-    // Geometry::IDetector_const_sptr det = it->second;
+  for (const auto detIDandSpecNum : detId2SpecIndex) {
+    const auto &detectorID = detIDandSpecNum.first;
 
     // Find the offset, if any
     double offset = 0.0;

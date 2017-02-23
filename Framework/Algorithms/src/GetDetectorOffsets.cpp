@@ -39,6 +39,7 @@ void GetDetectorOffsets::init() {
                   "Step size used to bin d-spacing data");
   declareProperty("DReference", 2.0, mustBePositive,
                   "Center of reference peak in d-space");
+
   declareProperty(
       "XMin", 0.0,
       "Minimum of CrossCorrelation data to search for peak, usually negative");
@@ -50,18 +51,26 @@ void GetDetectorOffsets::init() {
                                             FileProperty::OptionalSave, ".cal"),
                   "Optional: The name of the output CalFile to save the "
                   "generated OffsetsWorkspace.");
+  declareProperty<bool>("Sort CalFile", true,
+                        "If true this sorts the output calibration file by "
+                        "detector ID (default). If set to false it preserves "
+                        "the detector ID order found in the workspace",
+                        Direction::Input);
+
   declareProperty(make_unique<WorkspaceProperty<OffsetsWorkspace>>(
                       "OutputWorkspace", "", Direction::Output),
                   "An output workspace containing the offsets.");
   declareProperty(make_unique<WorkspaceProperty<>>("MaskWorkspace", "Mask",
                                                    Direction::Output),
                   "An output workspace containing the mask.");
+
   // Only keep peaks
   declareProperty(
       "PeakFunction", "Gaussian",
       boost::make_shared<StringListValidator>(
           FunctionFactory::Instance().getFunctionNames<IPeakFunction>()),
       "The function type for fitting the peaks.");
+
   declareProperty("MaxOffset", 1.0,
                   "Maximum absolute value of offsets; default is 1");
 
@@ -70,6 +79,7 @@ void GetDetectorOffsets::init() {
   declareProperty("OffsetMode", "Relative",
                   boost::make_shared<StringListValidator>(modes),
                   "Whether to calculate a relative or absolute offset");
+
   declareProperty("DIdeal", 2.0, mustBePositive,
                   "The known peak centre value from the NIST standard "
                   "information, this is only used in Absolute OffsetMode.");
@@ -99,7 +109,7 @@ void GetDetectorOffsets::exec() {
 
   m_dideal = getProperty("DIdeal");
 
-  int64_t nspec = inputW->getNumberHistograms();
+  size_t nspec = inputW->getNumberHistograms();
   // Create the output OffsetsWorkspace
   auto outputW = boost::make_shared<OffsetsWorkspace>(inputW->getInstrument());
   // Create the output MaskWorkspace
@@ -116,15 +126,15 @@ void GetDetectorOffsets::exec() {
     PARALLEL_START_INTERUPT_REGION
     // Fit the peak
     double offset = fitSpectra(wi, isAbsolute);
-    double mask = 0.0;
+    bool mask = false;
     if (std::abs(offset) > m_maxOffset) {
       offset = 0.0;
-      mask = 1.0;
+      mask = true;
     }
 
     // Get the list of detectors in this pixel
     const auto &dets = inputW->getSpectrum(wi).getDetectorIDs();
-
+    outputW->getSpectrum(wi).setDetectorIDs(dets);
     // Most of the exec time is in FitSpectra, so this critical block should not
     // be a problem.
     PARALLEL_CRITICAL(GetDetectorOffsets_setValue) {
@@ -135,14 +145,14 @@ void GetDetectorOffsets::exec() {
         if (mapEntry == pixel_to_wi.end())
           continue;
         const size_t workspaceIndex = mapEntry->second;
-        if (mask == 1.) {
+        if (mask == true) {
           // Being masked
           maskWS->getSpectrum(workspaceIndex).clearData();
           spectrumInfo.setMasked(workspaceIndex, true);
-          maskWS->mutableY(workspaceIndex)[0] = mask;
+          maskWS->mutableY(workspaceIndex)[0] = 1.0;
         } else {
           // Using the detector
-          maskWS->mutableY(workspaceIndex)[0] = mask;
+          maskWS->mutableY(workspaceIndex)[0] = 0.0;
         }
       }
     }
@@ -163,6 +173,8 @@ void GetDetectorOffsets::exec() {
     childAlg->setProperty("OffsetsWorkspace", outputW);
     childAlg->setProperty("MaskWorkspace", maskWS);
     childAlg->setPropertyValue("Filename", filename);
+    childAlg->setProperty("Sort Detector IDs",
+                          getPropertyValue("Sort CalFile"));
     childAlg->executeAsChildAlg();
   }
 }
