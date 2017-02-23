@@ -190,7 +190,8 @@ public:
   void test_GroupingFileIsSorted() {
     // Setup various paths we will be using - by default we should sort
     // so use first reference file
-    const std::string referenceFileName("GetDetectorsOffsetSortedReference.cal");
+    const std::string referenceFileName(
+        "GetDetectorsOffsetSortedReference.cal");
     const std::string outFileName("GetDetectorsOffsetSortedTest.cal");
 
     auto fileHandle = getOutFileHandle(outFileName);
