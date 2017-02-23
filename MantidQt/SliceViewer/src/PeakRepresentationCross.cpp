@@ -45,10 +45,14 @@ void PeakRepresentationCross::movePositionNonOrthogonal(
     Mantid::Geometry::PeakTransform_sptr peakTransform,
     Mantid::coord_t *fromHklToXyz, size_t dimX, size_t dimY,
     size_t dimMissing) {
-  m_origin = peakTransform->transform(m_originalOrigin);
 
+  m_origin = m_originalOrigin; // reset to original peak point, then transform
+                               // to skewed original peak point, then use
+                               // peakTransform to take into account current
+                               // dimensions
   API::transformLookpointToWorkspaceCoordGeneric(m_origin, fromHklToXyz, dimX,
                                                  dimY, dimMissing);
+  m_origin = peakTransform->transform(m_origin);
 }
 
 /**

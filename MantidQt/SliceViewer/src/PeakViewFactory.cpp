@@ -129,6 +129,7 @@ PeakRepresentation_sptr PeakViewFactory::createPeakRepresentationCross(
     Mantid::Kernel::V3D position,
     Mantid::Geometry::PeakTransform_const_sptr transform) const {
   const auto zMinAndMax = getZMinAndMax(m_mdWS, transform);
+
   return std::make_shared<PeakRepresentationCross>(position, zMinAndMax.zMax,
                                                    zMinAndMax.zMin);
 }
@@ -203,7 +204,9 @@ void PeakViewFactory::getNonOrthogonalInfo(Mantid::coord_t &skewMatrix,
                                            size_t &dimX, size_t &dimY,
                                            size_t &dimMissing) {
   if (API::requiresSkewMatrix(m_mdWS)) {
-    Mantid::Kernel::DblMatrix skewMatrixDbl(3, 3, true);
+    auto numberOfDimensions = m_mdWS->getNumDims();
+    Mantid::Kernel::DblMatrix skewMatrixDbl(numberOfDimensions,
+                                            numberOfDimensions, true);
     API::provideSkewMatrix(skewMatrixDbl, m_mdWS);
     skewMatrixDbl.Invert();
     API::transformFromDoubleToCoordT(skewMatrixDbl, &skewMatrix);
