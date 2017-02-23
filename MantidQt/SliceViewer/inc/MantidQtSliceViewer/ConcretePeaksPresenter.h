@@ -37,7 +37,7 @@ public:
   void update() override;
   void updateWithSlicePoint(const PeakBoundingBox &slicePoint) override;
   void setNonOrthogonal(bool nonOrthogonalEnabled);
-  bool changeShownDim() override;
+  bool changeShownDim(size_t dimX, size_t dimY) override;
   bool isLabelOfFreeAxis(const std::string &label) const override;
   SetPeaksWorkspaces presentedWorkspaces() const override;
   void setForegroundColor(const PeakViewColor) override;

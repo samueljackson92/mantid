@@ -43,13 +43,12 @@ void PeakRepresentationCross::movePosition(
 
 void PeakRepresentationCross::movePositionNonOrthogonal(
     Mantid::Geometry::PeakTransform_sptr peakTransform,
-    Mantid::coord_t *m_fromHklToXyz) {
+    Mantid::coord_t *fromHklToXyz, size_t dimX, size_t dimY,
+    size_t dimMissing) {
   m_origin = peakTransform->transform(m_originalOrigin);
-  size_t m_dimX = 0;
-  size_t m_dimY = 1;
-  size_t m_missingHKLdim = 2;
-  API::transformLookpointToWorkspaceCoordGeneric(
-      m_origin, m_fromHklToXyz, m_dimX, m_dimY, m_missingHKLdim);
+
+  API::transformLookpointToWorkspaceCoordGeneric(m_origin, fromHklToXyz, dimX,
+                                                 dimY, dimMissing);
 }
 
 /**

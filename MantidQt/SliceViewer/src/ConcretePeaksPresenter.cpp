@@ -201,8 +201,9 @@ void ConcretePeaksPresenter::initialize() {
 
   // Make and register each peak widget.
   produceViews();
-  changeShownDim(); // in case dimensions shown are not those expected by
-                    // default transformation
+  changeShownDim(m_dimX,
+                 m_dimY); // in case dimensions shown are not those expected by
+                          // default transformation
   if (!transformSucceeded) {
     hideAll();
   }
@@ -267,13 +268,18 @@ ConcretePeaksPresenter::~ConcretePeaksPresenter() { hideAll(); }
  Respond to changes in the shown dimension.
  @ return True only if this succeeds.
  */
-bool ConcretePeaksPresenter::changeShownDim() {
+bool ConcretePeaksPresenter::changeShownDim(size_t dimX, size_t dimY) {
+  m_dimX = dimX;
+  m_dimY = dimY;
   // Reconfigure the mapping tranform.
   const bool transformSucceeded = this->configureMappingTransform();
   // Apply the mapping tranform to move each peak overlay object.
 
   if (transformSucceeded) {
     if (m_NonOrthogonal) {
+      m_viewFactory->getNonOrthogonalInfo(
+          *m_fromHklToXyz, m_dimX, m_dimY, // for updating missing dimension
+          m_dimMissing);
       m_viewPeaks->movePositionNonOrthogonal(m_transform, m_fromHklToXyz,
                                              m_dimX, m_dimY, m_dimMissing);
     } else {
@@ -286,8 +292,11 @@ bool ConcretePeaksPresenter::changeShownDim() {
 void ConcretePeaksPresenter::setNonOrthogonal(bool nonOrthogonalEnabled) {
   m_NonOrthogonal = nonOrthogonalEnabled;
   if (m_NonOrthogonal) {
-    m_viewFactory->getNonOrthogonalInfo(*m_fromHklToXyz, m_dimX, m_dimY,
-                                        m_dimMissing);
+    m_viewFactory->getNonOrthogonalInfo(
+        *m_fromHklToXyz, m_dimX,
+        m_dimY, // returns correct skewMatrix and the missing dimension
+        m_dimMissing);
+    changeShownDim(m_dimX, m_dimY);
   }
 }
 

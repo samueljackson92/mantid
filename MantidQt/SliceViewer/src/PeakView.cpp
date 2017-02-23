@@ -91,9 +91,9 @@ void PeakView::movePositionNonOrthogonal(
     Mantid::Geometry::PeakTransform_sptr peakTransform,
     Mantid::coord_t *fromHklToXyz, size_t dimX, size_t dimY,
     size_t dimMissing) {
-
   for (auto &peak : m_peaks) {
-    peak->movePositionNonOrthogonal(peakTransform, fromHklToXyz);
+    peak->movePositionNonOrthogonal(peakTransform, fromHklToXyz, dimX, dimY,
+                                    dimMissing);
   }
 }
 

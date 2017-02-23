@@ -207,6 +207,7 @@ void PeakViewFactory::getNonOrthogonalInfo(Mantid::coord_t &skewMatrix,
     API::provideSkewMatrix(skewMatrixDbl, m_mdWS);
     skewMatrixDbl.Invert();
     API::transformFromDoubleToCoordT(skewMatrixDbl, &skewMatrix);
+    dimMissing = API::getMissingHKLDimensionIndex(m_mdWS, dimX, dimY);
   }
 }
 }
