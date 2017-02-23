@@ -24,11 +24,20 @@ void addFullInstrumentToWorkspace(MatrixWorkspace &workspace,
       pixelRadius, 0.02, V3D(0.0, 0.0, 0.0), V3D(0., 1.0, 0.), "tube");
 
   const double detZPos(5.0);
-  // Careful! Do not use size_t or auto, the unisgned will break the -=2 below.
-  int ndets = static_cast<int>(workspace.getNumberHistograms());
-  if (includeMonitors)
-    ndets -= 2;
-  for (int i = 0; i < ndets; ++i) {
+
+  size_t ndets = workspace.getNumberHistograms();
+
+  if (includeMonitors) {
+    if (ndets < 2) {
+      throw std::out_of_range("The number of detectors must be greater "
+                              "than or equal to two if two monitors are "
+                              "included ");
+    } else {
+      ndets -= 2;
+    }
+  }
+
+  for (size_t i = 0; i < ndets; ++i) {
     std::ostringstream lexer;
     lexer << "pixel-" << i << ")";
     Detector *physicalPixel =
