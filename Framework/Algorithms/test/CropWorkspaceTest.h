@@ -348,7 +348,7 @@ public:
   void testNegativeBinBoundaries() {
     const std::string wsName("neg");
     AnalysisDataService::Instance().add(
-        wsName, WorkspaceCreationHelper::create2DWorkspaceBinned(1, 5, -6));
+      wsName, WorkspaceCreationHelper::create2DWorkspaceBinned(1, 5, -6));
     CropWorkspace crop4;
     TS_ASSERT_THROWS_NOTHING(crop4.initialize());
     TS_ASSERT_THROWS_NOTHING(crop4.setPropertyValue("InputWorkspace", wsName));
@@ -359,12 +359,37 @@ public:
 
     MatrixWorkspace_const_sptr output;
     TS_ASSERT_THROWS_NOTHING(
-        output = AnalysisDataService::Instance().retrieveWS<MatrixWorkspace>(
-            wsName));
+      output = AnalysisDataService::Instance().retrieveWS<MatrixWorkspace>(
+        wsName));
 
     TSM_ASSERT_EQUALS("The number of bins", 3, output->blocksize());
     TSM_ASSERT_EQUALS("First bin boundary", -5, output->readX(0).front());
     TSM_ASSERT_EQUALS("Last bin boundary", -2, output->readX(0).back());
+
+    AnalysisDataService::Instance().remove(wsName);
+  }
+
+  void testRemoveCropAction() {
+    const std::string wsName("CropWorkspace_testRemoveCropAction");
+    AnalysisDataService::Instance().add(
+        wsName, WorkspaceCreationHelper::create2DWorkspaceBinned(1, 5, 6));
+    CropWorkspace cropAlg;
+    TS_ASSERT_THROWS_NOTHING(cropAlg.initialize());
+    TS_ASSERT_THROWS_NOTHING(cropAlg.setPropertyValue("InputWorkspace", wsName));
+    TS_ASSERT_THROWS_NOTHING(cropAlg.setPropertyValue("OutputWorkspace", wsName));
+    TS_ASSERT_THROWS_NOTHING(cropAlg.setPropertyValue("XMin", "5"));
+    TS_ASSERT_THROWS_NOTHING(cropAlg.setPropertyValue("XMax", "2"));
+    TS_ASSERT_THROWS_NOTHING(cropAlg.setPropertyValue("CropAction", "Remove"));
+    TS_ASSERT(cropAlg.execute());
+
+    MatrixWorkspace_const_sptr output;
+    TS_ASSERT_THROWS_NOTHING(
+        output = AnalysisDataService::Instance().retrieveWS<MatrixWorkspace>(
+            wsName));
+
+    TSM_ASSERT_EQUALS("The number of bins", 2, output->blocksize());
+    TSM_ASSERT_EQUALS("First bin boundary", 1, output->readX(0).front());
+    TSM_ASSERT_EQUALS("Last bin boundary", 6, output->readX(0).back());
 
     AnalysisDataService::Instance().remove(wsName);
   }

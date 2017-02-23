@@ -4,6 +4,7 @@
 #include "MantidAPI/MatrixWorkspace.h"
 #include "MantidAlgorithms/CropWorkspace.h"
 #include "MantidKernel/BoundedValidator.h"
+#include "MantidKernel/ListValidator.h"
 
 namespace Mantid {
 namespace Algorithms {
@@ -44,6 +45,12 @@ void CropWorkspace::init() {
       "EndWorkspaceIndex", EMPTY_INT(), mustBePositive,
       "The index number of the last entry in the Workspace to be loaded\n"
       "(default: last entry in the Workspace)");
+
+  std::vector<std::string> cropOptions{ "Keep", "Remove"};
+  declareProperty("CropAction", "Keep",
+    boost::make_shared<StringListValidator>(cropOptions),
+    "Whether to keep or remove the selected section of the workspace\n"
+    "(default: Keep)");
 }
 
 /** Executes the algorithm
