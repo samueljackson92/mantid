@@ -385,6 +385,34 @@ public:
     auto ws = runAlgorithm(params, false);
   }
 
+  //--- Test ExtractOption --- 
+  void test_histoExtractOptionXRange() {
+    Parameters params;
+    params.setXRange();
+    params.setExtractActionRemove();
+
+    auto ws = runAlgorithm(params);
+    if (!ws)
+      return;
+
+    TS_ASSERT_EQUALS(ws->blocksize(), 5);
+    TS_ASSERT_EQUALS(ws->x(0)[0], 1.0);
+  }
+  void test_histoExtractOptionIndexRange() {
+    Parameters params;
+    params.setIndexRange();
+    params.setExtractActionRemove();
+
+    auto ws = runAlgorithm(params);
+    if (!ws)
+      return;
+
+    TS_ASSERT_EQUALS(ws->getNumberHistograms(), 3);
+    TS_ASSERT_EQUALS(ws->y(0)[0], 1.0);
+    TS_ASSERT_EQUALS(ws->y(1)[0], 2.0);
+    TS_ASSERT_EQUALS(ws->y(2)[0], 3.0);
+  }
+
 private:
   // -----------------------  helper methods ------------------------
 
@@ -502,13 +530,14 @@ private:
     Parameters(const std::string &workspaceType = "histo")
         : XMin(EMPTY_DBL()), XMax(EMPTY_DBL()), StartWorkspaceIndex(0),
           EndWorkspaceIndex(EMPTY_INT()), WorkspaceIndexList(),
-          wsType(workspaceType) {}
+          ExtractAction("Keep"), wsType(workspaceType) {}
     double XMin;
     double XMax;
     int StartWorkspaceIndex;
     int EndWorkspaceIndex;
     std::vector<size_t> WorkspaceIndexList;
     std::vector<detid_t> DetectorList;
+    std::string ExtractAction;
     std::string wsType;
 
     // ---- x range ----
@@ -651,6 +680,11 @@ private:
         TSM_ASSERT("Should never reach here", false);
       }
     }
+    // ---- Extract Action Remove ----
+    Parameters &setExtractActionRemove() {
+      ExtractAction = "Remove";
+      return *this;
+    }
   };
 
   MatrixWorkspace_sptr runAlgorithm(const Parameters &params,
@@ -683,7 +717,11 @@ private:
     }
     if (!params.DetectorList.empty()) {
       TS_ASSERT_THROWS_NOTHING(
-          alg.setProperty("DetectorList", params.DetectorList));
+        alg.setProperty("DetectorList", params.DetectorList));
+    }
+    if (!params.ExtractAction.empty()) {
+      TS_ASSERT_THROWS_NOTHING(
+        alg.setProperty("ExtractAction", params.ExtractAction));
     }
 
     TS_ASSERT_THROWS_NOTHING(alg.execute(););

@@ -81,6 +81,9 @@ void CropWorkspace::exec() {
   int end = getProperty("EndWorkspaceIndex");
   extract->setProperty("EndWorkspaceIndex", end);
 
+  std::string option = getProperty("CropOption");
+  extract->setProperty("ExtractOption", option);
+
   extract->execute();
 
   outputWorkspace = extract->getProperty("OutputWorkspace");

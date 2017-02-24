@@ -65,6 +65,8 @@ private:
   bool m_histogram = false;
   /// Flag indicating whether XMin and/or XMax has been set
   bool m_croppingInX = false;
+  /// flag indicating whether  to keep or discard selection
+  bool m_isKeep = false;
   /// The list of workspaces to extract.
   std::vector<size_t> m_workspaceIndexList;
 };

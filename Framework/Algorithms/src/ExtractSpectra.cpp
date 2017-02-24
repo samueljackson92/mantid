@@ -6,6 +6,7 @@
 #include "MantidAPI/WorkspaceFactory.h"
 #include "MantidKernel/ArrayProperty.h"
 #include "MantidKernel/BoundedValidator.h"
+#include "MantidKernel/ListValidator.h"
 #include "MantidKernel/VectorHelper.h"
 #include "MantidIndexing/Extract.h"
 #include "MantidIndexing/IndexInfo.h"
@@ -88,6 +89,13 @@ void ExtractSpectra::init() {
                   "explicitly set. When specifying the WorkspaceIndexList and "
                   "DetectorList property,\n"
                   "the latter is being selected.");
+
+  std::vector<std::string> extractOptions{"Keep", "Remove"};
+  declareProperty(
+      "ExtractAction", "Keep",
+      boost::make_shared<StringListValidator>(extractOptions),
+      "Whether to keep or remove the selected section of the workspace\n"
+      "(default: Keep)");
 }
 
 //----------------------------------------------------------------------------------------------
@@ -101,6 +109,10 @@ void ExtractSpectra::exec() {
   m_histogram = m_inputWorkspace->isHistogramData();
   // Check for common boundaries in input workspace
   m_commonBoundaries = WorkspaceHelpers::commonBoundaries(*m_inputWorkspace);
+
+  // set isKeep from the ExtractOption
+  std::string strKeep = getProperty("ExtractAction");
+  m_isKeep = (strKeep == "Keep");
 
   eventW = boost::dynamic_pointer_cast<EventWorkspace>(m_inputWorkspace);
   if (eventW != nullptr) {
@@ -117,12 +129,21 @@ void ExtractSpectra::execHistogram() {
   // Retrieve and validate the input properties
   this->checkProperties();
 
+  MatrixWorkspace_sptr outputWorkspace;
   // Create the output workspace
-  MatrixWorkspace_sptr outputWorkspace = WorkspaceFactory::Instance().create(
+  if (m_isKeep) {
+    outputWorkspace = WorkspaceFactory::Instance().create(
       m_inputWorkspace, m_workspaceIndexList.size(), m_maxX - m_minX,
       m_maxX - m_minX - m_histogram);
+  } else
+  {
+    // reduce the number of xBins by the selection to remove
+    outputWorkspace = WorkspaceFactory::Instance().create(
+      m_inputWorkspace, m_workspaceIndexList.size(), m_inputWorkspace->blocksize() - (m_maxX - m_minX),
+      m_inputWorkspace->blocksize() - (m_maxX - m_minX) - m_histogram);
+  }
   outputWorkspace->setIndexInfo(
-      Indexing::extract(m_inputWorkspace->indexInfo(), m_workspaceIndexList));
+    Indexing::extract(m_inputWorkspace->indexInfo(), m_workspaceIndexList));
 
   // If this is a Workspace2D, get the spectra axes for copying in the spectraNo
   // later
@@ -425,6 +446,49 @@ void ExtractSpectra::checkProperties() {
         m_workspaceIndexList.push_back(i);
       }
     }
+  }
+
+  if (!m_isKeep)
+  {
+    // validate the we do not have BOTH x range and histogram range limits
+    if (m_croppingInX && !m_workspaceIndexList.empty()) {
+      g_log.error("When Removing data you can only specify to remove bins (via "
+                  "xMin and xMax) or spectra (via workspace indices or "
+                  "detectors)");
+      throw std::out_of_range("When Removing data you can only specify to "
+                              "remove bins (via xMin and xMax) or spectra (via "
+                              "workspace indices or detectors)");
+    }
+
+    //invert the m_workspaceIndexList
+    std::vector<size_t> invertedWIList;
+    //ensure the WI list of exclusions is sorted
+    std::sort(m_workspaceIndexList.begin(), m_workspaceIndexList.end());
+    size_t exclusionIndex = 0;
+    const size_t exclusionSize = m_workspaceIndexList.size();
+    invertedWIList.reserve(m_inputWorkspace->getNumberHistograms() - exclusionSize);
+    for (size_t i = 0; i < m_inputWorkspace->getNumberHistograms(); ++i) { 
+      if (exclusionSize == 0)
+      {
+        // exclusion list is empty - include all
+        invertedWIList.push_back(i);
+      }
+      else {
+        // move on the exclusion index is the value is lower than the current
+        // index
+        while ((exclusionIndex < (exclusionSize - 1)) &&
+               (m_workspaceIndexList[exclusionIndex] < i)) {
+          ++exclusionIndex;
+        }
+
+        if (m_workspaceIndexList[exclusionIndex] > i) {
+          //the next value to be excluded is larger, include this index
+          invertedWIList.push_back(i);
+        }
+      }
+    }
+    //overwrite the workspace index list
+    m_workspaceIndexList = invertedWIList;
   }
 }
 
