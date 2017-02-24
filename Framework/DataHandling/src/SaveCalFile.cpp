@@ -1,9 +1,16 @@
+#include "MantidAPI/DetectorInfo.h"
 #include "MantidAPI/FileProperty.h"
+#include "MantidAPI/SpectrumInfo.h"
 #include "MantidDataHandling/SaveCalFile.h"
 #include "MantidKernel/System.h"
 #include "MantidKernel/BoundedValidator.h"
+#include "MantidTypes/SpectrumDefinition.h"
+
+#include <algorithm>
 #include <cmath>
 #include <fstream>
+#include <utility>
+#include <vector>
 
 using namespace Mantid::Kernel;
 using namespace Mantid::API;
@@ -80,16 +87,51 @@ template <typename T>
 std::vector<std::pair<Mantid::detid_t, size_t>>
 SaveCalFile::createDetectorToSpectrumMapping(const T *ws) {
   const size_t numHisto = ws->getNumberHistograms();
-  std::vector<std::pair<Mantid::detid_t, size_t>> detectorToSpectrumMap;
-  detectorToSpectrumMap.reserve(numHisto);
 
-  for (size_t spectra_index = 0; spectra_index < numHisto; spectra_index++) {
-    const auto &detectorIDs = ws->getSpectrum(spectra_index).getDetectorIDs();
-    for (const auto detID : detectorIDs) {
-      detectorToSpectrumMap.push_back(std::make_pair(detID, spectra_index));
+  // Create mappings for detector Positions to ID and detector ID to spectrum
+  // Maps
+  std::vector<std::pair<Mantid::detid_t, size_t>> detIDToSpectrumMap;
+  std::vector<std::pair<size_t, Mantid::detid_t>> detPositionToIDMap;
+  detIDToSpectrumMap.reserve(numHisto);
+  detPositionToIDMap.reserve(numHisto);
+
+  const API::DetectorInfo &detectorInfo = ws->detectorInfo();
+  const API::SpectrumInfo &spectrumInfo = ws->spectrumInfo();
+  const auto &detectorIDs = detectorInfo.detectorIDs();
+
+  // Create a lambda for comparing elements later
+  auto comparator =
+      [](const auto &a, const auto &b) { return a.first < b.first; };
+
+  // Don't take reference as detid_t is primitive type
+  // Get a mapping of detector positions to detector IDs we will use later
+  for (const auto detID : detectorIDs) {
+    detPositionToIDMap.push_back(
+        std::make_pair(detectorInfo.indexOf(detID), detID));
+  }
+  // Sort so we don't have to parse the entire container
+  std::sort(detPositionToIDMap.begin(), detPositionToIDMap.end(), comparator);
+
+  for (size_t specIndex = 0; specIndex < numHisto; specIndex++) {
+    const auto &specDef = spectrumInfo.spectrumDefinition(specIndex);
+    // Spectrum definition holds the detector index as the first element
+    for (size_t i = 0; i < specDef.size(); i++) {
+      const auto &spectrumPair = specDef[i];
+      // As container is sorted use lower bound to implement search
+      const auto it =
+          std::lower_bound(detPositionToIDMap.cbegin(),
+                           detPositionToIDMap.cend(), spectrumPair, comparator);
+
+      if (it != detPositionToIDMap.end()) {
+        // If we found it we take the detector ID and map it to the spectrum
+        // index
+        detIDToSpectrumMap.push_back(std::make_pair((*it).second, specIndex));
+      } else {
+        continue;
+      }
     }
   }
-  return detectorToSpectrumMap;
+  return detIDToSpectrumMap;
 }
 //-----------------------------------------------------------------------
 /** Reads the calibration file.
@@ -108,8 +150,8 @@ void SaveCalFile::saveCalFile(const std::string &calFileName,
                               MaskWorkspace_sptr maskWS) {
 
   Instrument_const_sptr inst;
-  using det2SpecPair = std::pair<Mantid::detid_t, size_t>;
-  std::vector<det2SpecPair> detId2SpecIndex;
+
+  std::vector<detIDToSpecIndexPair> detId2SpecIndex;
 
   bool doGroup = false;
   if (groupWS) {
@@ -145,18 +187,11 @@ void SaveCalFile::saveCalFile(const std::string &calFileName,
 
   if (getProperty("Sort Detector IDs")) {
     // Sort by detector ID
-    std::sort(detId2SpecIndex.begin(), detId2SpecIndex.end(),
-              [](const det2SpecPair &a, const det2SpecPair &b) {
-                // First element is detector ID
-                return a.first < b.first;
-              });
+    std::sort(detId2SpecIndex.begin(), detId2SpecIndex.end(), sortByDetID);
   } else {
     // Sort by spectrum index
     std::sort(detId2SpecIndex.begin(), detId2SpecIndex.end(),
-              [](const det2SpecPair &a, const det2SpecPair &b) {
-                // Second element is spectrum index
-                return a.second < b.second;
-              });
+              sortBySpectrumIndex);
   }
 
   // Header of the file
@@ -194,6 +229,21 @@ void SaveCalFile::saveCalFile(const std::string &calFileName,
 
     number++;
   }
+}
+
+bool SaveCalFile::sortBySpectrumIndex(const detIDToSpecIndexPair &a,
+                                      const detIDToSpecIndexPair &b) {
+  if (a.second != b.second) {
+    return a.second < b.second;
+  } else {
+    // Use detector IDs as the spectrum index is identical
+    return SaveCalFile::sortByDetID(a, b);
+  }
+}
+
+bool SaveCalFile::sortByDetID(const detIDToSpecIndexPair &a,
+                              const detIDToSpecIndexPair &b) {
+  return a.first < b.first;
 }
 
 } // namespace Mantid

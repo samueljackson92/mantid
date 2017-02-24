@@ -50,6 +50,17 @@ private:
   std::vector<std::pair<Mantid::detid_t, size_t>>
   createDetectorToSpectrumMapping(const T *ws);
 
+  /// Typedef the pair for future usage
+  using detIDToSpecIndexPair = std::pair<Mantid::detid_t, size_t>;
+
+  /// Sorts by detector ID
+  static bool sortByDetID(const detIDToSpecIndexPair &a,
+                          const detIDToSpecIndexPair &b);
+
+  /// Sorts by Spectrum Index - If identical falls back to using detector ID
+  static bool sortBySpectrumIndex(const detIDToSpecIndexPair &a,
+                                  const detIDToSpecIndexPair &b);
+
   /// Offset precision
   int m_precision{7};
 };
