@@ -46,7 +46,8 @@ class MockPeaksPresenter : public PeaksPresenter {
 public:
   MOCK_METHOD0(update, void());
   MOCK_METHOD1(updateWithSlicePoint, void(const PeakBoundingBox &));
-  MOCK_METHOD0(changeShownDim, bool());
+  MOCK_METHOD2(changeShownDim, bool(size_t, size_t));
+  MOCK_METHOD1(setNonOrthogonal, void(bool nonOrthogonalEnabled));
   MOCK_CONST_METHOD1(isLabelOfFreeAxis, bool(const std::string &));
   MOCK_CONST_METHOD0(presentedWorkspaces, SetPeaksWorkspaces());
   MOCK_METHOD1(setForegroundColor, void(const PeakViewColor));
@@ -125,6 +126,9 @@ public:
   MOCK_METHOD0(hideView, void());
   MOCK_METHOD0(showView, void());
   MOCK_METHOD1(movePosition, void(PeakTransform_sptr));
+  MOCK_METHOD5(movePositionNonOrthogonal,
+               void(PeakTransform_sptr, Mantid::coord_t *, size_t, size_t,
+                    size_t));
   MOCK_METHOD1(showBackgroundRadius, void(const bool));
   MOCK_CONST_METHOD1(getBoundingBox, PeakBoundingBox(const int));
   MOCK_METHOD1(changeOccupancyInView, void(const double));
@@ -158,6 +162,8 @@ public:
   MOCK_METHOD0(updateView, void());
   MOCK_METHOD1(swapPeaksWorkspace,
                void(boost::shared_ptr<Mantid::API::IPeaksWorkspace> &));
+  MOCK_METHOD4(getNonOrthogonalInfo,
+               void(Mantid::coord_t &, size_t &, size_t &, size_t &));
 };
 
 /*------------------------------------------------------------
