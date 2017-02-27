@@ -157,8 +157,7 @@ ConcretePeaksPresenter::ConcretePeaksPresenter(
       m_owningPresenter(NULL), m_isHidden(false), m_editMode(SliceViewer::None),
       m_hasAddPeaksMode(
           canAddPeaksTo(peaksWS.get(), m_transform->getCoordinateSystem())),
-      m_NonOrthogonal(false), m_initMappingTransform(true), m_dimX(0),
-      m_dimY(1), m_dimMissing(2) {
+      m_NonOrthogonal(false), m_dimX(0), m_dimY(1), m_dimMissing(2) {
   // Check that the workspaces appear to be compatible. Log if otherwise.
   checkWorkspaceCompatibilities(mdWS);
   m_fromHklToXyz[0] = 1.0;
@@ -196,17 +195,12 @@ void ConcretePeaksPresenter::reInitialize(IPeaksWorkspace_sptr peaksWS) {
  */
 void ConcretePeaksPresenter::initialize() {
 
-  const bool transformSucceeded =
-      this->configureMappingTransform(m_initMappingTransform);
-
   // Make and register each peak widget.
   produceViews();
+
   changeShownDim(m_dimX,
                  m_dimY); // in case dimensions shown are not those expected by
                           // default transformation
-  if (!transformSucceeded) {
-    hideAll();
-  }
 }
 
 /**
@@ -307,20 +301,13 @@ void ConcretePeaksPresenter::setNonOrthogonal(bool nonOrthogonalEnabled) {
  changes the chosen dimensions to plot.
  @return True if the mapping has succeeded.
  */
-bool ConcretePeaksPresenter::configureMappingTransform(
-    bool m_initMappingTransform) {
+bool ConcretePeaksPresenter::configureMappingTransform() {
   bool transformSucceeded = false;
   try {
-    if (m_initMappingTransform) {
-      auto temp = m_transformFactory->createDefaultTransform();
-      m_transform = temp;
-      m_initMappingTransform = false;
-    } else {
-      std::string xLabel = m_viewFactory->getPlotXLabel();
-      std::string yLabel = m_viewFactory->getPlotYLabel();
-      auto temp = m_transformFactory->createTransform(xLabel, yLabel);
-      m_transform = temp;
-    }
+    std::string xLabel = m_viewFactory->getPlotXLabel();
+    std::string yLabel = m_viewFactory->getPlotYLabel();
+    auto temp = m_transformFactory->createTransform(xLabel, yLabel);
+    m_transform = temp;
     showAll();
     transformSucceeded = true;
   } catch (Mantid::Geometry::PeakTransformException &) {
