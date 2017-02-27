@@ -103,15 +103,8 @@ class SANSReductionCoreTest(unittest.TestCase):
 
         # Compare reference file with the output_workspace
         # We need to disable the instrument comparison, it takes way too long
-        # We need to disable the sample -- Not clear why yet
+        # We need to disable the sample -- since the sample has been modified (more logs are being written)
         # operation how many entries can be found in the sample logs
-        # from mantid.api import AnalysisDataService
-        # from mantid.simpleapi import SaveNexus
-        # AnalysisDataService.add("Original", ws)
-        # AnalysisDataService.add("Reference", reference_workspace)
-        # SaveNexus(Filename="C:/Sandbox/original.nxs", InputWorkspace="Original")
-        # SaveNexus(Filename="C:/Sandbox/reference.nxs", InputWorkspace="Reference")
-
         compare_name = "CompareWorkspaces"
         compare_options = {"Workspace1": ws,
                            "Workspace2": reference_workspace,
@@ -188,7 +181,7 @@ class SANSReductionCoreRunnerTest(stresstesting.MantidStressTest):
             self._success = True
 
     def requiredMemoryMB(self):
-        return 1000
+        return 2000
 
     def validate(self):
         return self._success

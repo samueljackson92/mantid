@@ -279,8 +279,9 @@ class SANSSingleReductionTest(unittest.TestCase):
         output_shift_factor = single_reduction_alg.getProperty("OutShiftFactor").value
 
         tolerance = 1e-6
-        expected_shift = 0.00276858
-        expected_scale = 0.81469147
+        expected_shift = 0.00278452
+        expected_scale = 0.81439154
+
         self.assertTrue(abs(expected_shift - output_shift_factor) < tolerance)
         self.assertTrue(abs(expected_scale - output_scale_factor) < tolerance)
 

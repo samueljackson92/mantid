@@ -19,7 +19,7 @@ class CommandInterfaceStateDirectorTest(unittest.TestCase):
 
         # User file
         command = NParameterCommand(command_id=NParameterCommandId.user_file,
-                                    values=["USER_SANS2D_143ZC_2p4_4m_M4_Knowles_12mm.txt"])
+                                    values=["test_user_file_sans2d.txt"])
         self._assert_raises_nothing(command_interface.add_command, command)
 
         # Mask
@@ -109,8 +109,6 @@ class CommandInterfaceStateDirectorTest(unittest.TestCase):
         self._assert_raises_nothing(command_interface.add_command, command)
 
         # Process all commands
-        import time
-        time.sleep(10)
         state = command_interface.process_commands()
 
         # Assert

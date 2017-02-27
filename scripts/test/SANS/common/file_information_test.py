@@ -77,7 +77,7 @@ class SANSFileInformationTest(unittest.TestCase):
     def test_that_can_extract_information_for_added_histogram_data_and_nexus_format(self):
         # Arrange
         # The file is a single period, histogram-based and added
-        file_name = "SANS2D00022024-add"
+        file_name = "AddedHistogram-add"
         factory = SANSFileInformationFactory()
 
         # Act
@@ -99,7 +99,7 @@ class SANSFileInformationTest(unittest.TestCase):
     def test_that_can_extract_information_for_LARMOR_added_event_data_and_multi_period_and_nexus_format(self):
         # Arrange
         # The file is a single period, histogram-based and added
-        file_name = "LARMOR00013065-add"
+        file_name = "AddedEvent-add"
         factory = SANSFileInformationFactory()
 
         # Act

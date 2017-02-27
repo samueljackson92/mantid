@@ -317,13 +317,10 @@ class DetParser(UserFileComponentParser):
         self._shift = "\\s*SHIFT\\s*"
         self._shift_pattern = re.compile(start_string + self._shift + space_string + float_number + end_string)
         self._rescale_fit = "\\s*RESCALE\\s*/\\s*FIT\\s*"
-        self._rescale_fit_pattern = re.compile(start_string + self._rescale_fit + space_string +
-                                               float_number + space_string +
-                                               float_number + end_string)
+        self._q_range = "\\s*(" + float_number + space_string + float_number + ")?"
+        self._rescale_fit_pattern = re.compile(start_string + self._rescale_fit + self._q_range + end_string)
         self._shift_fit = "\\s*SHIFT\\s*/\\s*FIT\\s*"
-        self._shift_fit_pattern = re.compile(start_string + self._shift_fit + space_string +
-                                             float_number + space_string +
-                                             float_number + end_string)
+        self._shift_fit_pattern = re.compile(start_string + self._shift_fit + self._q_range + end_string)
 
     def parse_line(self, line):
         # Get the settings, ie remove command

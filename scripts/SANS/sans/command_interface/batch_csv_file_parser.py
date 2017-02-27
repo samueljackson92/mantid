@@ -2,6 +2,7 @@ from __future__ import (absolute_import, division, print_function)
 import re
 from csv import reader
 from sans.common.enums import BatchReductionEntry
+from sans.common.file_information import find_full_file_path
 from sans.common.constants import ALL_PERIODS
 
 
@@ -28,7 +29,10 @@ class BatchCsvParser(object):
     def __init__(self, batch_file_name):
         super(BatchCsvParser, self).__init__()
         # Get the full file path
-        self._batch_file_name = batch_file_name
+        self._batch_file_name = find_full_file_path(batch_file_name)
+        if not self._batch_file_name:
+            raise RuntimeError("batch_csv_file_parser: Could not find specified batch file. Make sure it is available"
+                               "in the Mantid path settings.")
 
     def parse_batch_file(self):
         """

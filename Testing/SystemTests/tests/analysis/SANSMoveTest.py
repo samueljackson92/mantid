@@ -301,7 +301,7 @@ class SANSMoveTest(unittest.TestCase):
         component_to_investigate = DetectorType.to_string(DetectorType.LAB)
         # The rotation couples the movements, hence we just insert absoltute value, to have a type of regression test.
         expected_position = V3D(0, -38, 25.3)
-        expected_rotation = Quat(0.978146, 0, 0.20792, 0)
+        expected_rotation = Quat(0.978146, 0, -0.20792, 0)
         self.compare_expected_position(expected_position, expected_rotation,
                                        component_to_investigate, state.move, workspace)
 
