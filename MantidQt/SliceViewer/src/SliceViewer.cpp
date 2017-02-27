@@ -2406,15 +2406,15 @@ void SliceViewer::setNonOrthogonalbtn() {
     m_oldDimNonOrthogonal = false;
   }
 
-    ui.btnNonOrthogonalToggle->setDisabled(!canShowSkewedWS);
-    if (canShowSkewedWS) {
-      ui.btnNonOrthogonalToggle->setToolTip(QString("NonOrthogonal axes view"));
-    } else {
-      ui.btnNonOrthogonalToggle->setToolTip(
-          QString("NonOrthogonal view requires HKL axes"));
-    }
+  ui.btnNonOrthogonalToggle->setDisabled(!canShowSkewedWS);
+  if (canShowSkewedWS) {
+    ui.btnNonOrthogonalToggle->setToolTip(QString("NonOrthogonal axes view"));
+  } else {
+    ui.btnNonOrthogonalToggle->setToolTip(
+        QString("NonOrthogonal view requires HKL axes"));
+  }
 
-    m_peaksPresenter->setNonOrthogonal(ui.btnNonOrthogonalToggle->isChecked());
+  m_peaksPresenter->setNonOrthogonal(ui.btnNonOrthogonalToggle->isChecked());
 
   emit disableOrthogonalAnalysisTools(ui.btnNonOrthogonalToggle->isChecked());
 }
