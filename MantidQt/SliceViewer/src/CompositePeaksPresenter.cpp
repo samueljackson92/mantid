@@ -70,7 +70,7 @@ void CompositePeaksPresenter::setNonOrthogonal(bool nonOrthogonalEnabled) {
   if (useDefault()) {
     m_default->setNonOrthogonal(nonOrthogonalEnabled);
   }
-  bool result = true;
+
   for (auto it = m_subjects.begin(); it != m_subjects.end(); ++it) {
     (*it)->setNonOrthogonal(nonOrthogonalEnabled);
   }
