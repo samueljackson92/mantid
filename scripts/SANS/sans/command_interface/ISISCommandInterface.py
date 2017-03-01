@@ -24,7 +24,6 @@ except (Exception, Warning):
     # this should happen when this is called from outside Mantidplot and only then,
     # the result is that attempting to plot will raise an exception
 
-
 # ----------------------------------------------------------------------------------------------------------------------
 # Globals
 # ----------------------------------------------------------------------------------------------------------------------
@@ -273,8 +272,8 @@ def Clean():
     """
     Removes all previous settings.
     """
-    user_file_command = NParameterCommand(command_id=NParameterCommandId.clean, values=[])
-    director.add_command(user_file_command)
+    clean_command = NParameterCommand(command_id=NParameterCommandId.clean, values=[])
+    director.add_command(clean_command)
 
 
 def Set1D():
@@ -757,10 +756,10 @@ def WavRangeReduction(wav_start=None, wav_end=None, full_trans_wav=None, name_su
         raise RuntimeError("WavRangeReduction: The combineDet input parameter was given a value of {0}. rear, front,"
                            " both, merged and no input are allowed".format(combineDet))
 
-    if wav_start:
+    if wav_start is not None:
         wav_start = float(wav_start)
 
-    if wav_end:
+    if wav_end is not None:
         wav_end = float(wav_end)
 
     wavelength_command = NParameterCommand(command_id=NParameterCommandId.wavrange_settings,
@@ -905,15 +904,36 @@ def BatchReduce(filename, format, plotresults=False, saveAlgs=None, verbose=Fals
                                                    output_mode=output_mode,
                                                    use_reduction_mode_as_suffix=use_reduction_mode_as_suffix)
 
+        # Remove the settings which were very specific for this single reduction which are:
+        # 1. The last user file (if any was set)
+        # 2. The last scatter entry
+        # 3. The last scatter transmission and direct entry (if any were set)
+        # 4. The last can scatter ( if any was set)
+        # 5. The last can transmission and direct entry (if any were set)
+        if BatchReductionEntry.UserFile in parsed_batch_entry.keys():
+            director.remove_last_user_file()
+        director.remove_last_scatter_sample()
+
+        if (BatchReductionEntry.SampleTransmission in parsed_batch_entry.keys() and
+            BatchReductionEntry.SampleDirect in parsed_batch_entry.keys()):
+            director.remove_last_sample_transmission_and_direct()
+
+        if BatchReductionEntry.CanScatter in parsed_batch_entry.keys():
+            director.remove_last_scatter_can()
+
+        if (BatchReductionEntry.CanTransmission in parsed_batch_entry.keys() and
+           BatchReductionEntry.CanDirect in parsed_batch_entry.keys()):
+            director.remove_last_can_transmission_and_direct()
+
         # Plot the results if that was requested, the flag 1 is from the old version.
         if plotresults == 1:
             if AnalysisDataService.doesExist(reduced_workspace_name):
                 workspace = AnalysisDataService.retrieve(reduced_workspace_name)
                 if isinstance(workspace, WorkspaceGroup):
                     for ws in workspace:
-                        PlotResult(str(ws))
+                        PlotResult(ws.getName())
                 else:
-                    PlotResult(str(workspace))
+                    PlotResult(workspace.getName())
 
 
 def CompWavRanges(wavelens, plot=True, combineDet=None, resetSetup=True):
@@ -1010,7 +1030,6 @@ def PlotResult(workspace, canvas=None):
         return graph
     except ImportError:
         print_message('Plot functions are not available, is this being run from outside Mantidplot?')
-
 
 
 def AddRuns(runs, instrument='sans2d', saveAsEvent=False, binning="Monitors", isOverlay=False, time_shifts=None,

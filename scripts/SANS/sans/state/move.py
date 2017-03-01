@@ -9,7 +9,6 @@ import copy
 from sans.state.state_base import (StateBase, FloatParameter, DictParameter, ClassTypeParameter,
                                    StringParameter, rename_descriptor_names)
 from sans.common.enums import (Coordinates, CanonicalCoordinates, SANSInstrument, DetectorType)
-from sans.common.file_information import (get_instrument_paths_for_sans_file)
 from sans.state.automatic_setters import automatic_setters
 from sans.state.state_functions import (validation_message, set_detector_names, set_monitor_names)
 
@@ -184,12 +183,13 @@ class StateMoveLARMOR(StateMove):
 # ----------------------------------------------------------------------------------------------------------------------
 def setup_idf_and_ipf_content(move_info, data_info):
     # Get the IDF and IPF path since they contain most of the import information
-    file_name = data_info.sample_scatter
-    idf_path, ipf_path = get_instrument_paths_for_sans_file(file_name)
+    idf_file_path = data_info.idf_file_path
+    ipf_file_path = data_info.ipf_file_path
+
     # Set the detector names
-    set_detector_names(move_info, ipf_path)
+    set_detector_names(move_info, ipf_file_path)
     # Set the monitor names
-    set_monitor_names(move_info, idf_path)
+    set_monitor_names(move_info, idf_file_path)
 
 
 class StateMoveLOQBuilder(object):

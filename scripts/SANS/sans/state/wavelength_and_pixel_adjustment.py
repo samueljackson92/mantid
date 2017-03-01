@@ -9,14 +9,7 @@ from sans.state.state_base import (StateBase, rename_descriptor_names, StringPar
                                    ClassTypeParameter, PositiveFloatParameter, DictParameter)
 from sans.state.state_functions import (is_not_none_and_first_larger_than_second, one_is_none, validation_message)
 from sans.common.enums import (RangeStepType, DetectorType, SANSInstrument)
-from sans.common.file_information import (get_instrument_paths_for_sans_file)
 from sans.state.automatic_setters import (automatic_setters)
-
-
-def get_idf_path(data_info):
-    file_name = data_info.sample_scatter
-    idf_path, _ = get_instrument_paths_for_sans_file(file_name)
-    return idf_path
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -92,9 +85,9 @@ class StateWavelengthAndPixelAdjustmentBuilder(object):
     @automatic_setters(StateWavelengthAndPixelAdjustment, exclusions=["idf_path"])
     def __init__(self, data_info):
         super(StateWavelengthAndPixelAdjustmentBuilder, self).__init__()
-        idf_path = get_idf_path(data_info)
+        idf_file_path = data_info.idf_file_path
         self.state = StateWavelengthAndPixelAdjustment()
-        self.state.idf_path = idf_path
+        self.state.idf_path = idf_file_path
 
     def build(self):
         self.state.validate()

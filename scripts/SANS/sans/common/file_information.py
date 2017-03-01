@@ -681,6 +681,11 @@ def get_geometry_information_raw(file_name):
 class SANSFileInformation(with_metaclass(ABCMeta, object)):
     def __init__(self, file_name):
         self._file_name = file_name
+        self._full_file_name = SANSFileInformation.get_full_file_name(self._file_name)
+
+        # Idf and Ipf file path (will be loaded via lazy evaluation)
+        self._idf_file_path = None
+        self._ipf_file_path = None
 
     @abstractmethod
     def get_file_name(self):
@@ -730,6 +735,20 @@ class SANSFileInformation(with_metaclass(ABCMeta, object)):
     def get_shape(self):
         pass
 
+    def get_idf_file_path(self):
+        if self._idf_file_path is None:
+            idf_path, ipf_path = get_instrument_paths_for_sans_file(self._full_file_name)
+            self._idf_file_path = idf_path
+            self._ipf_file_path = ipf_path
+        return self._idf_file_path
+
+    def get_ipf_file_path(self):
+        if self._ipf_file_path is None:
+            idf_path, ipf_path = get_instrument_paths_for_sans_file(self._full_file_name)
+            self._idf_file_path = idf_path
+            self._ipf_file_path = ipf_path
+        return self._ipf_file_path
+
     @staticmethod
     def get_full_file_name(file_name):
         return find_sans_file(file_name)
@@ -739,7 +758,6 @@ class SANSFileInformationISISNexus(SANSFileInformation):
     def __init__(self, file_name):
         super(SANSFileInformationISISNexus, self).__init__(file_name)
         # Setup instrument name
-        self._full_file_name = SANSFileInformation.get_full_file_name(self._file_name)
         instrument_name = get_instrument_name_for_isis_nexus(self._full_file_name)
         self._instrument = SANSInstrument.from_string(instrument_name)
 
@@ -803,7 +821,6 @@ class SANSFileInformationISISAdded(SANSFileInformation):
     def __init__(self, file_name):
         super(SANSFileInformationISISAdded, self).__init__(file_name)
         # Setup instrument name
-        self._full_file_name = SANSFileInformation.get_full_file_name(self._file_name)
         instrument_name = get_instrument_name_for_isis_nexus(self._full_file_name)
         self._instrument_name = get_instrument(instrument_name)
 
@@ -863,7 +880,6 @@ class SANSFileInformationRaw(SANSFileInformation):
     def __init__(self, file_name):
         super(SANSFileInformationRaw, self).__init__(file_name)
         # Setup instrument name
-        self._full_file_name = SANSFileInformation.get_full_file_name(self._file_name)
         instrument_name = get_instrument_name_for_raw(self._full_file_name)
         self._instrument = SANSInstrument.from_string(instrument_name)
 

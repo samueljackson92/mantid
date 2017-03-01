@@ -175,6 +175,26 @@ class CommandInterfaceStateDirectorTest(unittest.TestCase):
         self.assertTrue(state.convert_to_q.q_xy_step == 1.1)
         self.assertTrue(state.convert_to_q.q_xy_step_type is RangeStepType.Lin)
 
+    def test_that_can_remove_last_command(self):
+        # Arrange
+        command_interface = CommandInterfaceStateDirector(SANSFacility.ISIS)
+        command_interface.add_command(NParameterCommand(command_id=NParameterCommandId.user_file,
+                                                        values=["file_1.txt"]))
+        command_interface.add_command(NParameterCommand(command_id=NParameterCommandId.user_file,
+                                                        values=["file_2.txt"]))
+        command_interface.add_command(NParameterCommand(command_id=NParameterCommandId.user_file,
+                                                        values=["file_3.txt"]))
+        # Act
+        commands = command_interface.get_commands()
+        self.assertTrue(len(commands) == 3)
+
+        command_interface.remove_last_user_file()
+
+        # Assert
+        self.assertTrue(len(commands) == 2)
+        last_command = commands[-1]
+        self.assertTrue(last_command.values == ["file_2.txt"])
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -13,7 +13,6 @@ from sans.common.configurations import Configurations
 from sans.state.state_functions import (is_pure_none_or_not_none, validation_message,
                                         is_not_none_and_first_larger_than_second, one_is_none)
 from sans.state.automatic_setters import (automatic_setters)
-from sans.common.file_information import (get_instrument_paths_for_sans_file)
 from sans.common.xml_parsing import get_named_elements_from_ipf_file
 
 
@@ -326,12 +325,11 @@ def set_default_monitors(calculate_transmission_info, data_info):
     :param calculate_transmission_info: a StateCalculateTransmission object on which we set the default value
     :param data_info: a StateData object
     """
-    file_name = data_info.sample_scatter
-    _, ipf_path = get_instrument_paths_for_sans_file(file_name)
+    ipf_file_path = data_info.ipf_file_path
     incident_tag = "default-incident-monitor-spectrum"
     transmission_tag = "default-transmission-monitor-spectrum"
     monitors_to_search = [incident_tag, transmission_tag]
-    found_monitor_spectrum = get_named_elements_from_ipf_file(ipf_path, monitors_to_search, int)
+    found_monitor_spectrum = get_named_elements_from_ipf_file(ipf_file_path, monitors_to_search, int)
     if incident_tag in found_monitor_spectrum:
         calculate_transmission_info.default_incident_monitor = found_monitor_spectrum[incident_tag]
     if transmission_tag in found_monitor_spectrum:

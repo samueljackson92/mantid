@@ -38,6 +38,8 @@ class StateData(StateBase):
 
     sample_scatter_run_number = PositiveIntegerParameter()
     instrument = ClassTypeParameter(SANSInstrument)
+    idf_file_path = StringParameter()
+    ipf_file_path = StringParameter()
 
     def __init__(self):
         super(StateData, self).__init__()
@@ -109,6 +111,8 @@ def set_information_from_file(data_info):
     run_number = file_information.get_run_number()
     data_info.instrument = instrument
     data_info.sample_scatter_run_number = run_number
+    data_info.idf_file_path = file_information.get_idf_file_path()
+    data_info.ipf_file_path = file_information.get_ipf_file_path()
 
 
 class StateDataBuilder(object):

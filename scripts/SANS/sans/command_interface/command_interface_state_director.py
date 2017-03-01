@@ -1,4 +1,3 @@
-from copy import deepcopy
 from sans.common.enums import (serializable_enum, ReductionDimensionality, DetectorType, DataType)
 from sans.user_file.user_file_state_director import UserFileStateDirectorISIS
 from sans.state.data import get_data_builder
@@ -8,7 +7,6 @@ from sans.user_file.user_file_common import (MonId, monitor_spectrum, OtherId, S
                                              fit_general, FitId, monitor_file, mask_angle_entry, LimitsId, range_entry,
                                              simple_range, DetectorId, event_binning_string_values, det_fit_range,
                                              single_entry_with_detector)
-
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Commands
@@ -91,8 +89,6 @@ class FitData(object):
 # can process any of the commands we need to find the data entries, since they drive the reduction.
 # All other commands should be setting the SANSState in order.
 # ----------------------------------------------------------------------------------------------------------------------
-
-
 class CommandInterfaceStateDirector(object):
     def __init__(self, facility):
         super(CommandInterfaceStateDirector, self).__init__()
@@ -110,6 +106,7 @@ class CommandInterfaceStateDirector(object):
 
     def clear_commands(self):
         self._commands = []
+        self._processed_state_settings = {}
 
     def process_commands(self):
         """
@@ -129,6 +126,9 @@ class CommandInterfaceStateDirector(object):
 
         # 3. Provide the state
         return state
+
+    def get_commands(self):
+        return self._commands
 
     def _get_data_state(self):
         # Get the data commands
@@ -210,6 +210,9 @@ class CommandInterfaceStateDirector(object):
         @return: a SANSState object.
         """
         self._user_file_state_director = UserFileStateDirectorISIS(data_state)
+
+        # If we have a clean instruction in there, then we should apply it to all commands
+        self._apply_clean_if_required()
 
         # Evaluate all commands which adds them to the _processed_state_settings dictionary,
         # except for DataCommands which we deal with separately
@@ -293,7 +296,7 @@ class CommandInterfaceStateDirector(object):
                     old_values.append(value)
                 else:
                     raise RuntimeError("CommandInterfaceStateDirector: Trying to insert {0} which is a list into {0} "
-                                       "which is collection of non-list elements".format())
+                                       "which is collection of non-list elements".format(value, old_values))
             elif isinstance(value, list) and treat_list_as_element:
                 self._processed_state_settings.update({key: [value]})
             elif isinstance(value, list):
@@ -331,9 +334,26 @@ class CommandInterfaceStateDirector(object):
                                                               interpolate=interpolate)}
         self.add_to_processed_state_settings(new_state_entries)
 
+    def _apply_clean_if_required(self):
+        """
+        The cleans all commands up to the clean command point.
+
+        We have to do this clean before we start processing the elements.
+        """
+        index_first_clean_command = None
+        for index in reversed(range(0, len(self._commands))):
+            element = self._commands[index]
+            if element.command_id == NParameterCommandId.clean:
+                index_first_clean_command = index
+                break
+        if index_first_clean_command is not None:
+            del(self._commands[0:(index_first_clean_command + 1)])
+            self._processed_state_settings = {}
+
     def _process_clean(self, command):
         _ = command
-        self.clear_commands()
+        raise RuntimeError("Trying the process a Clean command. The clean command should have removed itself and "
+                           "all previous commands. If it is still here, then this is a bug")
 
     def _process_reduction_dimensionality(self, command):
         _ = command
@@ -459,23 +479,23 @@ class CommandInterfaceStateDirector(object):
         if LimitsId.wavelength in self._processed_state_settings:
             last_entry = self._processed_state_settings[LimitsId.wavelength][-1]
 
-            new_wavelength_low = wavelength_low if wavelength_low else last_entry.start
-            new_wavelength_high = wavelength_high if wavelength_high else last_entry.stop
+            new_wavelength_low = wavelength_low if wavelength_low is not None else last_entry.start
+            new_wavelength_high = wavelength_high if wavelength_high is not None else last_entry.stop
             new_range = simple_range(start=new_wavelength_low, stop=new_wavelength_high, step=last_entry.step,
                                      step_type=last_entry.step_type)
 
-            if wavelength_low or wavelength_high:
+            if wavelength_low is not None or wavelength_high is not None:
                 copied_entry = {LimitsId.wavelength: new_range}
                 self.add_to_processed_state_settings(copied_entry)
         else:
             raise RuntimeError("CommandInterfaceStateDirector: Setting the lower and upper wavelength bounds is not"
                                " possible. We require also a step and step range")
 
-        if full_wavelength_range:
+        if full_wavelength_range is not None:
             full_wavelength_range_entry = {OtherId.use_full_wavelength_range: full_wavelength_range}
             self.add_to_processed_state_settings(full_wavelength_range_entry)
 
-        if reduction_mode:
+        if reduction_mode is not None:
             reduction_mode_entry = {DetectorId.reduction_mode: reduction_mode}
             self.add_to_processed_state_settings(reduction_mode_entry)
 
@@ -541,3 +561,64 @@ class CommandInterfaceStateDirector(object):
         use_reduction_mode_as_suffix = command.values[0]
         new_state_entry = {OtherId.use_reduction_mode_as_suffix: use_reduction_mode_as_suffix}
         self.add_to_processed_state_settings(new_state_entry)
+
+    def remove_last_user_file(self):
+        """
+        Removes the last added user file from the commands.
+
+        See _remove_last_element for further explanation.
+        """
+        self._remove_last_element(NParameterCommandId.user_file)
+
+    def remove_last_scatter_sample(self):
+        """
+        Removes the last added scatter sample from the commands.
+
+        See _remove_last_element for further explanation.
+        """
+        self._remove_last_element(DataCommandId.sample_scatter)
+
+    def remove_last_sample_transmission_and_direct(self):
+        """
+        Removes the last added scatter transmission and direct from the commands.
+
+        See _remove_last_element for further explanation.
+        """
+        self._remove_last_element(DataCommandId.sample_transmission)
+        self._remove_last_element(DataCommandId.sample_direct)
+
+    def remove_last_scatter_can(self):
+        """
+        Removes the last added scatter can from the commands.
+
+        See _remove_last_element for further explanation.
+        """
+        self._remove_last_element(DataCommandId.can_scatter)
+
+    def remove_last_can_transmission_and_direct(self):
+        """
+        Removes the last added can transmission and direct from the commands.
+
+        See _remove_last_element for further explanation.
+        """
+        self._remove_last_element(DataCommandId.can_transmission)
+        self._remove_last_element(DataCommandId.can_direct)
+
+    def _remove_last_element(self, command_id):
+        """
+        Removes the last instance of a command associated with the command_id.
+
+        This method is vital for batch reduction.
+        TODO: more explanation
+        @param command_id: the command_id of the command which whose last instance we want to remove
+        """
+        index_to_remove = None
+        for index, element in reversed(list(enumerate(self._commands))):
+            if element.command_id == command_id:
+                index_to_remove = index
+                break
+        if index_to_remove is not None:
+            del(self._commands[index_to_remove])
+        else:
+            raise RuntimeError("Tried to delete the last instance of {0}, but none was present in the list of "
+                               "commands".format(command_id))

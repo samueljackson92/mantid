@@ -13,7 +13,6 @@ from sans.common.enums import (RebinType, RangeStepType, SANSInstrument)
 from sans.state.state_functions import (is_pure_none_or_not_none, is_not_none_and_first_larger_than_second,
                                         one_is_none, validation_message)
 from sans.common.xml_parsing import get_named_elements_from_ipf_file
-from sans.common.file_information import (get_instrument_paths_for_sans_file)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -167,11 +166,10 @@ def set_default_incident_monitor(normalize_monitor_info, data_info):
     :param normalize_monitor_info: a StateNormalizeMonitor object on which we set the default value
     :param data_info: a StateData object
     """
-    file_name = data_info.sample_scatter
-    _, ipf_path = get_instrument_paths_for_sans_file(file_name)
+    ipf_file_path = data_info.ipf_file_path
     named_element = "default-incident-monitor-spectrum"
     monitor_spectrum_tag_to_search = [named_element]
-    found_monitor_spectrum = get_named_elements_from_ipf_file(ipf_path, monitor_spectrum_tag_to_search, int)
+    found_monitor_spectrum = get_named_elements_from_ipf_file(ipf_file_path, monitor_spectrum_tag_to_search, int)
     if named_element in found_monitor_spectrum:
         normalize_monitor_info.incident_monitor = found_monitor_spectrum[named_element]
 
