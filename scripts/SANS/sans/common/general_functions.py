@@ -5,12 +5,14 @@
 from __future__ import (absolute_import, division, print_function)
 from math import (acos, sqrt, degrees)
 import re
+from copy import deepcopy
+import json
 from mantid.api import AlgorithmManager, AnalysisDataService
 from sans.common.constants import (SANS_FILE_TAG, ALL_PERIODS, REDUCED_WORKSPACE_NAME_IN_LOGS,
                                    REDUCED_WORKSPACE_NAME_BY_USER_IN_LOGS, REDUCED_WORKSPACE_BASE_NAME_IN_LOGS,
-                                   SANS2D, LOQ, LARMOR)
-from sans.common.log_tagger import (get_tag, has_tag, set_tag)
-from sans.common.enums import (DetectorType, RangeStepType, ReductionDimensionality, ISISReductionMode)
+                                   SANS2D, LOQ, LARMOR, ALL_PERIODS, EMPTY_NAME, REDUCED_CAN_TAG)
+from sans.common.log_tagger import (get_tag, has_tag, set_tag, has_hash, get_hash_value, set_hash)
+from sans.common.enums import (DetectorType, RangeStepType, ReductionDimensionality, ISISReductionMode, OutputParts)
 
 
 # -------------------------------------------
@@ -214,6 +216,9 @@ def convert_bank_name_to_detector_type_isis(detector_name):
     return detector_type
 
 
+# ----------------------------------------------------------------------------------------------------------------------
+#  Functions for bins, ranges and slices
+# ----------------------------------------------------------------------------------------------------------------------
 def parse_event_slice_setting(string_to_parse):
     """
     Create a list of boundaries from a string defining the slices.
@@ -381,6 +386,9 @@ def get_ranges_for_rebin_array(rebin_array):
     return get_ranges_for_rebin_setting(min_value, max_value, step_value, step_type)
 
 
+# ----------------------------------------------------------------------------------------------------------------------
+# Functions related to workspace names
+# ----------------------------------------------------------------------------------------------------------------------
 def get_output_workspace_name(state, reduction_mode):
     """
     Creates the name of the output workspace from a state object.
@@ -549,3 +557,101 @@ def sanitise_instrument_name(instrument_name):
     elif re.search(LARMOR, instrument_name_upper):
         instrument_name = LARMOR
     return instrument_name
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Hashing + ADS
+# ----------------------------------------------------------------------------------------------------------------------
+def get_state_hash_for_can_reduction(state, partial_type=None):
+    """
+    Creates a hash for a (modified) state object.
+
+    Note that we need to modify the state object to exclude elements which are not relevant for the can reduction.
+    This is primarily the setting of the sample workspaces. This is the only place where we directly alter the value
+    of a state object in the entire reduction workflow. Note that we are not changing the
+    @param state: a SANSState object.
+    @param partial_type: if it is a partial type, then it needs to be specified here.
+    @return: the hash of the state
+    """
+    def remove_sample_related_information(full_state):
+        state_to_hash = deepcopy(full_state)
+
+        # Data
+        state_to_hash.data.sample_scatter = EMPTY_NAME
+        state_to_hash.data.sample_scatter_period = ALL_PERIODS
+        state_to_hash.data.sample_transmission = EMPTY_NAME
+        state_to_hash.data.sample_transmission_period = ALL_PERIODS
+        state_to_hash.data.sample_direct = EMPTY_NAME
+        state_to_hash.data.sample_direct_period = ALL_PERIODS
+        state_to_hash.data.sample_scatter_run_number = 1
+
+        # Save
+        state_to_hash.save.user_specified_output_name = ""
+
+        return state_to_hash
+    new_state = remove_sample_related_information(state)
+    new_state_serialized = new_state.property_manager
+    new_state_serialized = json.dumps(new_state_serialized, sort_keys=True, indent=4)
+
+    # If we are dealing with a partial output workspace, then mark it as such
+    if partial_type is OutputParts.Count:
+        state_string = str(new_state_serialized) + "counts"
+    elif partial_type is OutputParts.Norm:
+        state_string = str(new_state_serialized) + "norm"
+    else:
+        state_string = str(new_state_serialized)
+    return str(get_hash_value(state_string))
+
+
+def get_workspace_from_ads_based_on_hash(hash_value):
+    for workspace in get_ads_workspace_references():
+        if has_hash(REDUCED_CAN_TAG, hash_value, workspace):
+            return workspace
+
+
+def does_workspace_exist_on_ads(workspace):
+    """
+    Checks if the workspace exists on the ADS based on a (potentially stored hash value)
+    @param workspace: workspace to check
+    @return: true if it is on the ADS else false
+    """
+    workspace_exists = False
+    if has_tag(REDUCED_CAN_TAG, workspace):
+        has_value = get_tag(REDUCED_CAN_TAG, workspace)
+        ws_reference_from_ads = get_workspace_from_ads_based_on_hash(has_value)
+        if ws_reference_from_ads is not None:
+            workspace_exists = True
+    return workspace_exists
+
+
+def get_reduced_can_workspace_from_ads(state, output_parts):
+    """
+    Get the reduced can workspace from the ADS if it exists else nothing
+
+    @param state: a SANSState object.
+    @param output_parts: if true then search also for the partial workspaces
+    @return: a reduced can object or None.
+    """
+    # Get the standard reduced can workspace)
+    hashed_state = get_state_hash_for_can_reduction(state)
+    reduced_can = get_workspace_from_ads_based_on_hash(hashed_state)
+    reduced_can_count = None
+    reduced_can_norm = None
+    if output_parts:
+        hashed_state_count = get_state_hash_for_can_reduction(state, OutputParts.Count)
+        reduced_can_count = get_workspace_from_ads_based_on_hash(hashed_state_count)
+        hashed_state_norm = get_state_hash_for_can_reduction(state, OutputParts.Norm)
+        reduced_can_norm = get_workspace_from_ads_based_on_hash(hashed_state_norm)
+    return reduced_can, reduced_can_count, reduced_can_norm
+
+
+def write_hash_into_reduced_can_workspace(state, workspace, partial_type=None):
+    """
+    Writes the state hash into a reduced can workspace.
+
+    @param state: a SANSState object.
+    @param workspace: a reduced can workspace
+    @param partial_type: if it is a partial type, then it needs to be specified here.
+    """
+    hashed_state = get_state_hash_for_can_reduction(state, partial_type=partial_type)
+    set_hash(REDUCED_CAN_TAG, hashed_state, workspace)

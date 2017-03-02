@@ -115,7 +115,9 @@ class CommandInterfaceStateDirector(object):
         The execution strategy is:
         1. Find the data entries and great a SANSStateData object out of them
         2. Go sequentially through the commands in a FIFO manner (except for the data entries)
-        3. Returns the constructed state
+        3. Delete the processed state settings. We only need to retain the commands. If we also retain the
+           processed state settings then we will populate some entries twice.
+        4. Returns the constructed state
         @returns a list of valid SANSState object which can be used for data reductions or raises an exception.
         """
         # 1. Get a SANSStateData object.
@@ -124,7 +126,10 @@ class CommandInterfaceStateDirector(object):
         # 2. Go through
         state = self._process_command_queue(data_state)
 
-        # 3. Provide the state
+        # 3. Leave commands in place put clear the list of processed commands, else they will be reused.
+        self._processed_state_settings = {}
+
+        # 4. Provide the state
         return state
 
     def get_commands(self):

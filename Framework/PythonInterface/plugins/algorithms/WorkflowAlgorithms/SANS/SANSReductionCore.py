@@ -49,11 +49,6 @@ class SANSReductionCore(DataProcessorAlgorithm):
         self.setPropertyGroup("TransmissionWorkspace", 'Data')
         self.setPropertyGroup("DirectWorkspace", 'Data')
 
-        self.declareProperty("UseOptimizations", True, direction=Direction.Input,
-                             doc="When enabled the ADS is being searched for already loaded and reduced workspaces. "
-                                 "Depending on your concrete reduction, this could provide a significant"
-                                 " performance boost")
-
         # The component
         allowed_detectors = StringListValidator([DetectorType.to_string(DetectorType.LAB),
                                                  DetectorType.to_string(DetectorType.HAB)])

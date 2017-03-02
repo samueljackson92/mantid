@@ -1,19 +1,19 @@
 from sans.common.constants import EMPTY_NAME
-from sans.common.general_functions import create_unmanaged_algorithm
-from sans.common.enums import (ISISReductionMode, DetectorType, DataType)
-from sans.state.state_functions import (get_reduced_can_workspace_from_ads, write_hash_into_reduced_can_workspace)
+from sans.common.general_functions import (create_unmanaged_algorithm,
+                                           write_hash_into_reduced_can_workspace,
+                                           get_reduced_can_workspace_from_ads)
+from sans.common.enums import (ISISReductionMode, DetectorType, DataType, OutputParts)
 from sans.algorithm_detail.strip_end_nans_and_infs import strip_end_nans
 from sans.algorithm_detail.merge_reductions import (MergeFactory, is_sample, is_can)
 from sans.algorithm_detail.bundles import (OutputBundle, OutputPartsBundle)
 
 
-def run_core_reduction(reduction_alg, reduction_setting_bundle, use_optimizations):
+def run_core_reduction(reduction_alg, reduction_setting_bundle):
     """
     This function runs a core reduction. This is essentially half a reduction (either smaple or can).
 
     :param reduction_alg: a handle to the reduction algorithm.
     :param reduction_setting_bundle: a ReductionSettingBundle tuple
-    :param use_optimizations: a flag to check if optimizations should be used.
     :return: an OutputBundle and an OutputPartsBundle
     """
     # Get component to reduce
@@ -21,7 +21,6 @@ def run_core_reduction(reduction_alg, reduction_setting_bundle, use_optimization
     # Set the properties on the reduction algorithms
     serialized_state = reduction_setting_bundle.state.property_manager
     reduction_alg.setProperty("SANSState", serialized_state)
-    reduction_alg.setProperty("UseOptimizations", use_optimizations)
     reduction_alg.setProperty("Component", component)
     reduction_alg.setProperty("ScatterWorkspace", reduction_setting_bundle.scatter_workspace)
     reduction_alg.setProperty("ScatterMonitorWorkspace", reduction_setting_bundle.scatter_monitor_workspace)
@@ -225,5 +224,22 @@ def run_optimized_for_can(reduction_alg, reduction_setting_bundle):
     partial_output_require_reload = output_parts and not is_valid_partial_workspace
 
     if output_bundle.output_workspace is None or partial_output_require_reload:
-        output_bundle, output_parts_bundle = run_core_reduction(reduction_alg, reduction_setting_bundle, True)
+        output_bundle, output_parts_bundle = run_core_reduction(reduction_alg, reduction_setting_bundle)
+
+        # Now we need to tag the workspaces and add it to the ADS
+        if output_bundle.output_workspace is not None:
+            write_hash_into_reduced_can_workspace(state=output_bundle.state,
+                                                  workspace=output_bundle.output_workspace,
+                                                  partial_type=None)
+
+        if (output_parts_bundle.output_workspace_count is not None and
+           output_parts_bundle.output_workspace_norm is not None):
+            write_hash_into_reduced_can_workspace(state=output_parts_bundle.state,
+                                                  workspace=output_parts_bundle.output_workspace_count,
+                                                  partial_type=OutputParts.Count)
+
+            write_hash_into_reduced_can_workspace(state=output_parts_bundle.state,
+                                                  workspace=output_parts_bundle.output_workspace_norm,
+                                                  partial_type=OutputParts.Norm)
+
     return output_bundle, output_parts_bundle

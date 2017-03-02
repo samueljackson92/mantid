@@ -85,12 +85,12 @@ def set_hash(tag, value, workspace):
     set_tag(tag, hash_value, workspace)
 
 
-def has_hash(tag, value, workspace):
+def has_hash(tag, hash_value, workspace):
     """
-    Checks if a certain hash exists on a workspace.
+    Checks if a hash exists on a workspace.
 
     :param tag: the tag as a hash.
-    :param value: the value which is converted to a hash and checked.
+    :param hash_value: the hash which is being checked
     :param workspace: the workspace.
     :return: true if the hash exists on the workspace else false.
     """
@@ -98,9 +98,9 @@ def has_hash(tag, value, workspace):
         return False
 
     check_if_valid_tag_and_workspace(tag, workspace)
-    same_hash = False
-    if has_tag(tag, workspace):
-        saved_hash = get_tag(tag, workspace)
-        to_check_hash = get_hash_value(str(value))
-        same_hash = True if saved_hash == to_check_hash else False
-    return same_hash
+
+    if not has_tag(tag, workspace):
+        return False
+
+    saved_hash = get_tag(tag, workspace)
+    return saved_hash == hash_value

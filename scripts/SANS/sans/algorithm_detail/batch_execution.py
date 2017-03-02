@@ -5,7 +5,7 @@ from mantid.api import AnalysisDataService
 
 from sans.common.general_functions import (create_unmanaged_algorithm, get_output_workspace_name_from_workspace,
                                            get_output_workspace_base_name_from_workspace,
-                                           get_base_name_from_multi_period_name)
+                                           get_base_name_from_multi_period_name, does_workspace_exist_on_ads)
 from sans.common.enums import (SANSDataType, SaveType, OutputMode)
 from sans.common.constants import (EMPTY_NAME, TRANS_SUFFIX, SANS_SUFFIX, ALL_PERIODS)
 from sans.common.file_information import (get_extension_for_file_type, SANSFileInformationFactory)
@@ -60,7 +60,9 @@ def single_reduction_for_batch(state, use_optimizations, output_mode):
     :param use_optimizations: if true then the optimizations of child algorithms are enabled.
     :param output_mode: the output mode
     """
+    # ------------------------------------------------------------------------------------------------------------------
     # Load the data
+    # ------------------------------------------------------------------------------------------------------------------
     workspace_to_name = {SANSDataType.SampleScatter: "SampleScatterWorkspace",
                          SANSDataType.SampleTransmission: "SampleTransmissionWorkspace",
                          SANSDataType.SampleDirect: "SampleDirectWorkspace",
@@ -71,14 +73,20 @@ def single_reduction_for_batch(state, use_optimizations, output_mode):
     workspace_to_monitor = {SANSDataType.SampleScatter: "SampleScatterMonitorWorkspace",
                             SANSDataType.CanScatter: "CanScatterMonitorWorkspace"}
     workspaces, monitors = provide_loaded_data(state, use_optimizations, workspace_to_name, workspace_to_monitor)
-    # Split into individual bundles which can be reduced individually
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # Get reduction settings
+    # Split into individual bundles which can be reduced individually. We split here if we have multiple periods or
+    # sliced times for example.
+    # ------------------------------------------------------------------------------------------------------------------
     reduction_packages = get_reduction_packages(state, workspaces, monitors)
 
-    # Run single reduction
+    # ------------------------------------------------------------------------------------------------------------------
+    # Run reductions (one at a time)
+    # ------------------------------------------------------------------------------------------------------------------
     single_reduction_name = "SANSSingleReduction"
     single_reduction_options = {"UseOptimizations": use_optimizations}
     reduction_alg = create_unmanaged_algorithm(single_reduction_name, **single_reduction_options)
-
     # Perform the data reduction
     for reduction_package in reduction_packages:
         # Set the properties on the algorithm
@@ -104,6 +112,19 @@ def single_reduction_for_batch(state, use_optimizations, output_mode):
         if output_mode is OutputMode.PublishToADS or output_mode is OutputMode.Both:
             output_workspaces_to_ads(reduction_package)
 
+        # If we have the optimizations enabled then we want to store the can reductions on the ADS in order to
+        # have them later available for other reductions (note that they are tagged with the hashed state information)
+        if use_optimizations:
+            reduced_lab_can = reduction_alg.getProperty("OutputWorkspaceLABCan").value
+            reduced_lab_can_count = reduction_alg.getProperty("OutputWorkspaceLABCanCount").value
+            reduced_lab_can_norm = reduction_alg.getProperty("OutputWorkspaceLABCanNorm").value
+            reduced_hab_can = reduction_alg.getProperty("OutputWorkspaceHABCan").value
+            reduced_hab_can_count = reduction_alg.getProperty("OutputWorkspaceHABCanCount").value
+            reduced_hab_can_norm = reduction_alg.getProperty("OutputWorkspaceHABCanNorm").value
+            output_reduced_can_workspaces_to_ads(reduced_lab_can, reduced_lab_can_count, reduced_lab_can_norm,
+                                                 reduced_hab_can, reduced_hab_can_count, reduced_hab_can_norm,
+                                                 reduction_package)
+
     # Once all reductions are completed we need to check if the user would like to save the reduced workspaces
     # to a file.
     if output_mode is OutputMode.Both:
@@ -126,6 +147,9 @@ def single_reduction_for_batch(state, use_optimizations, output_mode):
         delete_output_workspaces(reduction_packages)
 
 
+# ----------------------------------------------------------------------------------------------------------------------
+# Functions for Data Loading
+# ----------------------------------------------------------------------------------------------------------------------
 def get_expected_workspace_names(file_information, is_transmission, period, get_base_name_only=False):
     """
     Creates the expected names for SANS workspaces.
@@ -362,6 +386,9 @@ def get_multi_period_workspaces(load_alg, workspace_name, number_of_workspaces, 
     return workspaces
 
 
+# ----------------------------------------------------------------------------------------------------------------------
+# Functions for reduction packages
+# ----------------------------------------------------------------------------------------------------------------------
 def get_reduction_packages(state, workspaces, monitors):
     """
     This function creates a set of reduction packages which contain the necessary state for a single reduction
@@ -561,9 +588,18 @@ def set_properties_for_reduction_algorithm(reduction_alg, reduction_package, wor
     reduction_alg.setProperty("OutputWorkspaceHAB", EMPTY_NAME)
     reduction_alg.setProperty("OutputWorkspaceMerged", EMPTY_NAME)
 
+    # Set the output workspaces for the can reductions -- note that these will only be set if optimizations
+    # are enabled
+    reduction_alg.setProperty("OutputWorkspaceLABCan", EMPTY_NAME)
+    reduction_alg.setProperty("OutputWorkspaceLABCanCount", EMPTY_NAME)
+    reduction_alg.setProperty("OutputWorkspaceLABCanNorm", EMPTY_NAME)
+    reduction_alg.setProperty("OutputWorkspaceHABCan", EMPTY_NAME)
+    reduction_alg.setProperty("OutputWorkspaceHABCanCount", EMPTY_NAME)
+    reduction_alg.setProperty("OutputWorkspaceHABCanNorm", EMPTY_NAME)
+
 
 # ----------------------------------------------------------------------------------------------------------------------
-# Output section
+# Functions for outputs
 # ----------------------------------------------------------------------------------------------------------------------
 def output_workspaces_to_ads(reduction_package):
     """
@@ -572,6 +608,27 @@ def output_workspaces_to_ads(reduction_package):
     :param reduction_package: a reduction package containing the sans state, reduced workspaces etc.
     @return:
     """
+    def output_workspace(_state, _workspace, _reduction_mode,
+                         _is_part_of_multi_period_reduction, _is_part_of_event_slice_reduction):
+        output_name, output_base_name = get_output_names(_state, _workspace, _reduction_mode,
+                                                         _is_part_of_multi_period_reduction,
+                                                         _is_part_of_event_slice_reduction)
+        publish_to_ads(_workspace,
+                       output_name,
+                       output_base_name,
+                       _is_part_of_multi_period_reduction,
+                       _is_part_of_event_slice_reduction)
+
+    def output_workspace_sample_and_can_in_reduced_scenario(_state, _workspace, _reduction_mode):
+        output_name, _ = get_output_names(_state, _workspace, _reduction_mode, False, False)
+        if _reduction_mode is ReducedDataType.LAB:
+            output_name += "_lab"
+        elif _reduction_mode is ReducedDataType.HAB:
+            output_name += "_hab"
+        else:
+            raise RuntimeError("The reduction mode {0} has to be either LAB or HAB".format(_reduction_mode))
+        output_base_name = "can_sample_workspaces_from_merged_reduction"
+        publish_to_ads(_workspace, output_name, output_base_name, False,  False, force_group=True)
 
     reduced_lab = reduction_package.reduced_lab
     reduced_hab = reduction_package.reduced_hab
@@ -580,39 +637,24 @@ def output_workspaces_to_ads(reduction_package):
     is_part_of_event_slice_reduction = reduction_package.is_part_of_event_slice_reduction
     state = reduction_package.state
 
-    if reduced_lab:
-        output_name, output_base_name = get_output_names(state, reduced_lab, ReducedDataType.LAB,
-                                                         is_part_of_multi_period_reduction,
-                                                         is_part_of_event_slice_reduction)
-        publish_to_ads(reduced_lab,
-                       output_name,
-                       output_base_name,
-                       is_part_of_multi_period_reduction,
-                       is_part_of_event_slice_reduction)
-
-    if reduced_hab:
-        output_name, output_base_name = get_output_names(state, reduced_hab, ReducedDataType.HAB,
-                                                         is_part_of_multi_period_reduction,
-                                                         is_part_of_event_slice_reduction)
-        publish_to_ads(reduced_hab,
-                       output_name,
-                       output_base_name,
-                       is_part_of_multi_period_reduction,
-                       is_part_of_event_slice_reduction)
-
-    if reduced_merged:
-        output_name, output_base_name = get_output_names(state, reduced_merged, ReducedDataType.Merged,
-                                                         is_part_of_multi_period_reduction,
-                                                         is_part_of_event_slice_reduction)
-        publish_to_ads(reduced_merged,
-                       output_name,
-                       output_base_name,
-                       is_part_of_multi_period_reduction,
-                       is_part_of_event_slice_reduction)
+    # If we have a merged reduction also output the reduced sample and can workspaces.
+    # But they are all grouped into a Group workspace with the name
+    if reduced_merged is not None:
+        output_workspace(state, reduced_merged, ReducedDataType.Merged,
+                         is_part_of_multi_period_reduction, is_part_of_event_slice_reduction)
+        output_workspace_sample_and_can_in_reduced_scenario(state, reduced_lab, ReducedDataType.LAB)
+        output_workspace_sample_and_can_in_reduced_scenario(state, reduced_hab, ReducedDataType.HAB)
+    else:
+        if reduced_lab:
+            output_workspace(state, reduced_lab, ReducedDataType.LAB,
+                             is_part_of_multi_period_reduction, is_part_of_event_slice_reduction)
+        if reduced_hab:
+            output_workspace(state, reduced_hab, ReducedDataType.HAB,
+                             is_part_of_multi_period_reduction, is_part_of_event_slice_reduction)
 
 
 def publish_to_ads(workspace, workspace_name, workspace_base_name, is_part_of_multi_period_reduction,
-                   is_part_of_event_slice_reduction):
+                   is_part_of_event_slice_reduction, force_group=False):
     """
     Publish the reduced workspaces to the ADS. If the workspace is part of a multi-period workspace which
     is being reduced then we need to make sure that the workspace is added with the workspace name but then
@@ -627,7 +669,108 @@ def publish_to_ads(workspace, workspace_name, workspace_base_name, is_part_of_mu
                                 is common to all periods.
     :param is_part_of_multi_period_reduction: if true then we have several reductions from a multi-period file
     :param is_part_of_event_slice_reduction: if true then we have several reductions from a event slice scan
+    :param force_group: if true then we add the workspace to a group workspace. There are some scenarios, such as
+                        sample and can reductions of a merged reduction which require this
     """
+    if is_part_of_multi_period_reduction or is_part_of_event_slice_reduction or force_group:
+        AnalysisDataService.addOrReplace(workspace_name, workspace)
+        # If we are dealing with a reduced workspace which is actually part of a multi-period workspace
+        # then we need to add it to a GroupWorkspace, if there is no GroupWorkspace yet, then we create one
+        name_of_group_workspace = workspace_base_name
+
+        if AnalysisDataService.doesExist(name_of_group_workspace):
+            group_workspace = AnalysisDataService.retrieve(name_of_group_workspace)
+            group_workspace.add(workspace_name)
+        else:
+            group_name = "GroupWorkspaces"
+            group_options = {"InputWorkspaces": [workspace_name],
+                             "OutputWorkspace": name_of_group_workspace}
+            group_alg = create_unmanaged_algorithm(group_name, **group_options)
+            # At this point we are dealing with the ADS, hence we need to make sure that this is not called as
+            # a child algorithm
+            group_alg.setChild(False)
+            group_alg.execute()
+    else:
+        AnalysisDataService.addOrReplace(workspace_name, workspace)
+
+
+def output_reduced_can_workspaces_to_ads(reduced_lab_can, reduced_lab_can_count, reduced_lab_can_norm,
+                                         reduced_hab_can, reduced_hab_can_count, reduced_hab_can_norm,
+                                         reduction_package):
+    """
+    Publishes reduced can workspaces on the ADS.
+
+    :param reduced_lab_can: the reduced Can workspace for LAB
+    :param reduced_lab_can_count: the reduced Can count workspace for LAB
+    :param reduced_lab_can_norm: the reduced Can norm workspace for LAB
+    :param reduced_hab_can:  the reduced Can workspace for HAB
+    :param reduced_hab_can_count: the reduced Can count workspace for HAB
+    :param reduced_hab_can_norm: the reduced Can norm workspace for HAB
+    :param reduction_package: the reduction package which contains the reduced workspaces associated with these
+                              reduced can workspaces.
+    """
+    def output_workspace(_state, _workspace, _reduction_mode, _is_part_of_multi_period_reduction,
+                         _is_part_of_event_slice_reduction, _suffix):
+        output_name, output_base_name = get_output_names(_state, _workspace, _reduction_mode,
+                                                         _is_part_of_multi_period_reduction,
+                                                         _is_part_of_event_slice_reduction)
+        output_name += _suffix
+        output_base_name += _suffix
+        publish_can_to_ads(_workspace, output_name, output_base_name,
+                           _is_part_of_multi_period_reduction,
+                           _is_part_of_event_slice_reduction)
+
+    is_part_of_multi_period_reduction = reduction_package.is_part_of_multi_period_reduction
+    is_part_of_event_slice_reduction = reduction_package.is_part_of_event_slice_reduction
+    state = reduction_package.state
+
+    if reduced_lab_can:
+        suffix = "_lab_can"
+        output_workspace(state, reduced_lab_can, ReducedDataType.LAB,
+                         is_part_of_event_slice_reduction, is_part_of_multi_period_reduction, suffix)
+
+    if reduced_lab_can_count is not None and reduced_lab_can_norm is not None:
+        suffix_count = "_lab_can_count"
+        output_workspace(state, reduced_lab_can_count, ReducedDataType.LAB,
+                         is_part_of_event_slice_reduction, is_part_of_multi_period_reduction, suffix_count)
+        suffix_norm = "_lab_can_norm"
+        output_workspace(state, reduced_lab_can_norm, ReducedDataType.LAB,
+                         is_part_of_event_slice_reduction, is_part_of_multi_period_reduction, suffix_norm)
+
+    if reduced_hab_can:
+        suffix = "_hab_can"
+        output_workspace(state, reduced_hab_can, ReducedDataType.HAB,
+                         is_part_of_event_slice_reduction, is_part_of_multi_period_reduction, suffix)
+
+    if reduced_hab_can_count is not None and reduced_hab_can_norm is not None:
+        suffix_count = "_hab_can_count"
+        output_workspace(state, reduced_hab_can_count, ReducedDataType.HAB,
+                         is_part_of_event_slice_reduction, is_part_of_multi_period_reduction, suffix_count)
+        suffix_norm = "_hab_can_norm"
+        output_workspace(state, reduced_hab_can_norm, ReducedDataType.HAB,
+                         is_part_of_event_slice_reduction, is_part_of_multi_period_reduction, suffix_norm)
+
+
+def publish_can_to_ads(workspace, workspace_name, workspace_base_name, is_part_of_multi_period_reduction,
+                       is_part_of_event_slice_reduction):
+    """
+    Publish the reduced can workspace to the ADS. If the workspace is part of a multi-period workspace which
+    is being reduced then we need to make sure that the workspace is added with the workspace name but then
+    added to a WorkspaceGroup with the base name. For non-multi-period data the workspace name and the workspace
+    base name are the same and we just have to add it to the ADS. Note that the can will not be added if it
+    already exists.
+
+    :param workspace: the workspace which is being added to the ADS
+    :param workspace_name: the name of the workspace
+    :param workspace_base_name: the base name of the workspace. This is identiacal to the workspace name for
+                                non-multi-period data. For multi-period data it is different, eg 7712p7main_1D could
+                                be the name of the 7th reduced period and 7712main_1D would be the base name which
+                                is common to all periods.
+    :param is_part_of_multi_period_reduction: if true then we have several reductions from a multi-period file
+    :param is_part_of_event_slice_reduction: if true then we have several reductions from a event slice scan
+    """
+    if does_workspace_exist_on_ads(workspace):
+        return
 
     if is_part_of_multi_period_reduction or is_part_of_event_slice_reduction:
         AnalysisDataService.addOrReplace(workspace_name, workspace)

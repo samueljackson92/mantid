@@ -4,7 +4,7 @@
 
 from __future__ import (absolute_import, division, print_function)
 import copy
-from sans.state.state_base import (StateBase, BoolParameter, StringParameter,
+from sans.state.state_base import (StateBase, BoolParameter, StringParameter, StringWithNoneParameter,
                                    ClassTypeListParameter, rename_descriptor_names)
 from sans.common.enums import (SaveType, SANSInstrument)
 from sans.state.automatic_setters import (automatic_setters)
@@ -19,7 +19,7 @@ class StateSave(StateBase):
     file_format = ClassTypeListParameter(SaveType)
 
     # Settings for the output name
-    user_specified_output_name = StringParameter()
+    user_specified_output_name = StringWithNoneParameter()
     user_specified_output_name_suffix = StringParameter()
     use_reduction_mode_as_suffix = BoolParameter()
 
