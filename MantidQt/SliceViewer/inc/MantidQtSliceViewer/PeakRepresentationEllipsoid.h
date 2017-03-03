@@ -50,6 +50,10 @@ public:
   movePositionNonOrthogonal(Mantid::Geometry::PeakTransform_sptr peakTransform,
                             Mantid::coord_t *fromHklToXyz, size_t dimX,
                             size_t dimY, size_t dimMissing) override {
+    (void)fromHklToXyz;
+    (void)dimX;
+    (void)dimY;
+    (void)dimMissing;
     movePosition(peakTransform);
   }
   /// Get the bounding box.

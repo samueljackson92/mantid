@@ -36,7 +36,7 @@ public:
   ~ConcretePeaksPresenter() override;
   void update() override;
   void updateWithSlicePoint(const PeakBoundingBox &slicePoint) override;
-  void setNonOrthogonal(bool nonOrthogonalEnabled);
+  void setNonOrthogonal(bool nonOrthogonalEnabled) override;
   bool changeShownDim(size_t dimX, size_t dimY) override;
   bool isLabelOfFreeAxis(const std::string &label) const override;
   SetPeaksWorkspaces presentedWorkspaces() const override;
