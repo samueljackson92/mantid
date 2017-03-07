@@ -1,15 +1,18 @@
 #include "MantidAlgorithms/GetDetectorOffsets.h"
-
 #include "MantidAPI/CompositeFunction.h"
+#include "MantidAPI/DetectorInfo.h"
 #include "MantidAPI/FileProperty.h"
 #include "MantidAPI/FunctionFactory.h"
 #include "MantidAPI/IPeakFunction.h"
 #include "MantidAPI/SpectrumInfo.h"
+#include "MantidAPI/WorkspaceFactory.h"
 #include "MantidAPI/WorkspaceUnitValidator.h"
 #include "MantidDataObjects/MaskWorkspace.h"
 #include "MantidDataObjects/OffsetsWorkspace.h"
+#include "MantidIndexing/IndexInfo.h"
 #include "MantidKernel/BoundedValidator.h"
 #include "MantidKernel/ListValidator.h"
+#include "MantidTypes/SpectrumDefinition.h"
 
 namespace Mantid {
 namespace Algorithms {
@@ -39,7 +42,6 @@ void GetDetectorOffsets::init() {
                   "Step size used to bin d-spacing data");
   declareProperty("DReference", 2.0, mustBePositive,
                   "Center of reference peak in d-space");
-
   declareProperty(
       "XMin", 0.0,
       "Minimum of CrossCorrelation data to search for peak, usually negative");
@@ -51,26 +53,18 @@ void GetDetectorOffsets::init() {
                                             FileProperty::OptionalSave, ".cal"),
                   "Optional: The name of the output CalFile to save the "
                   "generated OffsetsWorkspace.");
-  declareProperty<bool>("Sort CalFile", true,
-                        "If true this sorts the output calibration file by "
-                        "detector ID (default). If set to false it preserves "
-                        "the detector ID order found in the workspace",
-                        Direction::Input);
-
   declareProperty(make_unique<WorkspaceProperty<OffsetsWorkspace>>(
                       "OutputWorkspace", "", Direction::Output),
                   "An output workspace containing the offsets.");
   declareProperty(make_unique<WorkspaceProperty<>>("MaskWorkspace", "Mask",
                                                    Direction::Output),
                   "An output workspace containing the mask.");
-
   // Only keep peaks
   declareProperty(
       "PeakFunction", "Gaussian",
       boost::make_shared<StringListValidator>(
           FunctionFactory::Instance().getFunctionNames<IPeakFunction>()),
       "The function type for fitting the peaks.");
-
   declareProperty("MaxOffset", 1.0,
                   "Maximum absolute value of offsets; default is 1");
 
@@ -79,7 +73,6 @@ void GetDetectorOffsets::init() {
   declareProperty("OffsetMode", "Relative",
                   boost::make_shared<StringListValidator>(modes),
                   "Whether to calculate a relative or absolute offset");
-
   declareProperty("DIdeal", 2.0, mustBePositive,
                   "The known peak centre value from the NIST standard "
                   "information, this is only used in Absolute OffsetMode.");
@@ -109,7 +102,7 @@ void GetDetectorOffsets::exec() {
 
   m_dideal = getProperty("DIdeal");
 
-  size_t nspec = inputW->getNumberHistograms();
+  int64_t nspec = inputW->getNumberHistograms();
   // Create the output OffsetsWorkspace
   auto outputW = boost::make_shared<OffsetsWorkspace>(inputW->getInstrument());
   // Create the output MaskWorkspace
@@ -121,44 +114,42 @@ void GetDetectorOffsets::exec() {
   // Fit all the spectra with a gaussian
   Progress prog(this, 0, 1.0, nspec);
   auto &spectrumInfo = maskWS->mutableSpectrumInfo();
+  const auto &indexInfo = inputW->indexInfo();
   PARALLEL_FOR_IF(Kernel::threadSafe(*inputW))
-  for (int64_t wi = 0; wi < static_cast<int64_t>(nspec); ++wi) {
+  for (int wi = 0; wi < nspec; ++wi) {
     PARALLEL_START_INTERUPT_REGION
     // Fit the peak
     double offset = fitSpectra(wi, isAbsolute);
-    bool mask = false;
+    double mask = 0.0;
     if (std::abs(offset) > m_maxOffset) {
       offset = 0.0;
-      mask = true;
+      mask = 1.0;
     }
 
     // Get the list of detectors in this pixel
-    const auto &dets = inputW->getSpectrum(wi).getDetectorIDs();
-    outputW->getSpectrum(wi).setDetectorIDs(dets);
+    auto dets = indexInfo.detectorIDs(wi);
+
     // Most of the exec time is in FitSpectra, so this critical block should not
     // be a problem.
-
-    // Use the same offset for all detectors from this pixel
-    for (const auto &det : dets) {
-      PARALLEL_CRITICAL(GetDetectorOffsets_setValue) {
-        outputW->setValue(det, offset);
-      }
-
-      const auto mapEntry = pixel_to_wi.find(det);
-      if (mapEntry == pixel_to_wi.end())
-        continue;
-      const size_t workspaceIndex = mapEntry->second;
-      if (mask == true) {
-        // Being masked
-        maskWS->getSpectrum(workspaceIndex).clearData();
-        spectrumInfo.setMasked(workspaceIndex, true);
-        maskWS->mutableY(workspaceIndex)[0] = 1.0;
-      } else {
-        // Using the detector indicated with 0 value
-        maskWS->mutableY(workspaceIndex)[0] = 0.0;
+    PARALLEL_CRITICAL(GetDetectorOffsets_setValue) {
+      // Use the same offset for all detectors from this pixel
+      for (const auto &det : dets) {
+        outputW->setValue(static_cast<detid_t>(det), offset);
+        const auto mapEntry = pixel_to_wi.find(det);
+        if (mapEntry == pixel_to_wi.end())
+          continue;
+        const size_t workspaceIndex = mapEntry->second;
+        if (mask == 1.) {
+          // Being masked
+          maskWS->getSpectrum(workspaceIndex).clearData();
+          spectrumInfo.setMasked(workspaceIndex, true);
+          maskWS->mutableY(workspaceIndex)[0] = mask;
+        } else {
+          // Using the detector
+          maskWS->mutableY(workspaceIndex)[0] = mask;
+        }
       }
     }
-
     prog.report();
     PARALLEL_END_INTERUPT_REGION
   }
@@ -176,8 +167,6 @@ void GetDetectorOffsets::exec() {
     childAlg->setProperty("OffsetsWorkspace", outputW);
     childAlg->setProperty("MaskWorkspace", maskWS);
     childAlg->setPropertyValue("Filename", filename);
-    childAlg->setProperty("Sort Detector IDs",
-                          getPropertyValue("Sort CalFile"));
     childAlg->executeAsChildAlg();
   }
 }
