@@ -32,8 +32,8 @@ void CompositePeaksPresenter::update() {
     m_default->update();
     return;
   }
-  for (auto it = m_subjects.begin(); it != m_subjects.end(); ++it) {
-    (*it)->update();
+  for (auto &i : m_subjects) {
+    i->update();
   }
 }
 
@@ -47,8 +47,8 @@ void CompositePeaksPresenter::updateWithSlicePoint(
     m_default->updateWithSlicePoint(point);
     return;
   }
-  for (auto it = m_subjects.begin(); it != m_subjects.end(); ++it) {
-    (*it)->updateWithSlicePoint(point);
+  for (auto &i : m_subjects) {
+    i->updateWithSlicePoint(point);
   }
 }
 
@@ -60,8 +60,8 @@ bool CompositePeaksPresenter::changeShownDim(size_t dimX, size_t dimY) {
     return m_default->changeShownDim(dimX, dimY);
   }
   bool result = true;
-  for (auto it = m_subjects.begin(); it != m_subjects.end(); ++it) {
-    result &= (*it)->changeShownDim(dimX, dimY);
+  for (auto &i : m_subjects) {
+    result &= i->changeShownDim(dimX, dimY);
   }
   return result;
 }
@@ -71,8 +71,8 @@ void CompositePeaksPresenter::setNonOrthogonal(bool nonOrthogonalEnabled) {
     m_default->setNonOrthogonal(nonOrthogonalEnabled);
   }
 
-  for (auto it = m_subjects.begin(); it != m_subjects.end(); ++it) {
-    (*it)->setNonOrthogonal(nonOrthogonalEnabled);
+  for (auto &i : m_subjects) {
+    i->setNonOrthogonal(nonOrthogonalEnabled);
   }
 }
 
@@ -86,8 +86,8 @@ bool CompositePeaksPresenter::isLabelOfFreeAxis(
     return m_default->isLabelOfFreeAxis(label);
   }
   bool result = true;
-  for (auto it = m_subjects.begin(); it != m_subjects.end(); ++it) {
-    result &= (*it)->isLabelOfFreeAxis(label);
+  for (auto &i : m_subjects) {
+    result &= i->isLabelOfFreeAxis(label);
   }
   return result;
 }
@@ -164,8 +164,8 @@ Return a collection of all referenced workspaces on demand.
 */
 SetPeaksWorkspaces CompositePeaksPresenter::presentedWorkspaces() const {
   SetPeaksWorkspaces allWorkspaces;
-  for (auto it = m_subjects.begin(); it != m_subjects.end(); ++it) {
-    auto workspacesToAppend = (*it)->presentedWorkspaces();
+  for (auto &i : m_subjects) {
+    auto workspacesToAppend = i->presentedWorkspaces();
     allWorkspaces.insert(workspacesToAppend.begin(), workspacesToAppend.end());
   }
   return allWorkspaces;
