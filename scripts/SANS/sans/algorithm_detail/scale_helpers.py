@@ -1,3 +1,4 @@
+from __future__ import (absolute_import, division, print_function)
 import math
 from abc import (ABCMeta, abstractmethod)
 from sans.common.enums import (SANSInstrument, SampleShape, convert_int_to_shape, DataType)
@@ -79,7 +80,7 @@ class DivideByVolumeFactory(object):
         super(DivideByVolumeFactory, self).__init__()
 
     @staticmethod
-    def create_divide_by_volume(state, data_type):
+    def create_divide_by_volume(state):
         data = state.data
         instrument = data.instrument
 

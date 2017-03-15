@@ -1,5 +1,5 @@
+from __future__ import (absolute_import, division, print_function)
 from mantid.api import ExperimentInfo
-
 from sans.common.general_functions import (create_unmanaged_algorithm, sanitise_instrument_name)
 from sans.common.constants import EMPTY_NAME
 

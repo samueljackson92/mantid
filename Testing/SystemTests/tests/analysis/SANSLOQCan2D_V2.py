@@ -1,4 +1,6 @@
 #pylint: disable=no-init
+
+from __future__ import (absolute_import, division, print_function)
 import stresstesting
 from mantid.simpleapi import *
 from sans.command_interface.ISISCommandInterface import (LOQ, Set2D, Detector, MaskFile, SetDetectorOffsets, Gravity,

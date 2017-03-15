@@ -1,8 +1,8 @@
 """ Merges two reduction types to single reduction"""
 
+from __future__ import (absolute_import, division, print_function)
 from abc import (ABCMeta, abstractmethod)
-
-from sans.common.general_functions import create_unmanaged_algorithm
+from sans.common.general_functions import create_child_algorithm
 from sans.common.enums import (SANSInstrument, DataType, FitModeForMerge)
 from sans.algorithm_detail.bundles import MergeBundle
 
@@ -12,7 +12,7 @@ class Merger(object):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def merge(self, reduction_settings):
+    def merge(self, reduction_mode_vs_output_bundles, parent_alg=None):
         pass
 
 
@@ -23,11 +23,12 @@ class ISIS1DMerger(Merger):
     def __init__(self):
         super(ISIS1DMerger, self).__init__()
 
-    def merge(self, reduction_mode_vs_output_bundles):
+    def merge(self, reduction_mode_vs_output_bundles, parent_alg=None):
         """
         Merges two partial reductions to obtain a merged reduction.
 
         :param reduction_mode_vs_output_bundles: a ReductionMode vs OutputBundle map
+        :param parent_alg: a handle to the parent algorithm.
         :return: a MergeBundle with the merged which contains the merged workspace.
         """
         # Get the primary and secondary detectors for stitching. This is normally LAB and HAB, but in other scenarios
@@ -67,7 +68,7 @@ class ISIS1DMerger(Merger):
                                   "ProcessCan": True}
             stitch_options.update(stitch_options_can)
 
-        stitch_alg = create_unmanaged_algorithm(stitch_name, **stitch_options)
+        stitch_alg = create_child_algorithm(parent_alg, stitch_name, **stitch_options)
         stitch_alg.execute()
 
         # Get the fit values
@@ -84,7 +85,7 @@ class NullMerger(Merger):
     def __init__(self):
         super(NullMerger, self).__init__()
 
-    def merge(self, reduction_settings):
+    def merge(self, reduction_mode_vs_output_bundles, parent_alg=None):
         pass
 
 

@@ -2,12 +2,13 @@
 
 """ SANSSingleReduction algorithm performs a single reduction."""
 
+from __future__ import (absolute_import, division, print_function)
 from mantid.kernel import (Direction, PropertyManagerProperty, Property)
-from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, AlgorithmFactory, PropertyMode)
+from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, AlgorithmFactory, PropertyMode, Progress)
 
 from sans.state.state_base import create_deserialized_sans_state_from_property_manager
 from sans.common.enums import (ReductionMode, DataType, ISISReductionMode)
-from sans.common.general_functions import (create_unmanaged_algorithm, add_workspace_name)
+from sans.common.general_functions import (create_child_algorithm, does_can_workspace_exist_on_ads)
 from sans.algorithm_detail.single_execution import (run_core_reduction, get_final_output_workspaces,
                                                     get_merge_bundle_for_merge_request, run_optimized_for_can)
 from sans.algorithm_detail.bundles import ReductionSettingBundle
@@ -150,7 +151,10 @@ class SANSSingleReduction(DataProcessorAlgorithm):
         # Create the reduction core algorithm
         reduction_name = "SANSReductionCore"
         reduction_options = {}
-        reduction_alg = create_unmanaged_algorithm(reduction_name, **reduction_options)
+        reduction_alg = create_child_algorithm(self, reduction_name, **reduction_options)
+
+        # Set up progress
+        progress = self._get_progress(len(reduction_setting_bundles), overall_reduction_mode)
 
         # --------------------------------------------------------------------------------------------------------------
         # Reduction
@@ -158,6 +162,7 @@ class SANSSingleReduction(DataProcessorAlgorithm):
         output_bundles = []
         output_parts_bundles = []
         for reduction_setting_bundle in reduction_setting_bundles:
+            progress.report("Running a single reduction ...")
             # We want to make use of optimizations here. If a can workspace has already been reduced with the same can
             # settings and is stored in the ADS, then we should use it (provided the user has optimizations enabled).
             if use_optimizations and reduction_setting_bundle.data_type is DataType.Can:
@@ -175,15 +180,17 @@ class SANSSingleReduction(DataProcessorAlgorithm):
         reduction_mode_vs_output_workspaces = {}
         # Merge if required with stitching etc.
         if overall_reduction_mode is ReductionMode.Merged:
-            merge_bundle = get_merge_bundle_for_merge_request(output_parts_bundles)
+            progress.report("Merging reductions ...")
+            merge_bundle = get_merge_bundle_for_merge_request(output_parts_bundles, self)
             self.set_shift_and_scale_output(merge_bundle)
             reduction_mode_vs_output_workspaces.update({ReductionMode.Merged: merge_bundle.merged_workspace})
 
         # --------------------------------------------------------------------------------------------------------------
         # Deal with non-merged
-        # Note that we have non-merged workspaces even in the case of a merged reduction
+        # Note that we have non-merged workspaces even in the case of a merged reduction, ie LAB and HAB results
         # --------------------------------------------------------------------------------------------------------------
-        output_workspaces_non_merged = get_final_output_workspaces(output_bundles)
+        progress.report("Final clean up...")
+        output_workspaces_non_merged = get_final_output_workspaces(output_bundles, self)
         reduction_mode_vs_output_workspaces.update(output_workspaces_non_merged)
 
         # --------------------------------------------------------------------------------------------------------------
@@ -193,14 +200,14 @@ class SANSSingleReduction(DataProcessorAlgorithm):
         # Todo: Set sample log -> Userfile and unfitted transmission workspace. Should probably set on
         # higher level (SANSBatch)
         # Set the output workspaces
-        self.set_output_workspaces(reduction_mode_vs_output_workspaces, state)
+        self.set_output_workspaces(reduction_mode_vs_output_workspaces)
 
         # --------------------------------------------------------------------------------------------------------------
         # Set the reduced can workspaces on the output if optimizations are
         # enabled. This will allow SANSBatchReduction to add them to the ADS.
         # --------------------------------------------------------------------------------------------------------------
         if use_optimizations:
-            self.set_reduced_can_workspace_on_output(state, output_bundles, output_parts_bundles)
+            self.set_reduced_can_workspace_on_output(output_bundles, output_parts_bundles)
 
     def validateInputs(self):
         errors = dict()
@@ -293,19 +300,17 @@ class SANSSingleReduction(DataProcessorAlgorithm):
         self.setProperty("OutScaleFactor", merge_bundle.scale)
         self.setProperty("OutShiftFactor", merge_bundle.shift)
 
-    def set_output_workspaces(self, reduction_mode_vs_output_workspaces, state):
+    def set_output_workspaces(self, reduction_mode_vs_output_workspaces):
         """
         Sets the output workspaces which can be HAB, LAB or Merged.
 
         At this step we also provide a workspace name to the sample logs which can be used later on for saving
         :param reduction_mode_vs_output_workspaces:  map from reduction mode to output workspace
-        :param state: a SANSState object
         """
         # Note that this breaks the flexibility that we have established with the reduction mode. We have not hardcoded
         # HAB or LAB anywhere which means that in the future there could be other detectors of relevance. Here we
         # reference HAB and LAB directly since we currently don't want to rely on dynamic properties. See also in PyInit
         for reduction_mode, output_workspace in reduction_mode_vs_output_workspaces.items():
-            add_workspace_name(output_workspace, state, reduction_mode)
             if reduction_mode is ReductionMode.Merged:
                 self.setProperty("OutputWorkspaceMerged", output_workspace)
             elif reduction_mode is ISISReductionMode.LAB:
@@ -316,7 +321,7 @@ class SANSSingleReduction(DataProcessorAlgorithm):
                 raise RuntimeError("SANSSingleReduction: Cannot set the output workspace. The selected reduction "
                                    "mode {0} is unknown.".format(reduction_mode))
 
-    def set_reduced_can_workspace_on_output(self, state, output_bundles, output_bundles_part):
+    def set_reduced_can_workspace_on_output(self, output_bundles, output_bundles_part):
         """
         Sets the reduced can workspaces on the output properties.
 
@@ -327,7 +332,6 @@ class SANSSingleReduction(DataProcessorAlgorithm):
         4. HAB Can
         5. HAB Can Count
         6. HAB Can Norm
-        :param state: a sans state object.
         :param output_bundles: a list of output bundles
         :param output_bundles_part: a list of partial output bundles
         """
@@ -338,12 +342,10 @@ class SANSSingleReduction(DataProcessorAlgorithm):
                 output_workspace = output_bundle.output_workspace
                 # Make sure that the output workspace is not None which can be the case if there has never been a
                 # can set for the reduction.
-                if output_workspace is not None:
+                if output_workspace is not None and not does_can_workspace_exist_on_ads(output_workspace):
                     if reduction_mode is ISISReductionMode.LAB:
-                        add_workspace_name(output_workspace, state, reduction_mode)
                         self.setProperty("OutputWorkspaceLABCan", output_workspace)
                     elif reduction_mode is ISISReductionMode.HAB:
-                        add_workspace_name(output_workspace, state, reduction_mode)
                         self.setProperty("OutputWorkspaceHABCan", output_bundle.output_workspace)
                     else:
                         raise RuntimeError("SANSSingleReduction: The reduction mode {0} should not"
@@ -357,20 +359,24 @@ class SANSSingleReduction(DataProcessorAlgorithm):
                 output_workspace_norm = output_bundle_part.output_workspace_norm
                 # Make sure that the output workspace is not None which can be the case if there has never been a
                 # can set for the reduction.
-                if output_workspace_norm is not None and output_workspace_count is not None:
+                if output_workspace_norm is not None and output_workspace_count is not None and \
+                        not does_can_workspace_exist_on_ads(output_workspace_norm) and \
+                        not does_can_workspace_exist_on_ads(output_workspace_count):
                     if reduction_mode is ISISReductionMode.LAB:
-                        add_workspace_name(output_workspace_count, state, reduction_mode)
                         self.setProperty("OutputWorkspaceLABCanCount", output_workspace_count)
-                        add_workspace_name(output_workspace_norm, state, reduction_mode)
                         self.setProperty("OutputWorkspaceLABCanNorm", output_workspace_norm)
                     elif reduction_mode is ISISReductionMode.HAB:
-                        add_workspace_name(output_workspace_count, state, reduction_mode)
                         self.setProperty("OutputWorkspaceHABCanCount", output_workspace_count)
-                        add_workspace_name(output_workspace_norm, state, reduction_mode)
                         self.setProperty("OutputWorkspaceHABCanNorm", output_workspace_norm)
                     else:
                         raise RuntimeError("SANSSingleReduction: The reduction mode {0} should not"
                                            " be set with a partial can.".format(reduction_mode))
+
+    def _get_progress(self, number_of_reductions, overall_reduction_mode):
+        number_from_merge = 1 if overall_reduction_mode is ReductionMode.Merged else 0
+        number_of_progress_reports = number_of_reductions + number_from_merge + 1
+        return Progress(self, start=0.0, end=1.0, nreports=number_of_progress_reports)
+
 
 # Register algorithm with Mantid
 AlgorithmFactory.subscribe(SANSSingleReduction)

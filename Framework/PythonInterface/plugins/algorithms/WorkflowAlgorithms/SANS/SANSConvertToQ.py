@@ -1,7 +1,7 @@
 # pylint: disable=too-few-public-methods
 
 """ Converts a workspace from wavelengths to momentum transfer."""
-
+from __future__ import (absolute_import, division, print_function)
 from mantid.kernel import (Direction, StringListValidator, PropertyManagerProperty, CompositeValidator)
 from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, AlgorithmFactory, PropertyMode, Progress,
                         WorkspaceUnitValidator)

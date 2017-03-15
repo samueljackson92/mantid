@@ -1,4 +1,6 @@
 # pylint: disable=too-many-public-methods, invalid-name, too-many-arguments
+
+from __future__ import (absolute_import, division, print_function)
 import os
 import mantid
 import unittest

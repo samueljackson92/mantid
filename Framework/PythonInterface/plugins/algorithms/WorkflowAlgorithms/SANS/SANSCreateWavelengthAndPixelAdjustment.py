@@ -4,6 +4,7 @@
     and wavelength adjustment.
 """
 
+from __future__ import (absolute_import, division, print_function)
 from mantid.kernel import (Direction, IntBoundedValidator, FloatBoundedValidator, StringListValidator, Property,
                            PropertyManagerProperty, CompositeValidator)
 
@@ -166,7 +167,6 @@ class SANSCreateWavelengthAndPixelAdjustment(DataProcessorAlgorithm):
         :param idf_path: the idf path
         :return: the pixel adjustment workspace
         """
-
         if pixel_adjustment_file:
             load_name = "LoadRKH"
             load_options = {"Filename": pixel_adjustment_file,

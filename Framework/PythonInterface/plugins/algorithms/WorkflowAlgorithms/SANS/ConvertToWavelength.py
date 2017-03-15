@@ -2,6 +2,7 @@
 
 """ ConvertToWavelength algorithm converts to wavelength units."""
 
+from __future__ import (absolute_import, division, print_function)
 from mantid.kernel import (Direction, StringListValidator, Property)
 from mantid.dataobjects import EventWorkspace
 from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, AlgorithmFactory, PropertyMode, Progress)

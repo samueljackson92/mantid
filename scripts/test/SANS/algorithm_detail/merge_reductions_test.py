@@ -1,6 +1,6 @@
+from __future__ import (absolute_import, division, print_function)
 import unittest
 import mantid
-import math
 from sans.algorithm_detail.merge_reductions import (MergeFactory, ISIS1DMerger)
 from sans.algorithm_detail.bundles import OutputPartsBundle
 

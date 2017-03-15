@@ -2,6 +2,7 @@
 
 """ Multiplies a SANS workspace by an absolute scale and divides it by the sample volume. """
 
+from __future__ import (absolute_import, division, print_function)
 from mantid.kernel import (Direction, PropertyManagerProperty, StringListValidator,
                            FloatArrayProperty)
 from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, AlgorithmFactory, PropertyMode, Progress)
@@ -33,11 +34,11 @@ class SANSScale(DataProcessorAlgorithm):
                              doc='The scaled output workspace')
 
         # The data type
-        allowed_data = StringListValidator([DataType.to_string(DataType.Sample),
-                                            DataType.to_string(DataType.Can)])
-        self.declareProperty("DataType", DataType.to_string(DataType.Sample),
-                             validator=allowed_data, direction=Direction.Input,
-                             doc="The component of the instrument which is to be reduced.")
+        # allowed_data = StringListValidator([DataType.to_string(DataType.Sample),
+        #                                     DataType.to_string(DataType.Can)])
+        # self.declareProperty("DataType", DataType.to_string(DataType.Sample),
+        #                      validator=allowed_data, direction=Direction.Input,
+        #                      doc="The component of the instrument which is to be reduced.")
 
     def PyExec(self):
         state_property_manager = self.getProperty("SANSState").value
@@ -54,18 +55,16 @@ class SANSScale(DataProcessorAlgorithm):
 
         # Divide by the sample volume
         progress.report("Dividing by the sample volume.")
-        data_type_as_string = self.getProperty("DataType").value
-        data_type = DataType.from_string(data_type_as_string)
 
-        workspace = self._divide_by_volume(workspace, state, data_type)
+        workspace = self._divide_by_volume(workspace, state)
 
         append_to_sans_file_tag(workspace, "_scale")
         self.setProperty("OutputWorkspace", workspace)
         progress.report("Finished applying absolute scale")
 
-    def _divide_by_volume(self, workspace, state, data_type):
+    def _divide_by_volume(self, workspace, state):
         divide_factory = DivideByVolumeFactory()
-        divider = divide_factory.create_divide_by_volume(state, data_type)
+        divider = divide_factory.create_divide_by_volume(state)
         scale_info = state.scale
         return divider.divide_by_volume(workspace, scale_info)
 

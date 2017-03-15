@@ -4,7 +4,7 @@ import mantid
 
 from mantid.kernel import (V3D, Quat)
 from sans.common.general_functions import (quaternion_to_angle_and_axis, create_unmanaged_algorithm, add_to_sample_log,
-                                           get_output_workspace_name, sanitise_instrument_name)
+                                           get_standard_output_workspace_name, sanitise_instrument_name)
 from sans.common.constants import (SANS2D, LOQ, LARMOR)
 from sans.common.enums import (ISISReductionMode, ReductionDimensionality)
 from sans.test_helper.test_director import TestDirector
@@ -125,7 +125,7 @@ class SANSFunctionsTest(unittest.TestCase):
 
         # Act + Assert
         try:
-            get_output_workspace_name(state, ISISReductionMode.All)
+            get_standard_output_workspace_name(state, ISISReductionMode.All)
             did_raise = False
         except RuntimeError:
             did_raise = True
@@ -135,7 +135,7 @@ class SANSFunctionsTest(unittest.TestCase):
         # Arrange
         state = SANSFunctionsTest._get_state()
         # Act
-        output_workspace, _ = get_output_workspace_name(state, ISISReductionMode.LAB)
+        output_workspace, _ = get_standard_output_workspace_name(state, ISISReductionMode.LAB)
         # Assert
         self.assertTrue("12345rear_1D_12.0_34.0Phi12.0_56.0_t4.57_T12.37" == output_workspace)
 

@@ -1,4 +1,6 @@
 #pylint: disable=no-init,attribute-defined-outside-init
+
+from __future__ import (absolute_import, division, print_function)
 import stresstesting
 
 from mantid import config
@@ -61,7 +63,6 @@ class SANS2DNewSettingsCarriedAcrossInBatchModeTest_V2(stresstesting.MantidStres
             os.remove(path1)
         if os.path.exists(path2):
             os.remove(path2)
-
 
     def validate(self):
         self.tolerance_is_reller = True

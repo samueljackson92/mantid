@@ -2,6 +2,7 @@
 
 """ SANSNormalizeToMonitor algorithm calculates the normalization to the monitor."""
 
+from __future__ import (absolute_import, division, print_function)
 from mantid.kernel import (Direction, IntBoundedValidator, FloatBoundedValidator, StringListValidator,
                            Property, PropertyManagerProperty)
 from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, AlgorithmFactory, PropertyMode, Progress)
@@ -9,6 +10,8 @@ from sans.common.constants import EMPTY_NAME
 from sans.common.general_functions import create_unmanaged_algorithm
 from sans.common.enums import RebinType, RangeStepType
 from sans.state.state_base import create_deserialized_sans_state_from_property_manager
+from mantid.api import AnalysisDataService
+from mantid.simpleapi import SaveNexus
 
 
 class SANSNormalizeToMonitor(DataProcessorAlgorithm):
@@ -61,6 +64,7 @@ class SANSNormalizeToMonitor(DataProcessorAlgorithm):
 
         # 5. Convert to wavelength with the specified bin settings.
         workspace = self._convert_to_wavelength(workspace, normalize_to_monitor_state)
+
         self.setProperty("OutputWorkspace", workspace)
 
     def _scale(self, workspace, factor):

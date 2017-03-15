@@ -1,4 +1,6 @@
 ﻿#pylint: disable=no-init
+
+from __future__ import (absolute_import, division, print_function)
 import stresstesting
 import os
 from mantid.kernel import config

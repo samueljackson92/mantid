@@ -2,6 +2,7 @@
 
 """ SANBatchReduction algorithm is the starting point for any new type reduction, event single reduction"""
 
+from __future__ import (absolute_import, division, print_function)
 from mantid.kernel import (Direction, PropertyManagerProperty, StringListValidator)
 from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, AlgorithmFactory,
                         PropertyMode, AnalysisDataService)

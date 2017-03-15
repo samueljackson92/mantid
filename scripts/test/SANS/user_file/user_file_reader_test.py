@@ -1,3 +1,4 @@
+from __future__ import (absolute_import, division, print_function)
 import unittest
 import mantid
 import os
@@ -53,7 +54,7 @@ class UserFileReaderTest(unittest.TestCase):
                            MonId.spectrum: [monitor_spectrum(1, True, True), monitor_spectrum(1, False, True)],
                            SetId.centre: [position_entry(155.45, -169.6, DetectorType.LAB)],
                            SetId.scales: [set_scales_entry(0.074, 1.0, 1.0, 1.0, 1.0)],
-                           SampleId.offset: [53],
+                           SampleId.offset: [53.0],
                            DetectorId.correction_x: [single_entry_with_detector(-16.0, DetectorType.LAB),
                                                      single_entry_with_detector(-44.0, DetectorType.HAB)],
                            DetectorId.correction_y: [single_entry_with_detector(-20.0, DetectorType.HAB)],
@@ -64,7 +65,7 @@ class UserFileReaderTest(unittest.TestCase):
                            MaskId.clear_detector_mask: [True],
                            MaskId.clear_time_mask: [True],
                            LimitsId.radius: [range_entry(12, 15)],
-                           TransId.spec_shift: [-70],
+                           TransId.spec_shift: [-70.],
                            PrintId.print_line: ["for changer"],
                            BackId.all_monitors: [range_entry(start=3500, stop=4500)],
                            FitId.monitor_times: [range_entry(start=1000, stop=2000)],
@@ -74,7 +75,7 @@ class UserFileReaderTest(unittest.TestCase):
                            TransId.roi: ["test.xml", "test2.xml"],
                            TransId.mask: ["test3.xml", "test4.xml"],
                            SampleId.path: [True],
-                           LimitsId.radius_cut: [200],
+                           LimitsId.radius_cut: [200.0],
                            LimitsId.wavelength_cut: [8.0],
                            QResolutionId.on: [True],
                            QResolutionId.delta_r: [11.],
@@ -88,7 +89,10 @@ class UserFileReaderTest(unittest.TestCase):
         for key, value in expected_values.items():
             self.assertTrue(key in output)
             self.assertTrue(len(output[key]) == len(value))
-            self.assertTrue(sorted(output[key]) == sorted(value))
+            if len(output[key]) == 1:
+                self.assertTrue(output[key] == value)
+            else:
+                self.assertTrue(sorted(output[key]) == sorted(value))
 
         # clean up
         if os.path.exists(user_file_path):

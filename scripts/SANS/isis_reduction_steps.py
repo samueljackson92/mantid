@@ -14,7 +14,6 @@ import re
 import math
 from collections import namedtuple
 from mantid.kernel import Logger
-
 from mantid.api import WorkspaceGroup, Workspace, IEventWorkspace
 from mantid.simpleapi import *
 from SANSUtility import (GetInstrumentDetails, MaskByBinRange,
@@ -1937,11 +1936,13 @@ class NormalizeToMonitor(ReductionStep):
         self.output_wksp = None
 
     def execute(self, reducer, workspace):
+        # Set the prompt peak default values
+        self.set_prompt_parameter_if_not_set(reducer)
+
         normalization_spectrum = self._normalization_spectrum
         if normalization_spectrum is None:
             # the -1 converts from spectrum number to spectrum index
             normalization_spectrum = reducer.instrument.get_incident_mon()
-
         sanslog.notice('Normalizing to monitor ' + str(normalization_spectrum))
 
         self.output_wksp = str(workspace) + INCIDENT_MONITOR_TAG
@@ -1966,6 +1967,7 @@ class NormalizeToMonitor(ReductionStep):
                        XMin=reducer.transmission_calculator.removePromptPeakMin, XMax=
                        reducer.transmission_calculator.removePromptPeakMax, Interpolation="Linear")
 
+
         # Remove flat background
         TOF_start, TOF_end = reducer.inst.get_TOFs(normalization_spectrum)
 
@@ -1979,6 +1981,18 @@ class NormalizeToMonitor(ReductionStep):
         else:
             r_alg = 'Rebin'
         reducer.to_wavelen.execute(reducer, self.output_wksp, bin_alg=r_alg)
+
+    def set_prompt_parameter_if_not_set(self, reducer):
+        """
+        This method sets default prompt peak values in case the user has not provided some. Currently
+        we only use default values for LOQ.
+        """
+        is_prompt_peak_not_set = reducer.transmission_calculator.removePromptPeakMin is None and \
+                                 reducer.transmission_calculator.removePromptPeakMax is None
+        if is_prompt_peak_not_set:
+            if reducer.instrument.name() == "LOQ":
+                reducer.transmission_calculator.removePromptPeakMin = 19000.0 # Units of micro-seconds
+                reducer.transmission_calculator.removePromptPeakMax = 20500.0 # Units of micro-seconds
 
 
 class TransmissionCalc(ReductionStep):
@@ -2790,6 +2804,7 @@ class ConvertToQISIS(ReductionStep):
                     WavePixelAdj=wavepixeladj,
                     ExtraLength=self._grav_extra_length,
                     QResolution=qResolution)
+
 
             elif self._Q_alg == 'Qxy':
                 Qxy(InputWorkspace=workspace,

@@ -12,7 +12,7 @@ from sans.common.constants import (SANS_FILE_TAG, ALL_PERIODS, REDUCED_WORKSPACE
                                    REDUCED_WORKSPACE_NAME_BY_USER_IN_LOGS, REDUCED_WORKSPACE_BASE_NAME_IN_LOGS,
                                    SANS2D, LOQ, LARMOR, ALL_PERIODS, EMPTY_NAME, REDUCED_CAN_TAG)
 from sans.common.log_tagger import (get_tag, has_tag, set_tag, has_hash, get_hash_value, set_hash)
-from sans.common.enums import (DetectorType, RangeStepType, ReductionDimensionality, ISISReductionMode, OutputParts)
+from sans.common.enums import (DetectorType, RangeStepType, ReductionDimensionality, OutputParts, ISISReductionMode)
 
 
 # -------------------------------------------
@@ -98,6 +98,40 @@ def create_unmanaged_algorithm(name, **kwargs):
     alg.setChild(True)
     for key, value in kwargs.items():
         alg.setProperty(key, value)
+    return alg
+
+
+def create_managed_non_child_algorithm(name, **kwargs):
+    """
+    Creates a managed child algorithm and initializes it.
+
+    :param name: the name of the algorithm
+    :param kwargs: settings for the algorithm
+    :return: an initialized algorithm instance.
+    """
+    alg = AlgorithmManager.create(name)
+    alg.initialize()
+    alg.setChild(False)
+    for key, value in kwargs.items():
+        alg.setProperty(key, value)
+    return alg
+
+
+def create_child_algorithm(parent_alg, name, **kwargs):
+    """
+    Creates a child algorithm from a parent algorithm
+
+    @param parent_alg: a handle to the parent algorithm
+    @param name: the name of the child algorithm
+    @param kwargs: a argument dict
+    @return: the child algorithm
+    """
+    if parent_alg:
+        alg = parent_alg.createChildAlgorithm(name)
+        for key, value in kwargs.items():
+            alg.setProperty(key, value)
+    else:
+        alg = create_unmanaged_algorithm(name, **kwargs)
     return alg
 
 
@@ -214,6 +248,33 @@ def convert_bank_name_to_detector_type_isis(detector_name):
         raise RuntimeError("There is not detector type conversion for a detector with the "
                            "name {0}".format(detector_name))
     return detector_type
+
+
+def is_part_of_reduced_output_workspace_group(state):
+    """
+    Check if this state will generate a WorkspaceGroup as the output.
+
+    This can be the case if:
+    1. The scatter sample data is a multi-period workspace
+    2. A event slice reduction is being performed, ie that there is more than one entry for the slice length
+
+    Note: that this is a hacky solution to for the return value of WavRangeReduction in ISISCommandInterface.
+          Improve this!!! (Maybe by getting rid of the return value of WavRangeReduction)
+    @param state: a state object.
+    @return: True if the reduced output is a workspace group else false
+    """
+    # 1. Multi-period input
+    data_info = state.data
+    is_multi_period = data_info.sample_scatter_is_multi_period
+
+    # 2. Slice event input
+    slice_info = state.slice
+    if slice_info.start_time is None:
+        is_sliced_reduction = False
+    else:
+        is_sliced_reduction = len(slice_info.start_time) > 1
+
+    return is_multi_period or is_sliced_reduction
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -389,7 +450,7 @@ def get_ranges_for_rebin_array(rebin_array):
 # ----------------------------------------------------------------------------------------------------------------------
 # Functions related to workspace names
 # ----------------------------------------------------------------------------------------------------------------------
-def get_output_workspace_name(state, reduction_mode):
+def get_standard_output_workspace_name(state, reduction_data_type):
     """
     Creates the name of the output workspace from a state object.
 
@@ -403,7 +464,7 @@ def get_output_workspace_name(state, reduction_mode):
     7. If we are dealing with an actual slice limit, then specify it: "_tXX_TYY" Note that the time set to
        two decimals
     :param state: a SANSState object
-    :param reduction_mode: which reduction is being looked at
+    :param reduction_data_type: which reduced data type is being looked at, ie HAB, LAB or Merged
     :return: the name of the reduced workspace, and the base name fo the reduced workspace
     """
     # 1. Short run number
@@ -421,15 +482,15 @@ def get_output_workspace_name(state, reduction_mode):
     # 3. Detector name
     move = state.move
     detectors = move.detectors
-    if reduction_mode is ISISReductionMode.Merged:
+    if reduction_data_type is ISISReductionMode.Merged:
         detector_name_short = "merged"
-    elif reduction_mode is ISISReductionMode.HAB:
+    elif reduction_data_type is ISISReductionMode.HAB:
         detector_name_short = detectors[DetectorType.to_string(DetectorType.HAB)].detector_name_short
-    elif reduction_mode is ISISReductionMode.LAB:
+    elif reduction_data_type is ISISReductionMode.LAB:
         detector_name_short = detectors[DetectorType.to_string(DetectorType.LAB)].detector_name_short
     else:
-        raise RuntimeError("SANSStateFunctions: Unknown reduction mode {0} cannot be used to "
-                           "create an output name".format(reduction_mode))
+        raise RuntimeError("SANSStateFunctions: Unknown reduction data type {0} cannot be used to "
+                           "create an output name".format(reduction_data_type))
 
     # 4. Dimensionality
     reduction = state.reduction
@@ -472,57 +533,58 @@ def get_output_workspace_name(state, reduction_mode):
     return output_workspace_name, output_workspace_base_name
 
 
-def add_workspace_name(workspace, state, reduction_mode):
-    """
-    Adds the default reduced workspace name to the sample logs as well as the base name and a a user specified name,
-    if one was specified.
+def get_output_name(state, reduction_mode, is_group, suffix=""):
 
-    :param workspace: The output workspace
-    :param state: a SANSState object
-    :param reduction_mode: the reduction mode, i.e. LAB, HAB, MERGED of the particular data set. If it is HAB it can
-                           still be part of an overall MERGED request.
-    """
-    reduced_workspace_name, reduced_workspace_base_name = get_output_workspace_name(state, reduction_mode)
-    add_to_sample_log(workspace, REDUCED_WORKSPACE_NAME_IN_LOGS, reduced_workspace_name, "String")
-    add_to_sample_log(workspace, REDUCED_WORKSPACE_BASE_NAME_IN_LOGS, reduced_workspace_base_name, "String")
+    # Get the standard workspace name
+    workspace_name, workspace_base_name = get_standard_output_workspace_name(state, reduction_mode)
 
+    # Get the external settings from the save state
+    save_info = state.save
+    user_specified_output_name = save_info.user_specified_output_name
+    user_specified_output_name_suffix = save_info.user_specified_output_name_suffix
+    use_reduction_mode_as_suffix = save_info.use_reduction_mode_as_suffix
 
-def get_output_workspace_name_from_workspace_log(workspace, log_name):
-    run = workspace.run()
-    if not run.hasProperty(log_name):
-        raise RuntimeError("The workspace sample logs don't contain an entry for {0}.".format(log_name))
-    return run.getProperty(log_name).value
+    # An output name requires special attention when the workspace is part of a multi-period reduction
+    # or slice event scan
+    # If user specified output name is not none then we use it for the base name
+    if user_specified_output_name and not is_group:
+        # Deal with single period data which has a user-specified name
+        output_name = user_specified_output_name
+        output_base_name = user_specified_output_name
+    elif user_specified_output_name and is_group:
+        # Deal with data which requires special attention and which has a user-specified name
+        output_name = workspace_name
+        output_base_name = user_specified_output_name
+    elif not user_specified_output_name and is_group:
+        output_name = workspace_name
+        output_base_name = workspace_base_name
+    else:
+        output_name = workspace_name
+        output_base_name = workspace_name
 
+    # Add a reduction mode suffix if it is required
+    if use_reduction_mode_as_suffix:
+        if reduction_mode is ISISReductionMode.LAB:
+            output_name += "_rear"
+            output_base_name += "_rear"
+        elif reduction_mode is ISISReductionMode.HAB:
+            output_name += "_front"
+            output_base_name += "_rear"
+        elif reduction_mode is ISISReductionMode.Merged:
+            output_name += "_merged"
+            output_base_name += "_rear"
 
-def get_output_workspace_name_from_workspace(workspace):
-    """
-    Gets the name of the reduced workspace from the logs.
+    # Add a suffix if the user has specified one
+    if user_specified_output_name_suffix:
+        output_name += user_specified_output_name_suffix
+        output_base_name += user_specified_output_name_suffix
 
-    @param workspace: a matrix workspace
-    @return: the name of the workspace
-    """
-    return get_output_workspace_name_from_workspace_log(workspace, REDUCED_WORKSPACE_NAME_IN_LOGS)
+    # Additional suffix. This will be a suffix for data like the partial output workspace
+    if suffix:
+        output_name += suffix
+        output_base_name += suffix
 
-
-def get_output_workspace_base_name_from_workspace(workspace):
-    """
-    Gets the base name of the reduced workspace. This can be the same as the name, but is different for
-    multi-period files, it will not contain the _X of the name of the multi-period file.
-
-    @param workspace: a matrix workspace
-    @return: the base name of the workspace
-    """
-    return get_output_workspace_name_from_workspace_log(workspace, REDUCED_WORKSPACE_BASE_NAME_IN_LOGS)
-
-
-def get_output_user_specified_name_from_workspace(workspace):
-    """
-    Gets a user specified name from the workspace logs.
-
-    @param workspace: a matrix workspace.
-    @return: the user specified output workspace name.
-    """
-    return get_output_workspace_name_from_workspace_log(workspace, REDUCED_WORKSPACE_NAME_BY_USER_IN_LOGS)
+    return output_name, output_base_name
 
 
 def get_base_name_from_multi_period_name(workspace_name):
@@ -562,16 +624,17 @@ def sanitise_instrument_name(instrument_name):
 # ----------------------------------------------------------------------------------------------------------------------
 # Hashing + ADS
 # ----------------------------------------------------------------------------------------------------------------------
-def get_state_hash_for_can_reduction(state, partial_type=None):
+def get_state_hash_for_can_reduction(state, reduction_mode, partial_type=None):
     """
     Creates a hash for a (modified) state object.
 
     Note that we need to modify the state object to exclude elements which are not relevant for the can reduction.
     This is primarily the setting of the sample workspaces. This is the only place where we directly alter the value
     of a state object in the entire reduction workflow. Note that we are not changing the
-    @param state: a SANSState object.
-    @param partial_type: if it is a partial type, then it needs to be specified here.
-    @return: the hash of the state
+    :param state: a SANSState object.
+    :param reduction_mode: the reduction mode, here it can be LAB or HAb
+    :param partial_type: if it is a partial type, then it needs to be specified here.
+    :return: the hash of the state
     """
     def remove_sample_related_information(full_state):
         state_to_hash = deepcopy(full_state)
@@ -593,13 +656,21 @@ def get_state_hash_for_can_reduction(state, partial_type=None):
     new_state_serialized = new_state.property_manager
     new_state_serialized = json.dumps(new_state_serialized, sort_keys=True, indent=4)
 
+    # Add a tag for the reduction mode
+    state_string = str(new_state_serialized)
+    if reduction_mode is ISISReductionMode.LAB:
+        state_string += "LAB"
+    elif reduction_mode is ISISReductionMode.HAB:
+        state_string += "HAB"
+    else:
+        raise RuntimeError("Only LAB and HAB reduction modes are allowed at this point."
+                           " {} was provided".format(reduction_mode))
+
     # If we are dealing with a partial output workspace, then mark it as such
     if partial_type is OutputParts.Count:
-        state_string = str(new_state_serialized) + "counts"
+        state_string += "counts"
     elif partial_type is OutputParts.Norm:
-        state_string = str(new_state_serialized) + "norm"
-    else:
-        state_string = str(new_state_serialized)
+        state_string += "norm"
     return str(get_hash_value(state_string))
 
 
@@ -609,49 +680,54 @@ def get_workspace_from_ads_based_on_hash(hash_value):
             return workspace
 
 
-def does_workspace_exist_on_ads(workspace):
-    """
-    Checks if the workspace exists on the ADS based on a (potentially stored hash value)
-    @param workspace: workspace to check
-    @return: true if it is on the ADS else false
-    """
-    workspace_exists = False
-    if has_tag(REDUCED_CAN_TAG, workspace):
-        has_value = get_tag(REDUCED_CAN_TAG, workspace)
-        ws_reference_from_ads = get_workspace_from_ads_based_on_hash(has_value)
-        if ws_reference_from_ads is not None:
-            workspace_exists = True
-    return workspace_exists
-
-
-def get_reduced_can_workspace_from_ads(state, output_parts):
+def get_reduced_can_workspace_from_ads(state, output_parts, reduction_mode):
     """
     Get the reduced can workspace from the ADS if it exists else nothing
 
-    @param state: a SANSState object.
-    @param output_parts: if true then search also for the partial workspaces
-    @return: a reduced can object or None.
+    :param state: a SANSState object.
+    :param output_parts: if true then search also for the partial workspaces
+    :param reduction_mode: the reduction mode which at this point is either HAB or LAB
+    :return: a reduced can object or None.
     """
     # Get the standard reduced can workspace)
-    hashed_state = get_state_hash_for_can_reduction(state)
+    hashed_state = get_state_hash_for_can_reduction(state, reduction_mode)
     reduced_can = get_workspace_from_ads_based_on_hash(hashed_state)
     reduced_can_count = None
     reduced_can_norm = None
     if output_parts:
-        hashed_state_count = get_state_hash_for_can_reduction(state, OutputParts.Count)
+        hashed_state_count = get_state_hash_for_can_reduction(state, reduction_mode, OutputParts.Count)
         reduced_can_count = get_workspace_from_ads_based_on_hash(hashed_state_count)
-        hashed_state_norm = get_state_hash_for_can_reduction(state, OutputParts.Norm)
+        hashed_state_norm = get_state_hash_for_can_reduction(state, reduction_mode, OutputParts.Norm)
         reduced_can_norm = get_workspace_from_ads_based_on_hash(hashed_state_norm)
     return reduced_can, reduced_can_count, reduced_can_norm
 
 
-def write_hash_into_reduced_can_workspace(state, workspace, partial_type=None):
+def write_hash_into_reduced_can_workspace(state, workspace, reduction_mode, partial_type=None):
     """
     Writes the state hash into a reduced can workspace.
 
-    @param state: a SANSState object.
-    @param workspace: a reduced can workspace
-    @param partial_type: if it is a partial type, then it needs to be specified here.
+    :param state: a SANSState object.
+    :param workspace: a reduced can workspace
+    :param reduction_mode: the reduction mode
+    :param partial_type: if it is a partial type, then it needs to be specified here.
     """
-    hashed_state = get_state_hash_for_can_reduction(state, partial_type=partial_type)
+    hashed_state = get_state_hash_for_can_reduction(state, reduction_mode, partial_type=partial_type)
     set_hash(REDUCED_CAN_TAG, hashed_state, workspace)
+
+
+def does_can_workspace_exist_on_ads(can_workspace):
+    """
+    Checks if a can workspace already exists on the ADS, based on the stored hash
+
+    @param can_workspace: a handle to the can workspace
+    @return: True if the workspace exists on the ADS else False
+    """
+    if not has_tag(REDUCED_CAN_TAG, can_workspace):
+        return False
+
+    hash_value_to_compare = get_tag(REDUCED_CAN_TAG, can_workspace)
+
+    for workspace in get_ads_workspace_references():
+        if has_hash(REDUCED_CAN_TAG, hash_value_to_compare, workspace):
+            return True
+    return False

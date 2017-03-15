@@ -1,5 +1,6 @@
+from __future__ import (absolute_import, division, print_function)
 from sans.common.constants import EMPTY_NAME
-from sans.common.general_functions import (create_unmanaged_algorithm,
+from sans.common.general_functions import (create_child_algorithm,
                                            write_hash_into_reduced_can_workspace,
                                            get_reduced_can_workspace_from_ads)
 from sans.common.enums import (ISISReductionMode, DetectorType, DataType, OutputParts)
@@ -16,6 +17,7 @@ def run_core_reduction(reduction_alg, reduction_setting_bundle):
     :param reduction_setting_bundle: a ReductionSettingBundle tuple
     :return: an OutputBundle and an OutputPartsBundle
     """
+
     # Get component to reduce
     component = get_component_to_reduce(reduction_setting_bundle)
     # Set the properties on the reduction algorithms
@@ -58,7 +60,7 @@ def run_core_reduction(reduction_alg, reduction_setting_bundle):
     return output_bundle, output_parts_bundle
 
 
-def get_final_output_workspaces(output_bundles):
+def get_final_output_workspaces(output_bundles, parent_alg):
     """
     This function provides the final steps for the data reduction.
 
@@ -66,6 +68,7 @@ def get_final_output_workspaces(output_bundles):
     1. Can Subtraction (if required)
     2. Data clean up (if required)
     :param output_bundles: A set of outputBundles
+    :param parent_alg: a handle to the parent algorithm.
     :return: a map of ReductionMode vs final output workspaces.
     """
 
@@ -81,12 +84,12 @@ def get_final_output_workspaces(output_bundles):
                                      if is_can(output_bundle)), None)
         # Perform the can subtraction
         if output_can_workspace is not None:
-            final_output_workspace = perform_can_subtraction(output_sample_workspace, output_can_workspace)
+            final_output_workspace = perform_can_subtraction(output_sample_workspace, output_can_workspace, parent_alg)
         else:
             final_output_workspace = output_sample_workspace
 
         # Tidy up the workspace by removing start/end-NANs and start/end-INFs
-        final_output_workspace = strip_end_nans(final_output_workspace)
+        final_output_workspace = strip_end_nans(final_output_workspace, parent_alg)
         final_output_workspaces.update({reduction_mode: final_output_workspace})
 
     # Finally add sample log information
@@ -95,20 +98,21 @@ def get_final_output_workspaces(output_bundles):
     return final_output_workspaces
 
 
-def perform_can_subtraction(sample, can):
+def perform_can_subtraction(sample, can, parent_alg):
     """
     Subtracts the can from the sample workspace.
 
     We need to manually take care of the q resolution issue here.
     :param sample: the sample workspace
     :param can: the can workspace.
+    :param parent_alg: a handle to the parent algorithm.
     :return: the subtracted workspace.
     """
     subtraction_name = "Minus"
     subtraction_options = {"LHSWorkspace": sample,
                            "RHSWorkspace": can,
                            "OutputWorkspace": EMPTY_NAME}
-    subtraction_alg = create_unmanaged_algorithm(subtraction_name, **subtraction_options)
+    subtraction_alg = create_child_algorithm(parent_alg, subtraction_name, **subtraction_options)
     subtraction_alg.execute()
     output_workspace = subtraction_alg.getProperty("OutputWorkspace").value
 
@@ -133,9 +137,11 @@ def correct_q_resolution_for_can(sample_workspace, can_workspace, subtracted_wor
         subtracted_workspace.setDx(0, sample_workspace.dataDx(0))
 
 
-def get_merge_bundle_for_merge_request(output_bundles):
+def get_merge_bundle_for_merge_request(output_bundles, parent_alg):
     """
     Create a merge bundle for the reduction outputs and perform stitching if required
+    :param output_bundles: a list of output_bundles
+    :param parent_alg: a handle to the parent algorithm
     """
     # Order the reductions. This leaves us with a dict mapping from the reduction type (i.e. HAB, LAB) to
     # a list of reduction settings which contain the information for sample and can.
@@ -148,7 +154,7 @@ def get_merge_bundle_for_merge_request(output_bundles):
     merger = merge_factory.create_merger(state)
 
     # Run the merger and return the merged output workspace
-    return merger.merge(reduction_mode_vs_output_bundles)
+    return merger.merge(reduction_mode_vs_output_bundles, parent_alg)
 
 
 def get_reduction_mode_vs_output_bundles(output_bundles):
@@ -195,12 +201,14 @@ def run_optimized_for_can(reduction_alg, reduction_setting_bundle):
     @param reduction_setting_bundle: a ReductionSettingBundle tuple.
     @return: a reduced workspace, a partial output workspace for the counts, a partial workspace for the normalization.
     """
+    #import pydevd
+    #pydevd.settrace('localhost', port=5230, stdoutToServer=True, stderrToServer=True)
     state = reduction_setting_bundle.state
     output_parts = reduction_setting_bundle.output_parts
     reduction_mode = reduction_setting_bundle.reduction_mode
     data_type = reduction_setting_bundle.data_type
     reduced_can_workspace, reduced_can_workspace_count, reduced_can_workspace_norm = \
-        get_reduced_can_workspace_from_ads(state, output_parts)
+        get_reduced_can_workspace_from_ads(state, output_parts, reduction_mode)
     # Set the results on the output bundle
     output_bundle = OutputBundle(state=state, data_type=data_type, reduction_mode=reduction_mode,
                                  output_workspace=reduced_can_workspace)
@@ -219,9 +227,11 @@ def run_optimized_for_can(reduction_alg, reduction_setting_bundle):
     # |  True        |        False                        |           True                      |    True     |
     # |  True        |        False                        |           False                     |    False    |
 
-    is_valid_partial_workspace = output_parts_bundle.output_workspace_count is None and \
-                                 output_parts_bundle.output_workspace_norm is None  # noqa
-    partial_output_require_reload = output_parts and not is_valid_partial_workspace
+    is_invalid_partial_workspaces = ((output_parts_bundle.output_workspace_count is None and
+                                     output_parts_bundle.output_workspace_norm is not None) or
+                                     (output_parts_bundle.output_workspace_count is not None and
+                                     output_parts_bundle.output_workspace_norm is None))
+    partial_output_require_reload = output_parts and is_invalid_partial_workspaces
 
     if output_bundle.output_workspace is None or partial_output_require_reload:
         output_bundle, output_parts_bundle = run_core_reduction(reduction_alg, reduction_setting_bundle)
@@ -230,16 +240,19 @@ def run_optimized_for_can(reduction_alg, reduction_setting_bundle):
         if output_bundle.output_workspace is not None:
             write_hash_into_reduced_can_workspace(state=output_bundle.state,
                                                   workspace=output_bundle.output_workspace,
-                                                  partial_type=None)
+                                                  partial_type=None,
+                                                  reduction_mode=reduction_mode)
 
         if (output_parts_bundle.output_workspace_count is not None and
            output_parts_bundle.output_workspace_norm is not None):
             write_hash_into_reduced_can_workspace(state=output_parts_bundle.state,
                                                   workspace=output_parts_bundle.output_workspace_count,
-                                                  partial_type=OutputParts.Count)
+                                                  partial_type=OutputParts.Count,
+                                                  reduction_mode=reduction_mode)
 
             write_hash_into_reduced_can_workspace(state=output_parts_bundle.state,
                                                   workspace=output_parts_bundle.output_workspace_norm,
-                                                  partial_type=OutputParts.Norm)
+                                                  partial_type=OutputParts.Norm,
+                                                  reduction_mode=reduction_mode)
 
     return output_bundle, output_parts_bundle

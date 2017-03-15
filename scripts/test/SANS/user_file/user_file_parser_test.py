@@ -1,3 +1,4 @@
+from __future__ import (absolute_import, division, print_function)
 import unittest
 import mantid
 
@@ -830,10 +831,18 @@ class MonParserTest(unittest.TestCase):
         do_test(mon_parser, valid_settings, invalid_settings, self.assertTrue, self.assertRaises)
 
     def test_that_hab_files_are_parsed_correctly(self):
-        valid_settings = {"MON/HAB  = C:\path1\Path2\file.ext ": {MonId.hab: "C:/path1/Path2/file.ext"},
-                          "MON/ hAB  = filE.Ext ": {MonId.hab: "filE.Ext"},
-                          "MON/HAb= \path1\Path2\file.ext ": {MonId.hab: "/path1/Path2/file.ext"},
-                          "MON/hAB= /path1/Path2/file.ext ": {MonId.hab: "/path1/Path2/file.ext"}}
+        valid_settings = {"MON/HAB  = C:\path1\Path2\file.ext ": {MonId.direct: [monitor_file(
+                                                                                file_path="C:/path1/Path2/file.ext",
+                                                                                detector_type=DetectorType.HAB)]},
+                          "MON/ hAB  = filE.Ext ": {MonId.direct: [monitor_file(
+                                                                   file_path="filE.Ext",
+                                                                   detector_type=DetectorType.HAB)]},
+                          "MON/HAb= \path1\Path2\file.ext ": {MonId.direct: [monitor_file(
+                                                              file_path="/path1/Path2/file.ext",
+                                                              detector_type=DetectorType.HAB)]},
+                          "MON/hAB= /path1/Path2/file.ext ": {MonId.direct: [monitor_file(
+                                                              file_path="/path1/Path2/file.ext",
+                                                              detector_type=DetectorType.HAB)]}}
         invalid_settings = {"MON/HAB= /path1/ Path2/file.ext ": RuntimeError,
                             "MON/hAB /path1/Path2/file.ext ": RuntimeError,
                             "MON/HAB=/path1/Path2/file ": RuntimeError}

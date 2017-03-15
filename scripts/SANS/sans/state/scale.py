@@ -67,9 +67,9 @@ class StateScaleBuilder(object):
         return copy.copy(self.state)
 
 
-# ------------------------------------------
+# ---------------------------------------
 # Factory method for SANStateScaleBuilder
-# ------------------------------------------
+# ---------------------------------------
 def get_scale_builder(data_info):
     # The data state has most of the information that we require to define the move. For the factory method, only
     # the instrument is of relevance.

@@ -1,5 +1,6 @@
 """ Performs slicing on an event workspace"""
 
+from __future__ import (absolute_import, division, print_function)
 from abc import (ABCMeta, abstractmethod)
 from mantid.dataobjects import Workspace2D
 

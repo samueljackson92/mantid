@@ -1,13 +1,15 @@
+from __future__ import (absolute_import, division, print_function)
 from math import (isinf, isnan)
 from sans.common.constants import EMPTY_NAME
-from sans.common.general_functions import create_unmanaged_algorithm
+from sans.common.general_functions import create_child_algorithm
 
 
-def strip_end_nans(workspace):
+def strip_end_nans(workspace, parent_alg=None):
     """
     This function removes the INFs and NANs from the start and end of a 1D workspace.
 
-    :param workspace: The workspace which is about to be trimmed
+    :param workspace: The workspace which is about to be
+    :param parent_alg: a handle to the parent algorithm
     :return: A trimmed NAN- and INF-trimmed workspace
     """
     # If the workspace is larger than 1D, then there is nothing we can do
@@ -44,7 +46,7 @@ def strip_end_nans(workspace):
     crop_options = {"InputWorkspace": workspace,
                     "XMin": start_q,
                     "XMax": end_q}
-    crop_alg = create_unmanaged_algorithm(crop_name, **crop_options)
+    crop_alg = create_child_algorithm(parent_alg, crop_name, **crop_options)
     crop_alg.setProperty("OutputWorkspace", EMPTY_NAME)
     crop_alg.execute()
     ws = crop_alg.getProperty("OutputWorkspace").value

@@ -1,9 +1,11 @@
+from __future__ import (absolute_import, division, print_function)
 import re
 import inspect
 from six import types
 from mantid.kernel import config
 from mantid.api import (AnalysisDataService, WorkspaceGroup)
 from SANSadd2 import add_runs
+from sans.sans_batch import SANSBatchReduction
 from sans.command_interface.command_interface_functions import (print_message, warning_message)
 from sans.command_interface.command_interface_state_director import (CommandInterfaceStateDirector, DataCommand,
                                                                      DataCommandId, NParameterCommand, NParameterCommandId,
@@ -13,8 +15,8 @@ from sans.common.constants import ALL_PERIODS
 from sans.common.file_information import (find_sans_file, find_full_file_path)
 from sans.common.enums import (RebinType, DetectorType, FitType, RangeStepType, ReductionDimensionality,
                                ISISReductionMode, SANSFacility, SaveType, BatchReductionEntry, OutputMode)
-from sans.common.general_functions import (convert_bank_name_to_detector_type_isis, create_unmanaged_algorithm,
-                                           get_output_workspace_name)
+from sans.common.general_functions import (convert_bank_name_to_detector_type_isis, get_output_name,
+                                           is_part_of_reduced_output_workspace_group)
 
 # Disable plotting if running outside Mantidplot
 try:
@@ -779,20 +781,17 @@ def WavRangeReduction(wav_start=None, wav_end=None, full_trans_wav=None, name_su
 
     # Get the states
     state = director.process_commands()
-    serialized_state = state.property_manager
-    states = {"1": serialized_state}
 
     # Run the reduction
-    batch_name = "SANSBatchReduction"
-    batch_options = {"SANSStates": states,
-                     "OutputMode": OutputMode.to_string(output_mode),
-                     "UseOptimizations": True}
-    batch_alg = create_unmanaged_algorithm(batch_name, **batch_options)
-    batch_alg.execute()
+    batch_alg = SANSBatchReduction()
+    batch_alg(states=[state], use_optimizations=True, output_mode=output_mode)
 
-    # Provide the name of the output workspace. This is tricky we need to get the output workspace base name
+    # -----------------------------------------------------------
+    # Return the name fo the reduced workspace (or WorkspaceGroup)
+    # -----------------------------------------------------------
     reduction_mode = state.reduction.reduction_mode
-    _, output_workspace_base_name = get_output_workspace_name(state, reduction_mode)
+    is_group = is_part_of_reduced_output_workspace_group(state)
+    _, output_workspace_base_name = get_output_name(state, reduction_mode, is_group)
     return output_workspace_base_name
 
 
@@ -814,6 +813,8 @@ def BatchReduce(filename, format, plotresults=False, saveAlgs=None, verbose=Fals
     if saveAlgs is None:
         saveAlgs = {'SaveRKH': 'txt'}
 
+    # From the old interface
+    _ = format
     _ = reducer
     _ = verbose
 

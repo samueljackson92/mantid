@@ -1,7 +1,6 @@
 from __future__ import (absolute_import, division, print_function)
 import unittest
 import os
-
 import mantid
 from sans.common.enums import BatchReductionEntry
 from sans.common.constants import ALL_PERIODS

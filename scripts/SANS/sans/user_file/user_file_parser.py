@@ -1,5 +1,6 @@
 # pylint: disable=too-many-lines, invalid-name, too-many-instance-attributes, too-many-branches, too-few-public-methods
 
+from __future__ import (absolute_import, division, print_function)
 import abc
 import re
 from math import copysign
@@ -806,7 +807,7 @@ class MaskParser(UserFileComponentParser):
         self._spectrum_single_pattern = re.compile(start_string + self._spectrum + integer_number + end_string)
 
         # Strip Masks
-        self._hab = "\\s*\\HAB|FRONT\\s*"
+        self._hab = "\\s*HAB|FRONT\\s*"
         self._lab = "\\s*LAB|REAR|MAIN\\s*"
         self._detector = "\\s*(" + self._hab + "|" + self._lab + ")?\\s*"
 
@@ -1950,8 +1951,9 @@ class MonParser(UserFileComponentParser):
         return {MonId.flat: monitor_file(file_path=file_path, detector_type=detector_type)}
 
     def _extract_hab(self, line, original_line):
+        # This is the same as direct/front
         file_path = self._extract_file_path(line, original_line, self._hab_file)
-        return {MonId.hab: file_path}
+        return {MonId.direct: monitor_file(file_path=file_path, detector_type=DetectorType.HAB)}
 
     def _extract_file_path(self, line, original_line, to_remove):
         direct = re.sub(self._detector, "", line)

@@ -6,9 +6,10 @@ import stresstesting
 import mantid
 from mantid.api import AnalysisDataService
 
+from sans.sans_batch import SANSBatchReduction
 from sans.user_file.user_file_state_director import UserFileStateDirectorISIS
 from sans.state.data import get_data_builder
-from sans.common.enums import (SANSFacility, ISISReductionMode)
+from sans.common.enums import (SANSFacility, ISISReductionMode, OutputMode)
 from sans.common.constants import EMPTY_NAME
 from sans.common.general_functions import create_unmanaged_algorithm
 
@@ -19,16 +20,13 @@ from sans.common.general_functions import create_unmanaged_algorithm
 class SANSBatchReductionTest(unittest.TestCase):
 
     def _run_batch_reduction(self, states, use_optimizations=False):
-        batch_reduction_name = "SANSBatchReduction"
-        batch_reduction_options = {"SANSStates": states,
-                                   "UseOptimizations": use_optimizations,
-                                   "OutputMode": "PublishToADS"}
-
-        batch_reduction_alg = create_unmanaged_algorithm(batch_reduction_name, **batch_reduction_options)
-
-        # Act
-        batch_reduction_alg.execute()
-        self.assertTrue(batch_reduction_alg.isExecuted())
+        batch_reduction_alg = SANSBatchReduction()
+        try:
+            batch_reduction_alg(states, use_optimizations, OutputMode.PublishToADS)
+            did_raise = False
+        except:
+            did_raise = True
+        self.assertFalse(did_raise)
 
     def _compare_workspace(self, workspace, reference_file_name):
         # Load the reference file
@@ -93,9 +91,8 @@ class SANSBatchReductionTest(unittest.TestCase):
         state = user_file_director.construct()
 
         # Act
-        states = {"1": state.property_manager}
+        states = [state]
         self._run_batch_reduction(states, use_optimizations=False)
-
         workspace_name = "34484rear_1D_1.75_16.5"
         output_workspace = AnalysisDataService.retrieve(workspace_name)
 
@@ -122,7 +119,7 @@ class SANSBatchReductionTest(unittest.TestCase):
         state = user_file_director.construct()
 
         # Act
-        states = {"1": state.property_manager}
+        states = [state]
         self._run_batch_reduction(states, use_optimizations=False)
 
         # Assert
