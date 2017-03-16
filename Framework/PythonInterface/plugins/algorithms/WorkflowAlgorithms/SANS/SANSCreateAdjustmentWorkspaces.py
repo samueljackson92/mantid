@@ -14,9 +14,6 @@ from sans.common.enums import (DataType, DetectorType)
 from sans.common.general_functions import create_unmanaged_algorithm
 from sans.state.state_base import create_deserialized_sans_state_from_property_manager
 
-from mantid.api import AnalysisDataService
-from mantid.simpleapi import SaveNexus
-
 
 class SANSCreateAdjustmentWorkspaces(DataProcessorAlgorithm):
     def category(self):
@@ -97,16 +94,12 @@ class SANSCreateAdjustmentWorkspaces(DataProcessorAlgorithm):
         # Get the monitor normalization workspace
         # --------------------------------------
         monitor_normalization_workspace = self._get_monitor_normalization_workspace(state)
-        AnalysisDataService.addOrReplace("test", monitor_normalization_workspace)
-        SaveNexus(Filename="C:/Sandbox/norm_new.nxs", InputWorkspace="test")
 
         # --------------------------------------
         # Get the calculated transmission
         # --------------------------------------
         calculated_transmission_workspace, unfitted_transmission_workspace =\
             self._get_calculated_transmission_workspace(state)
-        AnalysisDataService.addOrReplace("test", calculated_transmission_workspace)
-        SaveNexus(Filename="C:/Sandbox/trans_new.nxs", InputWorkspace="test")
 
         # --------------------------------------
         # Get the wide angle correction workspace

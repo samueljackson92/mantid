@@ -12,10 +12,7 @@ from sans.common.constants import EMPTY_NAME
 from sans.common.general_functions import (create_child_algorithm, append_to_sans_file_tag)
 from sans.common.enums import (DetectorType, DataType)
 
-from mantid.api import AnalysisDataService
-from mantid.simpleapi import SaveNexus
 
-counter2 = 1
 class SANSReductionCore(DataProcessorAlgorithm):
     def category(self):
         return 'SANS\\Reduction'
@@ -86,7 +83,6 @@ class SANSReductionCore(DataProcessorAlgorithm):
         # Get the input
         state = self._get_state()
         state_serialized = state.property_manager
-
         component_as_string = self.getProperty("Component").value
         progress = self._get_progress()
 
@@ -166,10 +162,6 @@ class SANSReductionCore(DataProcessorAlgorithm):
         progress.report("Masking ...")
         workspace = self._mask(state_serialized, workspace, component_as_string)
 
-        global counter2
-        AnalysisDataService.addOrReplace("test", workspace)
-        SaveNexus(Filename="C:/Sandbox/after_masking_new" + str(counter2) + ".nxs", InputWorkspace="test")
-
         # --------------------------------------------------------------------------------------------------------------
         # 6. Convert to Wavelength
         # --------------------------------------------------------------------------------------------------------------
@@ -205,15 +197,6 @@ class SANSReductionCore(DataProcessorAlgorithm):
         # ------------------------------------------------------------
         # 10. Convert to Q
         # -----------------------------------------------------------
-        AnalysisDataService.addOrReplace("test", workspace)
-        SaveNexus(Filename="C:/Sandbox/before_q_new" + str(counter2) + ".nxs", InputWorkspace="test")
-        AnalysisDataService.addOrReplace("test", wavelength_adjustment_workspace)
-        SaveNexus(Filename="C:/Sandbox/wav_q_new" + str(counter2) + ".nxs", InputWorkspace="test")
-
-        if pixel_adjustment_workspace:
-            AnalysisDataService.addOrReplace("test", pixel_adjustment_workspace)
-            SaveNexus(Filename="C:/Sandbox/pix_q_new" + str(counter2) + ".nxs", InputWorkspace="test")
-
         progress.report("Converting to q ...")
         workspace, sum_of_counts, sum_of_norms = self._convert_to_q(state_serialized,
                                                                     workspace,
@@ -221,9 +204,6 @@ class SANSReductionCore(DataProcessorAlgorithm):
                                                                     pixel_adjustment_workspace,
                                                                     wavelength_and_pixel_adjustment_workspace)
         progress.report("Completed SANSReductionCore ...")
-        AnalysisDataService.addOrReplace("test", workspace)
-        SaveNexus(Filename="C:/Sandbox/after_q_new" + str(counter2) + ".nxs", InputWorkspace="test")
-        counter2 += 1
         # ------------------------------------------------------------
         # Populate the output
         # ------------------------------------------------------------
