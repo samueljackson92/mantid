@@ -188,7 +188,6 @@ class SANSNormalizeToMonitor(DataProcessorAlgorithm):
         wavelength_rebin_mode = normalize_to_monitor_state.rebin_type
         convert_name = "ConvertToWavelength"
         convert_options = {"InputWorkspace": workspace,
-                           "OutputWorkspace": EMPTY_NAME,
                            "WavelengthLow": wavelength_low,
                            "WavelengthHigh": wavelength_high,
                            "WavelengthStep": wavelength_step,
@@ -196,6 +195,8 @@ class SANSNormalizeToMonitor(DataProcessorAlgorithm):
                            "RebinMode": RebinType.to_string(wavelength_rebin_mode)}
 
         convert_alg = create_unmanaged_algorithm(convert_name, **convert_options)
+        convert_alg.setPropertyValue("OutputWorkspace", EMPTY_NAME)
+        convert_alg.setProperty("OutputWorkspace", workspace)
         convert_alg.execute()
         return convert_alg.getProperty("OutputWorkspace").value
 

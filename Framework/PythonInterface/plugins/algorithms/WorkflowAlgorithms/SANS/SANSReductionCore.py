@@ -94,7 +94,7 @@ class SANSReductionCore(DataProcessorAlgorithm):
         progress.report("Cropping ...")
         workspace = self._get_cropped_workspace(component_as_string)
 
-        # --------------------------------------------------------------------------------------------------------------
+        # --------------------------------------------------------------------------------------------
         # 2. Perform dark run subtraction
         #    This will subtract a dark background from the scatter workspace. Note that dark background subtraction
         #    will also affect the transmission calculation later on.
@@ -155,7 +155,6 @@ class SANSReductionCore(DataProcessorAlgorithm):
         workspace = self._move(state_serialized, workspace, component_as_string)
         monitor_workspace = self._move(state_serialized, monitor_workspace, component_as_string)
 
-
         # --------------------------------------------------------------------------------------------------------------
         # 5. Apply masking (pixel masking and time masking)
         # --------------------------------------------------------------------------------------------------------------
@@ -204,6 +203,7 @@ class SANSReductionCore(DataProcessorAlgorithm):
                                                                     pixel_adjustment_workspace,
                                                                     wavelength_and_pixel_adjustment_workspace)
         progress.report("Completed SANSReductionCore ...")
+
         # ------------------------------------------------------------
         # Populate the output
         # ------------------------------------------------------------
@@ -278,9 +278,10 @@ class SANSReductionCore(DataProcessorAlgorithm):
     def _convert_to_wavelength(self, state_serialized, workspace):
         wavelength_name = "SANSConvertToWavelength"
         wavelength_options = {"SANSState": state_serialized,
-                              "InputWorkspace": workspace,
-                              "OutputWorkspace": EMPTY_NAME}
+                              "InputWorkspace": workspace}
         wavelength_alg = create_child_algorithm(self, wavelength_name, **wavelength_options)
+        wavelength_alg.setPropertyValue("OutputWorkspace", EMPTY_NAME)
+        wavelength_alg.setProperty("OutputWorkspace", workspace)
         wavelength_alg.execute()
         return wavelength_alg.getProperty("OutputWorkspace").value
 
@@ -310,9 +311,11 @@ class SANSReductionCore(DataProcessorAlgorithm):
             transmission_workspace = self._move(state_serialized, transmission_workspace, component_as_string,
                                                 is_transmission=True)
             adjustment_options.update({"TransmissionWorkspace": transmission_workspace})
+
         if direct_workspace:
             direct_workspace = self._move(state_serialized, direct_workspace, component_as_string, is_transmission=True)
             adjustment_options.update({"DirectWorkspace": direct_workspace})
+
         adjustment_alg = create_child_algorithm(self, adjustment_name, **adjustment_options)
         adjustment_alg.execute()
 

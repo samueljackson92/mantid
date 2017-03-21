@@ -7,7 +7,7 @@ from math import (acos, sqrt, degrees)
 import re
 from copy import deepcopy
 import json
-from mantid.api import AlgorithmManager, AnalysisDataService
+from mantid.api import (AlgorithmManager, AnalysisDataService, isSameWorkspaceObject)
 from sans.common.constants import (SANS_FILE_TAG, ALL_PERIODS, REDUCED_WORKSPACE_NAME_IN_LOGS,
                                    REDUCED_WORKSPACE_NAME_BY_USER_IN_LOGS, REDUCED_WORKSPACE_BASE_NAME_IN_LOGS,
                                    SANS2D, LOQ, LARMOR, ALL_PERIODS, EMPTY_NAME, REDUCED_CAN_TAG)
@@ -133,6 +133,44 @@ def create_child_algorithm(parent_alg, name, **kwargs):
     else:
         alg = create_unmanaged_algorithm(name, **kwargs)
     return alg
+
+
+def get_input_workspace_as_copy_if_not_same_as_output_workspace(alg):
+    """
+    This function checks if the input workspace is the same as the output workspace, if so then it returns the
+    workspace else it creates a copy of the input in order for it to be consumed.
+
+    @param alg: a handle to the algorithm which has a InputWorkspace property and a OutputWorkspace property
+    @return: a workspace
+    """
+    def _clone_input(_ws):
+        clone_name = "CloneWorkspace"
+        clone_options = {"InputWorkspace": _ws,
+                         "OutputWorkspace": EMPTY_NAME}
+        clone_alg = create_unmanaged_algorithm(clone_name, **clone_options)
+        clone_alg.execute()
+        return clone_alg.getProperty("OutputWorkspace").value
+
+    if not alg.has_key("InputWorkspace") or not alg.has_key("OutputWorkspace"):
+        raise RuntimeError("The algorithm {} does not seem to have an InputWorkspace and"
+                           " an OutputWorkspace property.".format(alg.name()))
+
+    ws_in = alg.getProperty("InputWorkspace").value
+    if ws_in is None:
+        raise RuntimeError("The input for the algorithm {} seems to be None. We need an input.".format(alg.name()))
+
+    ws_out = alg.getProperty("OutputWorkspace").value
+
+    # There are three scenarios.
+    # 1. ws_out is None
+    # 2. ws_in and ws_out are the same workspace
+    # 3. ws_in and ws_out are not the same workspace
+    if ws_out is None:
+        return _clone_input(ws_in)
+    elif isSameWorkspaceObject(ws_in, ws_out):
+        return ws_in
+    else:
+        return _clone_input(ws_in)
 
 
 def quaternion_to_angle_and_axis(quaternion):
@@ -485,9 +523,11 @@ def get_standard_output_workspace_name(state, reduction_data_type):
     if reduction_data_type is ISISReductionMode.Merged:
         detector_name_short = "merged"
     elif reduction_data_type is ISISReductionMode.HAB:
-        detector_name_short = detectors[DetectorType.to_string(DetectorType.HAB)].detector_name_short
+        det_name = detectors[DetectorType.to_string(DetectorType.HAB)].detector_name_short
+        detector_name_short = det_name if det_name is not None else "hab"
     elif reduction_data_type is ISISReductionMode.LAB:
-        detector_name_short = detectors[DetectorType.to_string(DetectorType.LAB)].detector_name_short
+        det_name = detectors[DetectorType.to_string(DetectorType.LAB)].detector_name_short
+        detector_name_short = det_name if det_name is not None else "lab"
     else:
         raise RuntimeError("SANSStateFunctions: Unknown reduction data type {0} cannot be used to "
                            "create an output name".format(reduction_data_type))

@@ -293,13 +293,14 @@ class SANSCalculateTransmission(DataProcessorAlgorithm):
 
         convert_name = "ConvertToWavelength"
         convert_options = {"InputWorkspace": workspace,
-                           "OutputWorkspace": EMPTY_NAME,
                            "WavelengthLow": wavelength_low,
                            "WavelengthHigh": wavelength_high,
                            "WavelengthStep": wavelength_step,
                            "WavelengthStepType": RangeStepType.to_string(wavelength_step_type),
                            "RebinMode": RebinType.to_string(rebin_type)}
         convert_alg = create_unmanaged_algorithm(convert_name, **convert_options)
+        convert_alg.setPropertyValue("OutputWorkspace", EMPTY_NAME)
+        convert_alg.setProperty("OutputWorkspace", workspace)
         convert_alg.execute()
         return convert_alg.getProperty("OutputWorkspace").value
 
@@ -320,11 +321,12 @@ class SANSCalculateTransmission(DataProcessorAlgorithm):
                         prompt_peak_correction_max is not None:
             remove_name = "RemoveBins"
             remove_options = {"InputWorkspace": workspace,
-                              "OutputWorkspace": EMPTY_NAME,
                               "XMin": prompt_peak_correction_min,
                               "XMax": prompt_peak_correction_max,
                               "Interpolation": "Linear"}
             remove_alg = create_unmanaged_algorithm(remove_name, **remove_options)
+            remove_alg.setPropertyValue("OutputWorkspace", EMPTY_NAME)
+            remove_alg.setProperty("OutputWorkspace", workspace)
             remove_alg.execute()
             workspace = remove_alg.getProperty("OutputWorkspace").value
         return workspace

@@ -1,11 +1,12 @@
 from __future__ import (absolute_import, division, print_function)
+
 from abc import (ABCMeta, abstractmethod)
 from sans.common.constants import EMPTY_NAME
 from sans.common.enums import (SANSInstrument, DetectorType)
 from sans.common.general_functions import create_unmanaged_algorithm
 from sans.common.file_information import (find_full_file_path, get_instrument_paths_for_sans_file)
 from sans.algorithm_detail.xml_shapes import (add_cylinder, add_outside_cylinder, create_phi_mask, create_line_mask)
-from sans.algorithm_detail.mask_functions import (yield_masked_det_ids, SpectraBlock)
+from sans.algorithm_detail.mask_functions import (SpectraBlock)
 
 
 # ------------------------------------------------------------------
@@ -46,8 +47,10 @@ def mask_bins(mask_info, workspace, detector_type):
     mask_options = {"InputWorkspace": workspace}
     mask_alg = create_unmanaged_algorithm(mask_name, **mask_options)
     for start, stop in zip(start_mask, stop_mask):
+        # Bin mask should be operated in place
         mask_alg.setProperty("InputWorkspace", workspace)
-        mask_alg.setProperty("OutputWorkspace", EMPTY_NAME)
+        mask_alg.setPropertyValue("OutputWorkspace", EMPTY_NAME)
+        mask_alg.setProperty("OutputWorkspace", workspace)
         mask_alg.setProperty("XMin", start)
         mask_alg.setProperty("XMax", stop)
         mask_alg.execute()
@@ -113,7 +116,7 @@ def mask_with_mask_files(mask_info, workspace):
         # Mask loader
         load_name = "LoadMask"
         load_options = {"Instrument": idf_path,
-                        "OutputWorkspace": "dummy"}
+                        "OutputWorkspace": EMPTY_NAME}
         load_alg = create_unmanaged_algorithm(load_name, **load_options)
 
         # Masker
@@ -127,10 +130,9 @@ def mask_with_mask_files(mask_info, workspace):
             load_alg.setProperty("InputFile", mask_file)
             load_alg.execute()
             masking_workspace = load_alg.getProperty("OutputWorkspace").value
-            detector_list = list(yield_masked_det_ids(masking_workspace))
             # Mask the detector ids on the original workspace
             mask_alg.setProperty("Workspace", workspace)
-            mask_alg.setProperty("DetectorList", detector_list)
+            mask_alg.setProperty("MaskedWorkspace", masking_workspace)
             mask_alg.execute()
             workspace = mask_alg.getProperty("Workspace").value
     return workspace

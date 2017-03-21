@@ -9,16 +9,6 @@ detector_shape_bundle = namedtuple("detector_shape_bundle", 'rectangular_shape, 
 geometry_bundle = namedtuple("geometry_bundle", 'shape, first_low_angle_spec_number')
 
 
-def yield_masked_det_ids(masking_ws):
-    """
-    For some reason Detector.isMasked() does not work for MaskingWorkspaces.
-    We use masking_ws.readY(ws_index)[0] == 1 instead.
-    """
-    for ws_index in range(masking_ws.getNumberHistograms()):
-        if masking_ws.readY(ws_index)[0] == 1:
-            yield masking_ws.getDetector(ws_index).getID()
-
-
 def get_geometry_information(ipf_path, detector_type):
     """
     This function extracts geometry information for the detector benches.

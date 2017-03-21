@@ -7,7 +7,8 @@ from mantid.kernel import (Direction, StringListValidator, Property)
 from mantid.dataobjects import EventWorkspace
 from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, AlgorithmFactory, PropertyMode, Progress)
 from sans.common.constants import EMPTY_NAME
-from sans.common.general_functions import (create_unmanaged_algorithm, append_to_sans_file_tag)
+from sans.common.general_functions import (create_unmanaged_algorithm, append_to_sans_file_tag,
+                                           get_input_workspace_as_copy_if_not_same_as_output_workspace)
 from sans.common.enums import (RebinType, RangeStepType)
 
 
@@ -50,7 +51,8 @@ class ConvertToWavelength(DataProcessorAlgorithm):
                              doc='The output workspace.')
 
     def PyExec(self):
-        workspace = self.getProperty("InputWorkspace").value
+        workspace = get_input_workspace_as_copy_if_not_same_as_output_workspace(self)
+
         progress = Progress(self, start=0.0, end=1.0, nreports=3)
 
         # Convert the units into wavelength
@@ -62,17 +64,15 @@ class ConvertToWavelength(DataProcessorAlgorithm):
         rebin_string = self._get_rebin_string(workspace)
         if rebin_type is RebinType.Rebin:
             rebin_options = {"InputWorkspace": workspace,
-                             "OutputWorkspace": EMPTY_NAME,
                              "PreserveEvents": True,
                              "Params": rebin_string}
         else:
             rebin_options = {"InputWorkspace": workspace,
-                             "OutputWorkspace": EMPTY_NAME,
                              "Params": rebin_string}
 
         # Perform the rebin
         progress.report("Performing rebin.")
-        workspace = self._perform_rebin(rebin_type, rebin_options)
+        workspace = self._perform_rebin(rebin_type, rebin_options, workspace)
 
         append_to_sans_file_tag(workspace, "_toWavelength")
         self.setProperty("OutputWorkspace", workspace)
@@ -107,9 +107,10 @@ class ConvertToWavelength(DataProcessorAlgorithm):
     def _convert_units_to_wavelength(self, workspace):
         convert_name = "ConvertUnits"
         convert_options = {"InputWorkspace": workspace,
-                           "OutputWorkspace": EMPTY_NAME,
                            "Target": "Wavelength"}
         convert_alg = create_unmanaged_algorithm(convert_name, **convert_options)
+        convert_alg.setPropertyValue("OutputWorkspace", EMPTY_NAME)
+        convert_alg.setProperty("OutputWorkspace", workspace)
         convert_alg.execute()
         return convert_alg.getProperty("OutputWorkspace").value
 
@@ -132,9 +133,11 @@ class ConvertToWavelength(DataProcessorAlgorithm):
         wavelength_step *= pre_factor
         return str(wavelength_low) + "," + str(wavelength_step) + "," + str(wavelength_high)
 
-    def _perform_rebin(self, rebin_type, rebin_options):
+    def _perform_rebin(self, rebin_type, rebin_options, workspace):
         rebin_name = "Rebin" if rebin_type is RebinType.Rebin else "InterpolatingRebin"
         rebin_alg = create_unmanaged_algorithm(rebin_name, **rebin_options)
+        rebin_alg.setPropertyValue("OutputWorkspace", EMPTY_NAME)
+        rebin_alg.setProperty("OutputWorkspace", workspace)
         rebin_alg.execute()
         return rebin_alg.getProperty("OutputWorkspace").value
 

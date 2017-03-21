@@ -205,8 +205,10 @@ def set_components_to_original_for_isis(move_info, workspace, component):
         hab_name = move_info.detectors[DetectorType.to_string(DetectorType.HAB)].detector_name
         lab_name = move_info.detectors[DetectorType.to_string(DetectorType.LAB)].detector_name
         component_names = list(move_info.monitor_names.values())
-        component_names.append(hab_name)
-        component_names.append(lab_name)
+        if hab_name:
+            component_names.append(hab_name)
+        if lab_name:
+            component_names.append(lab_name)
         component_names.append("some-sample-holder")
     else:
         component_names = [component]

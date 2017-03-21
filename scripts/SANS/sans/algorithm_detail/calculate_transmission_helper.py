@@ -17,12 +17,13 @@ def apply_flat_background_correction_to_detectors(workspace, flat_background_cor
     if flat_background_correction_start is not None and flat_background_correction_stop is not None:
         flat_name = "CalculateFlatBackground"
         flat_options = {"InputWorkspace": workspace,
-                        "OutputWorkspace": EMPTY_NAME,
                         "Mode": "Mean",
                         "StartX": flat_background_correction_start,
                         "EndX": flat_background_correction_stop,
                         "SkipMonitors": True}
         flat_alg = create_unmanaged_algorithm(flat_name, **flat_options)
+        flat_alg.setPropertyValue("OutputWorkspace", EMPTY_NAME)
+        flat_alg.setProperty("OutputWorkspace", workspace)
         flat_alg.execute()
         workspace = flat_alg.getProperty("OutputWorkspace").value
     return workspace
@@ -62,12 +63,13 @@ def apply_flat_background_correction_to_monitors(workspace, monitor_indices, bac
 
         flat_name = "CalculateFlatBackground"
         flat_options = {"InputWorkspace": workspace,
-                        "OutputWorkspace": EMPTY_NAME,
                         "Mode": "Mean",
                         "StartX": tof_start,
                         "EndX": tof_stop,
                         "WorkspaceIndexList": workspace_index}
         flat_alg = create_unmanaged_algorithm(flat_name, **flat_options)
+        flat_alg.setPropertyValue("OutputWorkspace", EMPTY_NAME)
+        flat_alg.setProperty("OutputWorkspace", workspace)
         flat_alg.execute()
         workspace = flat_alg.getProperty("OutputWorkspace").value
     return workspace

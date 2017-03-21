@@ -7,7 +7,7 @@ import json
 import copy
 
 from sans.state.state_base import (StateBase, FloatParameter, DictParameter, ClassTypeParameter,
-                                   StringParameter, rename_descriptor_names)
+                                   StringWithNoneParameter, rename_descriptor_names)
 from sans.common.enums import (Coordinates, CanonicalCoordinates, SANSInstrument, DetectorType)
 from sans.state.automatic_setters import automatic_setters
 from sans.state.state_functions import (validation_message, set_detector_names, set_monitor_names)
@@ -34,8 +34,8 @@ class StateMoveDetector(StateBase):
     sample_centre_pos2 = FloatParameter()
 
     # Name of the detector
-    detector_name = StringParameter()
-    detector_name_short = StringParameter()
+    detector_name = StringWithNoneParameter()
+    detector_name_short = StringWithNoneParameter()
 
     def __init__(self):
         super(StateMoveDetector, self).__init__()
@@ -58,12 +58,12 @@ class StateMoveDetector(StateBase):
 
     def validate(self):
         is_invalid = {}
-        if not self.detector_name:
+        if self.detector_name == "":
             entry = validation_message("Missing detector name",
                                        "Make sure that a detector name was specified.",
                                        {"detector_name": self.detector_name})
             is_invalid.update(entry)
-        if not self.detector_name_short:
+        if self.detector_name_short == "":
             entry = validation_message("Missing short detector name",
                                        "Make sure that a short detector name was specified.",
                                        {"detector_name_short": self.detector_name_short})
@@ -181,15 +181,15 @@ class StateMoveLARMOR(StateMove):
 # ----------------------------------------------------------------------------------------------------------------------
 # Builder
 # ----------------------------------------------------------------------------------------------------------------------
-def setup_idf_and_ipf_content(move_info, data_info):
+def setup_idf_and_ipf_content(move_info, data_info, invalid_detector_types, invalid_monitor_names):
     # Get the IDF and IPF path since they contain most of the import information
     idf_file_path = data_info.idf_file_path
     ipf_file_path = data_info.ipf_file_path
 
     # Set the detector names
-    set_detector_names(move_info, ipf_file_path)
+    set_detector_names(move_info, ipf_file_path, invalid_detector_types)
     # Set the monitor names
-    set_monitor_names(move_info, idf_file_path)
+    set_monitor_names(move_info, idf_file_path, invalid_monitor_names)
 
 
 class StateMoveLOQBuilder(object):
@@ -215,7 +215,9 @@ class StateMoveSANS2DBuilder(object):
     def __init__(self, data_info):
         super(StateMoveSANS2DBuilder, self).__init__()
         self.state = StateMoveSANS2D()
-        setup_idf_and_ipf_content(self.state, data_info)
+        # TODO Automate this
+        invalid_monitor_names = ["monitor4", "monitor6", "monitor7", "monitor8"]
+        setup_idf_and_ipf_content(self.state, data_info, invalid_monitor_names=invalid_monitor_names)
 
     def build(self):
         self.state.validate()
@@ -233,7 +235,14 @@ class StateMoveLARMORBuilder(object):
     def __init__(self, data_info):
         super(StateMoveLARMORBuilder, self).__init__()
         self.state = StateMoveLARMOR()
-        setup_idf_and_ipf_content(self.state, data_info)
+        # There are several invalid monitor names which are not setup for LARMOR, also the IPF has a high-angle-bank
+        # but this is not setup for LARMOR
+        # TODO Automate this
+        invalid_monitor_names = ["monitor6", "monitor7", "monitor8", "monitor9", "monitor10"]
+        invalid_detector_types = [DetectorType.HAB]
+        setup_idf_and_ipf_content(self.state, data_info,
+                                  invalid_detector_types=invalid_detector_types,
+                                  invalid_monitor_names=invalid_monitor_names)
         self.conversion_value = 1000.
         self._set_conversion_value(data_info)
 

@@ -64,13 +64,17 @@ def validation_message(error_message, instruction, variables):
     return {error_message: message}
 
 
-def set_detector_names(state, ipf_path):
+def set_detector_names(state, ipf_path, invalid_detector_types=None):
     """
     Sets the detectors names on a State object which has a `detector` map entry, e.g. StateMask
 
-    @param state: the state object
-    @param ipf_path: the path to the Instrument Parameter File
+    :param state: the state object
+    :param ipf_path: the path to the Instrument Parameter File
+    :param invalid_detector_types: a list of invalid detector types which don't exist for the instrument
     """
+    if invalid_detector_types is None:
+        invalid_detector_types = []
+
     lab_keyword = DetectorType.to_string(DetectorType.LAB)
     hab_keyword = DetectorType.to_string(DetectorType.HAB)
     detector_names = {lab_keyword: "low-angle-detector-name",
@@ -86,6 +90,8 @@ def set_detector_names(state, ipf_path):
 
     for detector_type in state.detectors:
         try:
+            if DetectorType.from_string(detector_type) in invalid_detector_types:
+                continue
             detector_name_tag = detector_names[detector_type]
             detector_name_short_tag = detector_names_short[detector_type]
             detector_name = found_detector_names[detector_name_tag]
@@ -97,6 +103,8 @@ def set_detector_names(state, ipf_path):
         state.detectors[detector_type].detector_name_short = detector_name_short
 
 
-def set_monitor_names(state, idf_path):
-    monitor_names = get_monitor_names_from_idf_file(idf_path)
+def set_monitor_names(state, idf_path, invalid_monitor_names=None):
+    if invalid_monitor_names is None:
+        invalid_monitor_names = []
+    monitor_names = get_monitor_names_from_idf_file(idf_path, invalid_monitor_names)
     state.monitor_names = monitor_names

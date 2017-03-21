@@ -43,9 +43,10 @@ class DivideByVolumeISIS(DivideByVolume):
 
         divide_name = "Divide"
         divide_options = {"LHSWorkspace": workspace,
-                          "RHSWorkspace": single_valued_workspace,
-                          "OutputWorkspace": EMPTY_NAME}
+                          "RHSWorkspace": single_valued_workspace}
         divide_alg = create_unmanaged_algorithm(divide_name, **divide_options)
+        divide_alg.setPropertyValue("OutputWorkspace", EMPTY_NAME)
+        divide_alg.setProperty("OutputWorkspace", workspace)
         divide_alg.execute()
         return divide_alg.getProperty("OutputWorkspace").value
 
@@ -111,9 +112,10 @@ class MultiplyByAbsoluteScale(object):
 
         multiply_name = "Multiply"
         multiply_options = {"LHSWorkspace": workspace,
-                            "RHSWorkspace": single_valued_workspace,
-                            "OutputWorkspace": EMPTY_NAME}
+                            "RHSWorkspace": single_valued_workspace}
         multiply_alg = create_unmanaged_algorithm(multiply_name, **multiply_options)
+        multiply_alg.setPropertyValue("OutputWorkspace", EMPTY_NAME)
+        multiply_alg.setProperty("OutputWorkspace", workspace)
         multiply_alg.execute()
         return multiply_alg.getProperty("OutputWorkspace").value
 
