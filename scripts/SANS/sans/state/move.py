@@ -58,12 +58,12 @@ class StateMoveDetector(StateBase):
 
     def validate(self):
         is_invalid = {}
-        if self.detector_name == "":
+        if self.detector_name == "" or self.detector_name is None:
             entry = validation_message("Missing detector name",
                                        "Make sure that a detector name was specified.",
                                        {"detector_name": self.detector_name})
             is_invalid.update(entry)
-        if self.detector_name_short == "":
+        if self.detector_name_short == "" or self.detector_name_short is None:
             entry = validation_message("Missing short detector name",
                                        "Make sure that a short detector name was specified.",
                                        {"detector_name_short": self.detector_name_short})
@@ -96,6 +96,10 @@ class StateMove(StateBase):
         # No validation of the descriptors on this level, let potential exceptions from detectors "bubble" up
         for key in self.detectors:
             self.detectors[key].validate()
+
+        # If the detectors are empty, then we raise
+        if not self.detectors:
+            raise ValueError("No detectors have been set.")
 
 
 @rename_descriptor_names
@@ -181,7 +185,7 @@ class StateMoveLARMOR(StateMove):
 # ----------------------------------------------------------------------------------------------------------------------
 # Builder
 # ----------------------------------------------------------------------------------------------------------------------
-def setup_idf_and_ipf_content(move_info, data_info, invalid_detector_types, invalid_monitor_names):
+def setup_idf_and_ipf_content(move_info, data_info, invalid_detector_types=None, invalid_monitor_names=None):
     # Get the IDF and IPF path since they contain most of the import information
     idf_file_path = data_info.idf_file_path
     ipf_file_path = data_info.ipf_file_path

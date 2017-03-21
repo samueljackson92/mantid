@@ -19,7 +19,7 @@ class StateFunctionsTest(unittest.TestCase):
         state = test_director.construct()
 
         state.data.sample_scatter_run_number = 12345
-        state.data.sample_scatter_period = StateData.ALL_PERIODS
+        state.data.sample_scatter_period = StateData.ALL_PERIODS 
 
         state.reduction.dimensionality = ReductionDimensionality.OneDim
 

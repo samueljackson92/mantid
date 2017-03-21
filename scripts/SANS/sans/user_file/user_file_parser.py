@@ -1953,7 +1953,7 @@ class MonParser(UserFileComponentParser):
     def _extract_hab(self, line, original_line):
         # This is the same as direct/front
         file_path = self._extract_file_path(line, original_line, self._hab_file)
-        return {MonId.direct: monitor_file(file_path=file_path, detector_type=DetectorType.HAB)}
+        return {MonId.direct: [monitor_file(file_path=file_path, detector_type=DetectorType.HAB)]}
 
     def _extract_file_path(self, line, original_line, to_remove):
         direct = re.sub(self._detector, "", line)
