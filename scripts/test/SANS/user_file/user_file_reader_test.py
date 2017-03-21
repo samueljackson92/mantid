@@ -100,3 +100,39 @@ class UserFileReaderTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+    def _sort_list(elements):
+        if len(elements) == 1:
+            return
+
+        if isinstance(elements[0], single_entry_with_detector):
+            UserFileReaderTest._sort(elements, lambda x: x.entry)
+        elif isinstance(elements[0], simple_range):
+            UserFileReaderTest._sort(elements, lambda x: x.start)
+        elif isinstance(elements[0], complex_range):
+            UserFileReaderTest._sort(elements, lambda x: x.start)
+        elif isinstance(elements[0], back_single_monitor_entry):
+            UserFileReaderTest._sort(elements, lambda x: x.monitor)
+        elif isinstance(elements[0], fit_general):
+            UserFileReaderTest._sort(elements, lambda x: x.start)
+        elif isinstance(elements[0], range_entry_with_detector):
+            UserFileReaderTest._sort(elements, lambda x: x.start)
+        elif isinstance(elements[0], monitor_file):
+            UserFileReaderTest._sort(elements, lambda x: (x.file_path, DetectorType.to_string(x.detector_type)))
+        elif isinstance(elements[0], monitor_spectrum):
+            UserFileReaderTest._sort(elements, lambda x: x.spectrum)
+        elif isinstance(elements[0], position_entry):
+            UserFileReaderTest._sort(elements, lambda x: x.pos1)
+        elif isinstance(elements[0], set_scales_entry):
+            UserFileReaderTest._sort(elements, lambda x: x.s)
+        elif isinstance(elements[0], range_entry):
+            UserFileReaderTest._sort(elements, lambda x: x.start)
+        else:
+            elements.sort()
+
+    @staticmethod
+    def _sort(elements, predicate):
+        elements.sort(key=predicate)
+
+
+if __name__ == "__main__":
+    unittest.main()

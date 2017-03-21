@@ -45,7 +45,9 @@ Documentation
 Custom Interfaces
 #################
 
-Indirect > Corrections and Indirect > Analysis interfaces have been configured to not to accept GroupWorkspace as input.
+- Indirect > Corrections > CalculatePaalmanPings is upgraded with few new options for computation of the corrections. Those are needed to be able to compute the corrections for different scenarios, like QENS, FWS, diffraction.
+- Indirect > Corrections and Indirect > Analysis interfaces have been configured to not to accept GroupWorkspace as input.
+
 
 Bugs Resolved
 -------------
@@ -57,7 +59,8 @@ SliceViewer Improvements
 
 VSI Improvments
 ---------------
-Update ParaView to v5.3.0-RC1
+- ParaView was updated to to `v5.3.0 <https://blog.kitware.com/paraview-5-3-0-release-notes/>`_.
+- The mapped array vtkMDHWSignalArray has been refactored to use the new vtkGenericDataArray class template. This minimized virtual indirection and allows advanced compiler optimizations such as vectorization.
 
 |
 

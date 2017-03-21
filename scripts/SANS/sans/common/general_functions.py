@@ -80,7 +80,7 @@ def get_single_valued_logs_from_workspace(workspace, log_names, log_types, conve
         log_value = get_log_value(run, log_name, log_type)
         log_results.update({log_name: log_value})
     if convert_from_millimeter_to_meter:
-        for key in log_results.keys():
+        for key in list(log_results.keys()):
             log_results[key] /= 1000.
     return log_results
 
@@ -96,7 +96,7 @@ def create_unmanaged_algorithm(name, **kwargs):
     alg = AlgorithmManager.createUnmanaged(name)
     alg.initialize()
     alg.setChild(True)
-    for key, value in kwargs.items():
+    for key, value in list(kwargs.items()):
         alg.setProperty(key, value)
     return alg
 

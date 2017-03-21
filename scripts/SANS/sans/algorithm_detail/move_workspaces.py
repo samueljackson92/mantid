@@ -3,6 +3,7 @@
 from __future__ import (absolute_import, division, print_function)
 import math
 from mantid.api import MatrixWorkspace
+from six import with_metaclass
 from abc import (ABCMeta, abstractmethod)
 from sans.state.move import StateMove
 from sans.common.enums import (SANSInstrument, CanonicalCoordinates, DetectorType)
