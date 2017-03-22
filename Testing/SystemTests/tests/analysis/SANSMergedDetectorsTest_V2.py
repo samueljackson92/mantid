@@ -2,7 +2,7 @@
 
 from __future__ import (absolute_import, division, print_function)
 import stresstesting
-from mantid.simpleapi import *
+from mantid.simpleapi import DeleteWorkspace, mtd
 from sans.command_interface.ISISCommandInterface import (SANS2DTUBES, MaskFile, SetDetectorOffsets, Gravity, Set1D,
                                                          SetFrontDetRescaleShift, WavRangeReduction, AssignSample,
                                                          AssignCan, TransmissionSample, TransmissionCan,

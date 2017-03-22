@@ -161,6 +161,7 @@ class SANSSingleReduction(DataProcessorAlgorithm):
         # --------------------------------------------------------------------------------------------------------------
         output_bundles = []
         output_parts_bundles = []
+
         for reduction_setting_bundle in reduction_setting_bundles:
             progress.report("Running a single reduction ...")
             # We want to make use of optimizations here. If a can workspace has already been reduced with the same can

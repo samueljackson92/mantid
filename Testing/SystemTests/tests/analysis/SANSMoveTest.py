@@ -120,6 +120,11 @@ class SANSMoveTest(unittest.TestCase):
                                        component_key, move_info, workspace)
 
     def check_that_sets_to_zero(self, workspace, move_alg, move_info, comp_name=None):
+        def _get_components_to_compare(_key, _move_info, _component_names):
+            if _key in _move_info.detectors:
+                _name = _move_info.detectors[_key].detector_name
+                _component_names.append(_name)
+
         # Reset the position to zero
         move_alg.setProperty("Workspace", workspace)
         move_alg.setProperty("MoveType", "SetToZero")
@@ -132,11 +137,11 @@ class SANSMoveTest(unittest.TestCase):
 
         # Get the components to compare
         if comp_name is None:
-            hab_name = move_info.detectors[DetectorType.to_string(DetectorType.HAB)].detector_name
-            lab_name = move_info.detectors[DetectorType.to_string(DetectorType.LAB)].detector_name
             component_names = list(move_info.monitor_names.values())
-            component_names.append(hab_name)
-            component_names.append(lab_name)
+            hab_name = DetectorType.to_string(DetectorType.HAB)
+            lab_name = DetectorType.to_string(DetectorType.LAB),
+            _get_components_to_compare(hab_name, move_info, component_names)
+            _get_components_to_compare(lab_name, move_info, component_names)
             component_names.append("some-sample-holder")
         else:
             component_names = [comp_name]

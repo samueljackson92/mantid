@@ -201,8 +201,6 @@ def run_optimized_for_can(reduction_alg, reduction_setting_bundle):
     @param reduction_setting_bundle: a ReductionSettingBundle tuple.
     @return: a reduced workspace, a partial output workspace for the counts, a partial workspace for the normalization.
     """
-    #import pydevd
-    #pydevd.settrace('localhost', port=5230, stdoutToServer=True, stderrToServer=True)
     state = reduction_setting_bundle.state
     output_parts = reduction_setting_bundle.output_parts
     reduction_mode = reduction_setting_bundle.reduction_mode

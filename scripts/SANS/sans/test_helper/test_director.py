@@ -62,7 +62,8 @@ class TestDirector(object):
         # Build the SANSStateMove
         if self.move_state is None:
             move_builder = get_move_builder(self.data_state)
-            move_builder.set_HAB_x_translation_correction(21.2)
+            if hasattr(move_builder, "set_HAB_x_translation_correction"):
+                move_builder.set_HAB_x_translation_correction(21.2)
             move_builder.set_LAB_x_translation_correction(12.1)
             self.move_state = move_builder.build()
 

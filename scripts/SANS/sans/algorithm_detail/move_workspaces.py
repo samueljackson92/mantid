@@ -201,15 +201,22 @@ def set_components_to_original_for_isis(move_info, workspace, component):
     :param component: the component which is being reset on the workspace. If this is not specified, then
                       everything is being reset.
     """
+    def _reset_detector(_key, _move_info, _component_names):
+        if _key in _move_info.detectors:
+            _detector_name = _move_info.detectors[_key].detector_name
+            if _detector_name:
+                _component_names.append(_detector_name)
+
     # We reset the HAB, the LAB, the sample holder and monitor 4
     if not component:
-        hab_name = move_info.detectors[DetectorType.to_string(DetectorType.HAB)].detector_name
-        lab_name = move_info.detectors[DetectorType.to_string(DetectorType.LAB)].detector_name
         component_names = list(move_info.monitor_names.values())
-        if hab_name:
-            component_names.append(hab_name)
-        if lab_name:
-            component_names.append(lab_name)
+
+        hab_key = DetectorType.to_string(DetectorType.HAB)
+        _reset_detector(hab_key, move_info, component_names)
+
+        lab_key = DetectorType.to_string(DetectorType.LAB)
+        _reset_detector(lab_key, move_info, component_names)
+
         component_names.append("some-sample-holder")
     else:
         component_names = [component]
@@ -444,6 +451,7 @@ class SANSMoveSANS2D(SANSMove):
     @staticmethod
     def _move_monitor_4(workspace, move_info):
         if move_info.monitor_4_offset != 0.0:
+            mon_name= move_info.monitor_names
             monitor_4_name = move_info.monitor_names["4"]
             instrument = workspace.getInstrument()
             monitor_4 = instrument.getComponentByName(monitor_4_name)

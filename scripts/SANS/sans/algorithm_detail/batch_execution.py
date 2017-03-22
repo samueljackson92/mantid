@@ -58,7 +58,6 @@ def single_reduction_for_batch(state, use_optimizations, output_mode):
     single_reduction_options = {"UseOptimizations": use_optimizations}
     reduction_alg = create_managed_non_child_algorithm(single_reduction_name, **single_reduction_options)
     reduction_alg.setChild(False)
-
     # Perform the data reduction
     for reduction_package in reduction_packages:
         # -----------------------------------
@@ -94,7 +93,6 @@ def single_reduction_for_batch(state, use_optimizations, output_mode):
         # The workspaces are already on the ADS, but should potentially be grouped
         # -----------------------------------
         group_workspaces_if_required(reduction_package)
-
 
     # --------------------------------
     # Perform output of all workspaces
@@ -312,7 +310,7 @@ def get_workspaces_from_load_algorithm(load_alg, workspace_to_count, workspace_n
     Reads the workspaces from SANSLoad
 
     :param load_alg: a handle to the load algorithm
-    :param workspace_to_count: a map from SANSDataType to the outpyt-number property name of SANSLoad for workspaces
+    :param workspace_to_count: a map from SANSDataType to the output-number property name of SANSLoad for workspaces
     :param workspace_name_dict: a map of SANSDataType vs output-property name of SANSLoad for (monitor) workspaces
     :return: a map of SANSDataType vs list of workspaces (to handle multi-period data)
     """
@@ -547,6 +545,37 @@ def set_properties_for_reduction_algorithm(reduction_alg, reduction_package, wor
         setattr(_reduction_package, _attr_out_name, _out_name)
         setattr(_reduction_package, _atrr_out_name_base, _out_name_base)
 
+    def _set_lab(_reduction_alg, _reduction_package, _is_group):
+        _set_output_name(_reduction_alg, _reduction_package, _is_group, ISISReductionMode.LAB,
+                         "OutputWorkspaceLABCan", "reduced_lab_can_name", "reduced_lab_can_base_name",
+                         LAB_CAN_SUFFIX)
+
+        # Lab Can Count workspace - this is a partial workspace
+        _set_output_name(_reduction_alg, _reduction_package, _is_group, ISISReductionMode.LAB,
+                         "OutputWorkspaceLABCanCount", "reduced_lab_can_count_name", "reduced_lab_can_count_base_name",
+                         LAB_CAN_COUNT_SUFFIX)
+
+        # Lab Can Norm workspace - this is a partial workspace
+        _set_output_name(_reduction_alg, _reduction_package, _is_group, ISISReductionMode.LAB,
+                         "OutputWorkspaceLABCanNorm", "reduced_lab_can_norm_name", "reduced_lab_can_norm_base_name",
+                         LAB_CAN_NORM_SUFFIX)
+
+    def _set_hab(_reduction_alg, _reduction_package, _is_group):
+        # Hab Can Workspace
+        _set_output_name(_reduction_alg, _reduction_package, _is_group, ISISReductionMode.HAB,
+                         "OutputWorkspaceHABCan", "reduced_hab_can_name", "reduced_hab_can_base_name",
+                         HAB_CAN_SUFFIX)
+
+        # Hab Can Count workspace - this is a partial workspace
+        _set_output_name(_reduction_alg, _reduction_package, _is_group, ISISReductionMode.HAB,
+                         "OutputWorkspaceHABCanCount", "reduced_hab_can_count_name", "reduced_hab_can_count_base_name",
+                         HAB_CAN_COUNT_SUFFIX)
+
+        # Hab Can Norm workspace - this is a partial workspace
+        _set_output_name(_reduction_alg, _reduction_package, _is_group, ISISReductionMode.HAB,
+                         "OutputWorkspaceHABCanNorm", "reduced_hab_can_norm_name", "reduced_hab_can_norm_base_name",
+                         HAB_CAN_NORM_SUFFIX)
+
     # Go through the elements of the reduction package and set them on the reduction algorithm
     # Set the SANSState
     state = reduction_package.state
@@ -594,42 +623,24 @@ def set_properties_for_reduction_algorithm(reduction_alg, reduction_package, wor
     else:
         raise RuntimeError("The reduction mode {0} is not known".format(reduction_mode))
 
-
-
     # ------------------------------------------------------------------------------------------------------------------
     # Set the output workspaces for the can reduction and the partial can reductions
     # ------------------------------------------------------------------------------------------------------------------
     # Set the output workspaces for the can reductions -- note that these will only be set if optimizations
     # are enabled
     # Lab Can Workspace
-    _set_output_name(reduction_alg, reduction_package, is_group, ISISReductionMode.LAB,
-                     "OutputWorkspaceLABCan", "reduced_lab_can_name", "reduced_lab_can_base_name",
-                     LAB_CAN_SUFFIX)
-
-    # Lab Can Count workspace - this is a partial workspace
-    _set_output_name(reduction_alg, reduction_package, is_group, ISISReductionMode.LAB,
-                     "OutputWorkspaceLABCanCount", "reduced_lab_can_count_name", "reduced_lab_can_count_base_name",
-                     LAB_CAN_COUNT_SUFFIX)
-
-    # Lab Can Norm workspace - this is a partial workspace
-    _set_output_name(reduction_alg, reduction_package, is_group, ISISReductionMode.LAB,
-                     "OutputWorkspaceLABCanNorm", "reduced_lab_can_norm_name", "reduced_lab_can_norm_base_name",
-                     LAB_CAN_NORM_SUFFIX)
-
-    # Hab Can Workspace
-    _set_output_name(reduction_alg, reduction_package, is_group, ISISReductionMode.HAB,
-                     "OutputWorkspaceHABCan", "reduced_hab_can_name", "reduced_hab_can_base_name",
-                     HAB_CAN_SUFFIX)
-
-    # Hab Can Count workspace - this is a partial workspace
-    _set_output_name(reduction_alg, reduction_package, is_group, ISISReductionMode.HAB,
-                     "OutputWorkspaceHABCanCount", "reduced_hab_can_count_name", "reduced_hab_can_count_base_name",
-                     HAB_CAN_COUNT_SUFFIX)
-
-    # Hab Can Norm workspace - this is a partial workspace
-    _set_output_name(reduction_alg, reduction_package, is_group, ISISReductionMode.HAB,
-                     "OutputWorkspaceHABCanNorm", "reduced_hab_can_norm_name", "reduced_hab_can_norm_base_name",
-                     HAB_CAN_NORM_SUFFIX)
+    if reduction_mode is ISISReductionMode.Merged:
+        _set_lab(reduction_alg, reduction_package, is_group)
+        _set_hab(reduction_alg, reduction_package, is_group)
+    elif reduction_mode is ISISReductionMode.LAB:
+        _set_lab(reduction_alg, reduction_package, is_group)
+    elif reduction_mode is ISISReductionMode.HAB:
+        _set_hab(reduction_alg, reduction_package, is_group)
+    elif reduction_mode is ISISReductionMode.Both:
+        _set_lab(reduction_alg, reduction_package, is_group)
+        _set_hab(reduction_alg, reduction_package, is_group)
+    else:
+        raise RuntimeError("The reduction mode {0} is not known".format(reduction_mode))
 
 
 def get_workspace_from_algorithm(alg, output_property_name):

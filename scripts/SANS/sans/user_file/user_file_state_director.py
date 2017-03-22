@@ -486,8 +486,10 @@ class UserFileStateDirectorISIS(object):
                 pos2 = beam_centre.pos2
                 self._move_builder.set_LAB_sample_centre_pos1(self._move_builder.convert_pos1(pos1))
                 self._move_builder.set_LAB_sample_centre_pos2(self._move_builder.convert_pos2(pos2))
-                self._move_builder.set_HAB_sample_centre_pos1(self._move_builder.convert_pos1(pos1))
-                self._move_builder.set_HAB_sample_centre_pos2(self._move_builder.convert_pos2(pos2))
+                if hasattr(self._move_builder, "set_HAB_sample_centre_pos1"):
+                    self._move_builder.set_HAB_sample_centre_pos1(self._move_builder.convert_pos1(pos1))
+                if hasattr(self._move_builder, "set_HAB_sample_centre_pos2"):
+                    self._move_builder.set_HAB_sample_centre_pos2(self._move_builder.convert_pos2(pos2))
 
             for beam_centre in beam_centres_for_hab:
                 pos1 = beam_centre.pos1
