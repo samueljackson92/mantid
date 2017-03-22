@@ -37,7 +37,7 @@ class ScaleHelperTest(unittest.TestCase):
         state_isis = test_director.construct()
         divide_factory = DivideByVolumeFactory()
         # Act
-        divider = divide_factory.create_divide_by_volume(state_isis, data_type=DataType.Sample)
+        divider = divide_factory.create_divide_by_volume(state_isis)
         # Arrange
         self.assertTrue(isinstance(divider, DivideByVolumeISIS))
 
@@ -56,7 +56,7 @@ class ScaleHelperTest(unittest.TestCase):
         state = test_director.construct()
 
         divide_factory = DivideByVolumeFactory()
-        divider = divide_factory.create_divide_by_volume(state, data_type=DataType.Sample)
+        divider = divide_factory.create_divide_by_volume(state)
 
         # Apply the settings from the SANS2D00022024 workspace
         width = 8.
@@ -97,7 +97,7 @@ class ScaleHelperTest(unittest.TestCase):
         state = test_director.construct()
 
         divide_factory = DivideByVolumeFactory()
-        divider = divide_factory.create_divide_by_volume(state, data_type=DataType.Sample)
+        divider = divide_factory.create_divide_by_volume(state)
 
         workspace = ScaleHelperTest._get_workspace()
 

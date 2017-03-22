@@ -47,6 +47,10 @@ class ISIS1DMerger(Merger):
         shift_factor, scale_factor, fit_mode = get_shift_and_scale_parameter(reduction_mode_vs_output_bundles)
         fit_mode_as_string = FitModeForMerge.to_string(fit_mode)
 
+        # We need to convert NoFit to None.
+        if fit_mode_as_string == "NoFit":
+            fit_mode_as_string = "None"
+
         # Run the SANSStitch algorithm
         stitch_name = "SANSStitch"
         stitch_options = {"HABCountsSample": sample_count_secondary,

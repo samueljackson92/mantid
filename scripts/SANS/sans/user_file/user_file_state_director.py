@@ -560,7 +560,7 @@ class UserFileStateDirectorISIS(object):
             if q_range_max_shift:
                 self._reduction_builder.set_merge_range_max(q_range_max_shift)
         else:
-            self._reduction_builder.set_merge_fit_mode(FitModeForMerge.None)
+            self._reduction_builder.set_merge_fit_mode(FitModeForMerge.NoFit)
 
         # ------------------------
         # Reduction Dimensionality

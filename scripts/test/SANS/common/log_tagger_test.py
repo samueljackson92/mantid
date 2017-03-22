@@ -32,13 +32,13 @@ class SANSLogTaggerTest(unittest.TestCase):
         ws1 = self._provide_sample_workspace()
         tag1 = "test"
         value1 = "tested"
-        value2 = get_hash_value("tested2")
+        value2 = "tested2"
 
         # Act + Assert
         hashed_value_1 = get_hash_value(value1)
         hashed_value_2 = get_hash_value(value2)
         self.assertFalse(has_hash(tag1, hashed_value_1, ws1))
-        set_hash(tag1, value1, ws1)
+        set_hash(tag1, hashed_value_1, ws1)
         self.assertTrue(has_hash(tag1, hashed_value_1, ws1))
         self.assertFalse(has_hash(tag1, hashed_value_2, ws1))
 

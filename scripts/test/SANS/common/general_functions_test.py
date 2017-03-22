@@ -3,15 +3,41 @@ import unittest
 import mantid
 
 from mantid.kernel import (V3D, Quat)
+from mantid.api import AnalysisDataService
 from sans.common.general_functions import (quaternion_to_angle_and_axis, create_unmanaged_algorithm, add_to_sample_log,
-                                           get_standard_output_workspace_name, sanitise_instrument_name)
+                                           get_standard_output_workspace_name, sanitise_instrument_name,
+                                           get_reduced_can_workspace_from_ads, write_hash_into_reduced_can_workspace)
 from sans.common.constants import (SANS2D, LOQ, LARMOR)
-from sans.common.enums import (ISISReductionMode, ReductionDimensionality)
+from sans.common.enums import (ISISReductionMode, ReductionDimensionality, OutputParts)
 from sans.test_helper.test_director import TestDirector
 from sans.state.data import StateData
 
 
 class SANSFunctionsTest(unittest.TestCase):
+    @staticmethod
+    def _prepare_workspaces(number_of_workspaces, tagged_workspace_names=None, state=None, reduction_mode=None):
+        create_name = "CreateSampleWorkspace"
+        create_options = {"OutputWorkspace": "test",
+                          "NumBanks": 1,
+                          "BankPixelWidth": 2,
+                          "XMin": 1,
+                          "XMax": 10,
+                          "BinWidth": 2}
+        create_alg = create_unmanaged_algorithm(create_name, **create_options)
+
+        for index in range(number_of_workspaces):
+            create_alg.execute()
+            workspace = create_alg.getProperty("OutputWorkspace").value
+            workspace_name = "test" + "_" + str(index)
+            AnalysisDataService.addOrReplace(workspace_name, workspace)
+
+        if tagged_workspace_names is not None:
+            for key, value in list(tagged_workspace_names.items()):
+                create_alg.execute()
+                workspace = create_alg.getProperty("OutputWorkspace").value
+                AnalysisDataService.addOrReplace(value, workspace)
+                write_hash_into_reduced_can_workspace(state, workspace, reduction_mode, key)
+
     @staticmethod
     def _create_sample_workspace():
         sample_name = "CreateSampleWorkspace"
@@ -151,6 +177,57 @@ class SANSFunctionsTest(unittest.TestCase):
 
         name4 = sanitise_instrument_name("OThER")
         self.assertTrue("OThER" == name4)
+
+    def test_that_can_find_can_reduction_if_it_exists(self):
+        # Arrange
+        test_director = TestDirector()
+        state = test_director.construct()
+        tagged_workspace_names = {None: "test_ws",
+                                  OutputParts.Count: "test_ws_count",
+                                  OutputParts.Norm: "test_ws_norm"}
+        SANSFunctionsTest._prepare_workspaces(number_of_workspaces=4,
+                                              tagged_workspace_names=tagged_workspace_names,
+                                              state=state,
+                                              reduction_mode=ISISReductionMode.LAB)
+        # Act
+        workspace, workspace_count, workspace_norm = get_reduced_can_workspace_from_ads(state, output_parts=True,
+                                                                            reduction_mode=ISISReductionMode.LAB)
+
+        # Assert
+        self.assertTrue(workspace is not None)
+        self.assertTrue(workspace.name() == AnalysisDataService.retrieve("test_ws").name())
+        self.assertTrue(workspace_count is not None)
+        self.assertTrue(workspace_count.name() == AnalysisDataService.retrieve("test_ws_count").name())
+        self.assertTrue(workspace_norm is not None)
+        self.assertTrue(workspace_norm.name() == AnalysisDataService.retrieve("test_ws_norm").name())
+
+        # Clean up
+        SANSFunctionsTest._remove_workspaces()
+
+    @staticmethod
+    def _remove_workspaces():
+        for element in AnalysisDataService.getObjectNames():
+            AnalysisDataService.remove(element)
+
+    def test_that_returns_none_if_it_does_not_exist(self):
+        # Arrange
+        test_director = TestDirector()
+        state = test_director.construct()
+        SANSFunctionsTest._prepare_workspaces(number_of_workspaces=4, tagged_workspace_names=None,
+                                              state=state, reduction_mode=ISISReductionMode.LAB)
+
+        # Act
+        workspace, workspace_count, workspace_norm = \
+            get_reduced_can_workspace_from_ads(state, output_parts=False, reduction_mode=ISISReductionMode.LAB)
+
+        # Assert
+        self.assertTrue(workspace is None)
+        self.assertTrue(workspace_count is None)
+        self.assertTrue(workspace_norm is None)
+
+        # Clean up
+        SANSFunctionsTest._remove_workspaces()
+
 
 if __name__ == '__main__':
     unittest.main()

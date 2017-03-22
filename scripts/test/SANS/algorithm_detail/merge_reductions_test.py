@@ -27,7 +27,7 @@ class MergeReductionsTest(unittest.TestCase):
         return create_alg.getProperty('OutputWorkspace').value
 
     @staticmethod
-    def _get_simple_state(fit_type=FitModeForMerge.None, scale=1.0, shift=0.0):
+    def _get_simple_state(fit_type=FitModeForMerge.NoFit, scale=1.0, shift=0.0):
         # Set the reduction parameters
         reduction_info = StateReductionMode()
         reduction_info.reduction_mode = ISISReductionMode.Merged
@@ -95,7 +95,7 @@ class MergeReductionsTest(unittest.TestCase):
 
     def test_that_can_merge_without_fitting(self):
         # Arrange
-        fit_type = FitModeForMerge.None
+        fit_type = FitModeForMerge.NoFit
         scale_input = 32.0
         shift_input = 12.65
         state = self._get_simple_state(fit_type, scale_input, shift_input)
