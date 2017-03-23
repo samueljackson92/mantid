@@ -1,8 +1,9 @@
 from __future__ import (absolute_import, division, print_function)
+from six import iterkeys
 
 import mantid.kernel as kernel
 import mantid.simpleapi as mantid
-from isis_powder.routines.common_enums import InputBatchingEnum
+from isis_powder.routines.common_enums import INPUT_BATCHING, WORKSPACE_UNITS
 
 
 def cal_map_dictionary_key_helper(dictionary, key, append_to_error_message=None):
@@ -11,7 +12,7 @@ def cal_map_dictionary_key_helper(dictionary, key, append_to_error_message=None)
     message stating the following key could not be found in the calibration mapping file. As
     several instruments will use this message it makes sense to localise it to common. If a
     message is passed in append_to_error_message it will append that to the end of the generic
-    error message in its own line when an exception is raised.
+    error message in its own line when an exception is raised. This lookup is case insensitive.
     :param dictionary: The dictionary to search in for the key
     :param key: The key to search for
     :param append_to_error_message: (Optional) The message to append to the end of the error message
@@ -19,12 +20,14 @@ def cal_map_dictionary_key_helper(dictionary, key, append_to_error_message=None)
     """
     err_message = "The field '" + str(key) + "' is required within the calibration file but was not found."
     err_message += '\n' + str(append_to_error_message) if append_to_error_message else ''
-    return dictionary_key_helper(dictionary=dictionary, key=key, throws=True, exception_msg=err_message)
+
+    return dictionary_key_helper(dictionary=dictionary, key=key, throws=True,
+                                 case_insensitive=True, exception_msg=err_message)
 
 
-def crop_banks_in_tof(bank_list, crop_values_list):
+def crop_banks_using_crop_list(bank_list, crop_values_list):
     """
-    Crops the each bank by the specified tuple values from a list of tuples in TOF. The number
+    Crops each bank by the specified tuple values from a list of tuples in TOF. The number
     of tuples must match the number of banks to crop. A list of [(100,200), (150,250)] would crop
     bank 1 to the values 100, 200 and bank 2 to 150 and 250 in TOF.
     :param bank_list: The list of workspaces each containing one bank of data to crop
@@ -32,11 +35,12 @@ def crop_banks_in_tof(bank_list, crop_values_list):
     :return: A list of cropped workspaces
     """
     if not isinstance(crop_values_list, list):
-        if isinstance(bank_list, list):
-            raise ValueError("The cropping values were not in a list type")
-        else:
-            raise RuntimeError("Attempting to use list based cropping on a single workspace not in a list")
+        raise ValueError("The cropping values were not in a list type")
+    elif not isinstance(bank_list, list):
+        # This error is probably internal as we control the bank lists
+        raise RuntimeError("Attempting to use list based cropping on a single workspace not in a list")
 
+    # Finally check the number of elements are equal
     if len(bank_list) != len(crop_values_list):
         raise RuntimeError("The number of TOF cropping values does not match the number of banks for this instrument")
 
@@ -66,7 +70,7 @@ def crop_in_tof(ws_to_crop, x_min=None, x_max=None):
     return cropped_ws
 
 
-def dictionary_key_helper(dictionary, key, throws=True, exception_msg=None):
+def dictionary_key_helper(dictionary, key, throws=True, case_insensitive=False, exception_msg=None):
     """
     Checks if the key is in the dictionary and performs various different actions if it is not depending on
     the user parameters. If set to not throw it will return none. Otherwise it will throw a custom user message
@@ -74,12 +78,25 @@ def dictionary_key_helper(dictionary, key, throws=True, exception_msg=None):
     :param dictionary: The dictionary to search for the key
     :param key: The key to search for in the dictionary
     :param throws: (Optional) Defaults to true, whether this should throw on a key not being present
+    :param case_insensitive (Optional) Defaults to false, if set to true it accounts for mixed case but is O(n) time
     :param exception_msg: (Optional) The error message to print in the KeyError instead of the default Python message
     :return: The key if it was found, None if throws was set to false and the key was not found.
     """
     if key in dictionary:
+        # Try to use hashing first
         return dictionary[key]
-    elif not throws:
+
+    # If we still couldn't find it use the O(n) method
+    if case_insensitive:
+        # Convert key to str
+        lower_key = str(key).lower()
+        for dict_key in iterkeys(dictionary):
+            if str(dict_key).lower() == lower_key:
+                # Found it
+                return dictionary[dict_key]
+
+    # It doesn't exist at this point lets go into our error handling
+    if not throws:
         return None
     elif exception_msg:
         # Print user specified message
@@ -136,8 +153,12 @@ def generate_splined_name(vanadium_string, *args):
     :return: The splined vanadium name
     """
     out_name = "VanSplined" + '_' + str(vanadium_string)
-    for value in args:
-        out_name += '_' + str(value)
+    for passed_arg in args:
+        if isinstance(passed_arg, list):
+            for val in passed_arg:
+                out_name += '_' + str(val)
+        else:
+            out_name += '_' + str(passed_arg)
 
     out_name += ".nxs"
     return out_name
@@ -173,6 +194,33 @@ def get_monitor_ws(ws_to_process, run_number_string, instrument):
     return load_monitor_ws
 
 
+def keep_single_ws_unit(d_spacing_group, tof_group, unit_to_keep):
+    """
+    Takes variables to the output workspaces in d-spacing and TOF and removes one
+    of them depending on what the user has selected as their unit to keep.
+    If a workspace has been deleted it additionally deletes the variable.
+    If a unit they want to keep has not been specified it does nothing.
+    :param d_spacing_group: The output workspace group in dSpacing
+    :param tof_group: The output workspace group in TOF
+    :param unit_to_keep: The unit to keep from the WorkspaceUnits enum
+    :return: None
+    """
+    if not unit_to_keep:
+        # If they do not specify which unit to keep don't do anything
+        return
+
+    if unit_to_keep == WORKSPACE_UNITS.d_spacing:
+        remove_intermediate_workspace(tof_group)
+        del tof_group
+
+    elif unit_to_keep == WORKSPACE_UNITS.tof:
+        remove_intermediate_workspace(d_spacing_group)
+        del d_spacing_group
+
+    else:
+        raise ValueError("The user specified unit to keep is unknown")
+
+
 def load_current_normalised_ws_list(run_number_string, instrument, input_batching=None):
     """
     Loads a workspace using Mantid and then performs current normalisation on it. Additionally it will either
@@ -191,7 +239,7 @@ def load_current_normalised_ws_list(run_number_string, instrument, input_batchin
     run_information = instrument._get_run_details(run_number_string=run_number_string)
     raw_ws_list = _load_raw_files(run_number_string=run_number_string, instrument=instrument)
 
-    if input_batching.lower() == InputBatchingEnum.Summed.lower() and len(raw_ws_list) > 1:
+    if input_batching == INPUT_BATCHING.Summed and len(raw_ws_list) > 1:
         summed_ws = _sum_ws_range(ws_list=raw_ws_list)
         remove_intermediate_workspace(raw_ws_list)
         raw_ws_list = [summed_ws]
@@ -275,7 +323,7 @@ def subtract_sample_empty(ws_to_correct, empty_sample_ws_string, instrument):
     """
     if empty_sample_ws_string:
         empty_sample = load_current_normalised_ws_list(run_number_string=empty_sample_ws_string, instrument=instrument,
-                                                       input_batching=InputBatchingEnum.Summed)
+                                                       input_batching=INPUT_BATCHING.Summed)
         mantid.Minus(LHSWorkspace=ws_to_correct, RHSWorkspace=empty_sample[0], OutputWorkspace=ws_to_correct)
         remove_intermediate_workspace(empty_sample)
 
@@ -394,4 +442,4 @@ def _run_number_generator(processed_string):
         number_generator = kernel.IntArrayProperty('array_generator', processed_string)
         return number_generator.value.tolist()
     except RuntimeError:
-        raise RuntimeError("Could not generate run numbers from this input: " + processed_string)
+        raise ValueError("Could not generate run numbers from this input: " + processed_string)

@@ -3,17 +3,19 @@ from __future__ import (absolute_import, division, print_function)
 import mantid.simpleapi as mantid
 
 import isis_powder.routines.common as common
-from isis_powder.routines.common_enums import InputBatchingEnum
+from isis_powder.routines.common_enums import INPUT_BATCHING
 import os
 import warnings
 
 
 def focus(run_number_string, instrument, perform_vanadium_norm=True):
     input_batching = instrument._get_input_batching_mode()
-    if input_batching.lower() == InputBatchingEnum.Individual.lower():
+    if input_batching == INPUT_BATCHING.Individual:
         return _individual_run_focusing(instrument, perform_vanadium_norm, run_number_string)
-    else:
+    elif input_batching == INPUT_BATCHING.Summed:
         return _batched_run_focusing(instrument, perform_vanadium_norm, run_number_string)
+    else:
+        raise ValueError("Input batching not passed through. Please contact development team.")
 
 
 def _focus_one_ws(ws, run_number, instrument, perform_vanadium_norm):
@@ -41,7 +43,10 @@ def _focus_one_ws(ws, run_number, instrument, perform_vanadium_norm):
     cropped_spectra = instrument._crop_banks_to_user_tof(calibrated_spectra)
 
     # Output
-    processed_nexus_files = instrument._output_focused_ws(cropped_spectra, run_details=run_details)
+    d_spacing_group, tof_group = instrument._output_focused_ws(cropped_spectra, run_details=run_details)
+
+    common.keep_single_ws_unit(d_spacing_group=d_spacing_group,tof_group=tof_group,
+                               unit_to_keep=instrument._get_unit_to_keep())
 
     # Tidy workspaces from Mantid
     common.remove_intermediate_workspace(input_workspace)
@@ -49,7 +54,7 @@ def _focus_one_ws(ws, run_number, instrument, perform_vanadium_norm):
     common.remove_intermediate_workspace(focused_ws)
     common.remove_intermediate_workspace(cropped_spectra)
 
-    return processed_nexus_files
+    return d_spacing_group
 
 
 def _apply_vanadium_corrections(instrument, run_number, input_workspace, perform_vanadium_norm):

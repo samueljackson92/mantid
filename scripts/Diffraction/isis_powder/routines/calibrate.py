@@ -3,15 +3,17 @@ from __future__ import (absolute_import, division, print_function)
 import mantid.simpleapi as mantid
 
 import isis_powder.routines.common as common
-from isis_powder.routines.common_enums import InputBatchingEnum
+from isis_powder.routines.common_enums import INPUT_BATCHING
 
 
 def create_van(instrument, run_details, absorb):
     van = run_details.vanadium_run_numbers
     # Always sum a range of inputs as its a vanadium run over multiple captures
     input_van_ws_list = common.load_current_normalised_ws_list(run_number_string=van, instrument=instrument,
-                                                               input_batching=InputBatchingEnum.Summed)
+                                                               input_batching=INPUT_BATCHING.Summed)
     input_van_ws = input_van_ws_list[0]  # As we asked for a summed ws there should only be one returned
+
+    # TODO where do we subtract empty can on GEM ?
     corrected_van_ws = common.subtract_sample_empty(ws_to_correct=input_van_ws,
                                                     empty_sample_ws_string=run_details.empty_runs,
                                                     instrument=instrument)
@@ -21,11 +23,8 @@ def create_van(instrument, run_details, absorb):
 
     aligned_ws = mantid.AlignDetectors(InputWorkspace=corrected_van_ws,
                                        CalibrationFile=run_details.offset_file_path)
-    import pydevd
-    pydevd.settrace('localhost', port=51205, stdoutToServer=True, stderrToServer=True)
     if absorb:
-        aligned_ws = _apply_absorb_corrections(instrument=instrument, run_details=run_details,
-                                               van_ws=aligned_ws)
+        aligned_ws = instrument._apply_absorb_corrections(run_details=run_details, van_ws=aligned_ws)
 
     focused_vanadium = mantid.DiffractionFocussing(InputWorkspace=aligned_ws,
                                                    GroupingFileName=run_details.grouping_file_path)
@@ -33,10 +32,13 @@ def create_van(instrument, run_details, absorb):
     focused_spectra = common.extract_ws_spectra(focused_vanadium)
     focused_spectra = instrument._crop_van_to_expected_tof_range(focused_spectra)
 
-    d_spacing_group = _save_focused_vanadium(instrument=instrument, run_details=run_details,
-                                             van_spectra=focused_spectra)
+    d_spacing_group, tof_group = instrument._output_focused_ws(processed_spectra=focused_spectra,
+                                                               run_details=run_details, output_mode="all")
 
     _create_vanadium_splines(focused_spectra, instrument, run_details)
+
+    common.keep_single_ws_unit(d_spacing_group=d_spacing_group,tof_group=tof_group,
+                               unit_to_keep=instrument._get_unit_to_keep())
 
     common.remove_intermediate_workspace(corrected_van_ws)
     common.remove_intermediate_workspace(aligned_ws)
@@ -55,14 +57,3 @@ def _create_vanadium_splines(focused_spectra, instrument, run_details):
         append = True
     # Group for user convenience
     mantid.GroupWorkspaces(InputWorkspaces=splined_ws_list, OutputWorkspace="Van_spline_data")
-
-
-def _apply_absorb_corrections(instrument, run_details, van_ws):
-    absorb_ws = instrument._apply_absorb_corrections(run_details=run_details, van_ws=van_ws)
-    return absorb_ws
-
-
-def _save_focused_vanadium(instrument, run_details, van_spectra):
-    d_spacing_group = instrument._output_focused_ws(processed_spectra=van_spectra,
-                                                    run_details=run_details, output_mode="all")
-    return d_spacing_group

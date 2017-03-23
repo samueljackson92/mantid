@@ -7,14 +7,15 @@ absorption_correction_params = {
     "cylinder_sample_radius": 0.4,
     "cylinder_position": [0., 0., 0.],
 
-    "chemical_formula": "V",
+    "chemical_formula": "V0.9486 Nb0.0514",  # V 94.86% Nb 5.14%
+    "number_density": 0.071
 }
 
 
 gem_adv_config_params = {
+    "grouping_file_name": "GEM_Instrument_grouping.cal",
     "raw_tof_cropping_values": (500, 20000),
     "spline_coefficient": 30
-
 }
 
 focused_cropping_values = [(550, 19900),  # Bank 1

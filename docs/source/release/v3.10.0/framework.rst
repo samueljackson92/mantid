@@ -5,8 +5,15 @@ Framework Changes
 .. contents:: Table of Contents
    :local:
 
+API
+---
+
+- Frequency unit (GHz) included as an option to represent energy transfer.
+
 Algorithms
 ----------
+
+- Removed the optional flag `LocationParameters` from `ClearInstrumentParameters`.
 
 New
 ###
@@ -16,14 +23,21 @@ New
 Improved
 ########
 
-- :ref`RawFileInfo <algm-RawFileInfo-v1>` now provides sample information.
-- :ref`SetInstrumentParameter <algm-SetInstrumentParameter-v1>` now supports also boolean parameters, and better validates the inputs.
+- :ref:`RawFileInfo <algm-RawFileInfo-v1>` now provides sample information.
+- :ref:`SetInstrumentParameter <algm-SetInstrumentParameter-v1>` now supports also boolean parameters, and better validates the inputs.
+- :ref:`FilterEvents <algm-FilterEvents-v1>` now accepts a general TableWorkspace as the splitters workspace.  The TableWorkspace must have at least 3 columns.  The first 3 columns are for relative starting time, relative stopping time and target workspace tag for splitters, respectively.
+- :ref:`FilterEvents <algm-FilterEvents-v1>` now generates a sample log named *splitter* of each output workspace (i.e., splitted workspace) to represent the event filter that is applied to it.
+- :ref:`FilterEvents <algm-FilterEvents-v1>` now splits all the sample logs if the input splitters are given by MatrixWorkspace or a general TableWorkspace.
+- Two new properties were added to :ref:`algm-Integration` *RangeLowerList* and *RangeUpperList* can be used to give histogram-specific integration ranges.
+- :ref:`algm-FindEPP` does not output the two extra workspaces from the :ref:`algm-Fit` anymore.
 
 Bug Fixes
 #########
 
 - Fixed two issues with absolute rotations that affected :ref:`RotateInstrumentComponent <algm-RotateInstrumentComponent>`. Previously, setting the absolute rotation of a component to ``R`` would result in its rotation being ``parent-rotation * R * inverse(relative-parent-rotation)``.
 - :ref:`MonteCarloAbsorption <algm-MonteCarloAbsorption>` has been modified to allow `EventWorkspace` as input
+- Fixed an issue where the log `proton_charge_by_period` was not loaded for `LoadEventNexus <algm-LoadEventNexus>`.
+
 
 Deprecated
 ##########
@@ -38,6 +52,9 @@ Bugs
 ----
 
 - We have fixed a bug where Mantid could crash when deleteing a large number of workspaces.
+
+CurveFitting
+------------
 
 Improved
 ########

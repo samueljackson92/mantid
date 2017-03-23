@@ -1,5 +1,6 @@
 from __future__ import (absolute_import, division, print_function)
 
+from six import iteritems
 import warnings
 
 
@@ -14,8 +15,8 @@ warnings.simplefilter('always', UserWarning)
 
 class InstrumentSettings(object):
     # Holds instance variables updated at runtime
-    def __init__(self, attr_mapping, adv_conf_dict=None, basic_conf_dict=None, kwargs=None):
-        self._attr_mapping = attr_mapping
+    def __init__(self, param_map, adv_conf_dict=None, basic_conf_dict=None, kwargs=None):
+        self._param_map = param_map
         self._adv_config_dict = adv_conf_dict
         self._basic_conf_dict = basic_conf_dict
         self._kwargs = kwargs
@@ -27,12 +28,20 @@ class InstrumentSettings(object):
         self._parse_attributes(dict_to_parse=basic_conf_dict)
         self._parse_attributes(dict_to_parse=kwargs)
 
+    # __getattr__ is only called if the attribute was not set so we already know
+    #  were going to throw at this point unless the attribute was optional.
     def __getattr__(self, item):
-        map_entry = next((attr_tuple for attr_tuple in self._attr_mapping if item == attr_tuple[-1]), None)
-        if map_entry:
-            # User forgot to enter the param:
-            raise AttributeError("The parameter with name: '" + str(map_entry[0]) + "' is required but was not set or "
-                                 "passed.\nPlease set this configuration option and try again")
+        # Check if it is in our parameter mapping
+        known_param = next((param_entry for param_entry in self._param_map if item == param_entry.int_name), None)
+
+        if known_param:
+            if known_param.optional:
+                # Optional param return none
+                return None
+            else:
+                # User forgot to enter the param:
+                self._raise_user_param_missing_error(known_param)
+
         else:
             # If you have got here from a grep or something similar this error message means the line caller
             # has asked for a class attribute which does not exist. These attributes are set in a mapping file which
@@ -40,16 +49,6 @@ class InstrumentSettings(object):
             # friendly name) is typed correctly in both the script(s) and mapping file.
             raise AttributeError("The attribute in the script with name " + str(item) + " was not found in the "
                                  "mapping file. \nPlease contact the development team.")
-
-    def check_expected_attributes_are_set(self, expected_attr_names):
-        for expected_attr in expected_attr_names:
-            if not [attr_entry for attr_entry in self._attr_mapping if expected_attr == attr_entry[-1]]:
-                raise ValueError("Expected attribute '" + str(expected_attr) + "' is unknown to attribute mapping")
-
-        # Filter down the full mapping list
-        found_tuple_list = [tuple_entry for tuple_entry in self._attr_mapping if tuple_entry[-1] in expected_attr_names]
-        expected_params_dict = dict(found_tuple_list)
-        self._check_attribute_is_set(expected_params_dict)
 
     def update_attributes(self, advanced_config=None, basic_config=None, kwargs=None, suppress_warnings=False):
         self._adv_config_dict = advanced_config if advanced_config else self._adv_config_dict
@@ -65,9 +64,9 @@ class InstrumentSettings(object):
             self._parse_attributes(self._adv_config_dict, suppress_warnings=suppress_warnings)
         if advanced_config or basic_config:
             self._parse_attributes(self._basic_conf_dict,
-                                   suppress_warnings=(not bool(basic_config or suppress_warnings)))
+                                   suppress_warnings=(not bool(basic_config) or suppress_warnings))
         if advanced_config or basic_config or kwargs:
-            self._parse_attributes(self._kwargs, suppress_warnings=(not bool(kwargs or suppress_warnings)))
+            self._parse_attributes(self._kwargs, suppress_warnings=(not bool(kwargs)) or suppress_warnings)
 
     def _parse_attributes(self, dict_to_parse, suppress_warnings=False):
         if not dict_to_parse:
@@ -80,29 +79,108 @@ class InstrumentSettings(object):
                 continue  # Skip so we don't accidentally re-add this dictionary
 
             # Update attributes from said dictionary
-            found_attribute = next((attr_tuple for attr_tuple in self._attr_mapping
-                                    if config_key == attr_tuple[0]), None)
-            if found_attribute:
-                # The first element of the attribute is the config name and the last element is the friendly name
-                self._update_attribute(attr_name=found_attribute[-1], attr_val=dict_to_parse[found_attribute[0]],
-                                       friendly_name=found_attribute[0], suppress_warnings=suppress_warnings)
+            found_param_entry = next((param_entry for param_entry in self._param_map
+                                      if config_key == param_entry.ext_name), None)
+            if found_param_entry:
+                # Update the internal parameter entry
+                self._update_attribute(
+                    param_map=found_param_entry, param_val=dict_to_parse[found_param_entry.ext_name],
+                    suppress_warnings=suppress_warnings)
             else:
                 # Key is unknown to us
-                _print_known_keys(self._attr_mapping)
+                _print_known_keys(self._param_map)
                 raise ValueError("Unknown configuration key: " + str(config_key))
 
-    def _update_attribute(self, attr_name, attr_val, friendly_name, suppress_warnings):
+    @staticmethod
+    def _raise_user_param_missing_error(param_entry):
+        err_text = "The parameter with name: '" + str(param_entry.ext_name) + "' is required but "
+        err_text += "was not set or passed.\n"
+        # If this item is an enum print known values
+        if param_entry.enum_class:
+            known_vals = _get_enum_values(param_entry.enum_class)
+            err_text += "Acceptable values for this parameter are: " + str(known_vals[0])
+            for val in known_vals[1:]:
+                err_text += ", " + str(val)
+
+        raise AttributeError(err_text)
+
+    def _update_attribute(self, param_map, param_val, suppress_warnings):
+        attribute_name = param_map.int_name
+
+        if param_map.enum_class:
+            # Check value falls within valid enum range and get the correct capital version
+            param_val = _check_value_is_in_enum(param_val, param_map.enum_class)
+
         # Does the attribute exist - has it changed and are we suppressing warnings
-        if hasattr(self, attr_name) and getattr(self, attr_name) != attr_val and not suppress_warnings:
-            warnings.warn("Replacing parameter: '" + str(friendly_name) + "' which was previously set to: '" +
-                          str(getattr(self, attr_name)) + "' with new value: '" + str(attr_val) + "'")
-        setattr(self, attr_name, attr_val)
+        if not suppress_warnings:
+            previous_value = getattr(self, attribute_name) if hasattr(self, attribute_name) else None
+            if previous_value and previous_value != param_val:
+                # Print warning of what we value we are replacing for which parameter
+                warnings.warn("Replacing parameter: '" + str(param_map.ext_name) + "' which was previously set to: '" +
+                              str(getattr(self, attribute_name)) + "' with new value: '" + str(param_val) + "'")
+
+        # Finally set the new attribute value
+        setattr(self, attribute_name, param_val)
+
+
+def _check_value_is_in_enum(val, enum):
+    """
+    Checks the the specified value is in the enum object. If it is
+    it will return the correctly capitalised version which should be used.
+    This is so the script not longer needs to convert to lower / upper case.
+    If the value was not in the enum it raises a value error and tells the user
+    the values available
+    :param val: The value to search for in the enumeration
+    :param enum: The enum object to check against.
+    :return: The correctly cased val. Otherwise raises a value error.
+    """
+    seen_val_in_enum = False
+    enum_known_vals = []
+    lower_string_val = str(val).lower()
+
+    known_values = _get_enum_values(enum_cls=enum)
+    for enum_val in known_values:
+
+        if lower_string_val == enum_val.lower():
+            # Get the correctly capitalised value so we no longer have to call lower
+            val = enum_val
+            seen_val_in_enum = True
+            break
+
+    # Check to see if the value was seen
+    if seen_val_in_enum:
+        # Return the correctly capitalised value to be set
+        return val
+    else:
+        e_msg = "The user specified value: '" + str(val) + "' is unknown. "
+        e_msg += "Known values for " + enum.enum_friendly_name + " are: \n"
+        for key in enum_known_vals:
+            e_msg += '\'' + key + '\' '
+
+        raise ValueError(e_msg)
+
+
+def _get_enum_values(enum_cls):
+    """
+    Gets all acceptable values for the specified enum class and returns them as a list
+    :param enum_cls: The enum to process
+    :return: List of accepted values for this enum
+    """
+    enum_known_vals = []
+
+    for k, enum_val in iteritems(enum_cls.__dict__):
+        # Get all class attribute and value pairs except enum_friendly_name
+        if k.startswith("__") or k.lower() == "enum_friendly_name":
+            continue
+        enum_known_vals.append(enum_val)
+
+    return enum_known_vals
 
 
 def _print_known_keys(master_mapping):
     print ("\nKnown keys are:")
     print("----------------------------------")
-    sorted_attributes = sorted(master_mapping, key=lambda tup: tup[0])
-    for tuple_entry in sorted_attributes:
-        print (tuple_entry[0] + ', ', end="")
+    sorted_attributes = sorted(master_mapping, key=lambda param_map_entry: param_map_entry.ext_name)
+    for param_entry in sorted_attributes:
+        print (param_entry.ext_name + ', ', end="")
     print("\n----------------------------------")
