@@ -49,7 +49,8 @@ void ReflDataProcessorPresenter::process() {
 
   // If uniform slicing is empty process normally, delegating to
   // GenericDataProcessorPresenter
-  std::string timeSlicing = m_mainPresenter->getTimeSlicingOptions();
+  std::string timeSlicing =
+      m_mainPresenter->getTimeSlicingOptions().toStdString();
   if (timeSlicing.empty()) {
     GenericDataProcessorPresenter::process();
     return;
@@ -112,13 +113,13 @@ void ReflDataProcessorPresenter::process() {
   }
 
   if (!allGroupsWereEvent)
-    m_mainPresenter->giveUserWarning(
+    m_view->giveUserWarning(
         "Some groups could not be processed as event workspaces", "Warning");
   if (errors)
-    m_mainPresenter->giveUserWarning("Some errors were encountered when "
-                                     "reducing table. Some groups may not have "
-                                     "been fully processed.",
-                                     "Warning");
+    m_view->giveUserWarning("Some errors were encountered when "
+                            "reducing table. Some groups may not have "
+                            "been fully processed.",
+                            "Warning");
 
   progressReporter.clear();
 }
@@ -287,8 +288,7 @@ void ReflDataProcessorPresenter::parseTimeSlicing(
   }
 
   if (startTimes.size() != stopTimes.size())
-    m_mainPresenter->giveUserCritical("Error parsing time slices",
-                                      "Time slicing error");
+    m_view->giveUserCritical("Error parsing time slices", "Time slicing error");
 }
 
 /** Loads an event workspace and puts it into the ADS
@@ -393,7 +393,9 @@ std::string ReflDataProcessorPresenter::takeSlice(const std::string &runNo,
 void ReflDataProcessorPresenter::plotRow() {
 
   // if uniform slicing is empty plot normally
-  std::string timeSlicing = m_mainPresenter->getTimeSlicingOptions();
+  std::string timeSlicing =
+      m_mainPresenter->getTimeSlicingOptions().toStdString();
+
   if (timeSlicing.empty()) {
     GenericDataProcessorPresenter::plotRow();
     return;
@@ -429,7 +431,7 @@ void ReflDataProcessorPresenter::plotRow() {
   }
 
   if (!notFound.empty())
-    m_mainPresenter->giveUserWarning(
+    m_view->giveUserWarning(
         "The following workspaces were not plotted because they were not "
         "found:\n" +
             boost::algorithm::join(notFound, "\n") +
@@ -467,7 +469,9 @@ std::string ReflDataProcessorPresenter::getPostprocessedWorkspaceName(
 void ReflDataProcessorPresenter::plotGroup() {
 
   // if uniform slicing is empty plot normally
-  std::string timeSlicing = m_mainPresenter->getTimeSlicingOptions();
+  std::string timeSlicing =
+      m_mainPresenter->getTimeSlicingOptions().toStdString();
+
   if (timeSlicing.empty()) {
     GenericDataProcessorPresenter::plotGroup();
     return;
@@ -503,7 +507,7 @@ void ReflDataProcessorPresenter::plotGroup() {
   }
 
   if (!notFound.empty())
-    m_mainPresenter->giveUserWarning(
+    m_view->giveUserWarning(
         "The following workspaces were not plotted because they were not "
         "found:\n" +
             boost::algorithm::join(notFound, "\n") +

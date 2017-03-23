@@ -32,6 +32,13 @@ public:
 
   // Prompt
   MOCK_METHOD0(requestNotebookPath, std::string());
+  MOCK_METHOD3(askUserString,
+               std::string(const std::string &, const std::string &,
+                           const std::string &));
+  MOCK_METHOD2(askUserYesNo, bool(std::string, std::string));
+  MOCK_METHOD2(giveUserWarning, void(std::string, std::string));
+  MOCK_METHOD2(giveUserCritical, void(std::string, std::string));
+  MOCK_METHOD1(runPythonAlgorithm, std::string(const std::string &));
 
   // IO
   MOCK_CONST_METHOD0(getWorkspaceToOpen, std::string());
@@ -43,9 +50,8 @@ public:
   MOCK_METHOD1(setClipboard, void(const std::string &text));
 
   MOCK_METHOD1(setModel, void(const std::string &));
-  MOCK_METHOD1(setTableList, void(const std::set<std::string> &));
-  MOCK_METHOD2(setInstrumentList,
-               void(const std::vector<std::string> &, const std::string &));
+  MOCK_METHOD1(setTableList, void(const QSet<QString> &));
+  MOCK_METHOD2(setInstrumentList, void(const QString &, const QString &));
   MOCK_METHOD2(setOptionsHintStrategy,
                void(MantidQt::MantidWidgets::HintStrategy *, int));
 
@@ -75,7 +81,7 @@ public:
   ~MockMainPresenter() override {}
 
   // Notify
-  MOCK_METHOD1(notify, void(DataProcessorMainPresenter::Flag));
+  MOCK_METHOD1(notifyADSChanged, void(const QSet<QString> &));
 
   // Prompt methods
   MOCK_METHOD3(askUserString,
@@ -87,13 +93,12 @@ public:
   MOCK_METHOD1(runPythonAlgorithm, std::string(const std::string &));
 
   // Global options
-  MOCK_CONST_METHOD0(getPreprocessingOptions,
-                     std::map<std::string, std::string>());
-  MOCK_CONST_METHOD0(getProcessingOptions, std::string());
-  MOCK_CONST_METHOD0(getPostprocessingOptions, std::string());
+  MOCK_CONST_METHOD0(getPreprocessingOptionsAsString, QString());
+  MOCK_CONST_METHOD0(getProcessingOptions, QString());
+  MOCK_CONST_METHOD0(getPostprocessingOptions, QString());
 
   // Methods we don't care about
-  std::string getTimeSlicingOptions() const override { return std::string(); };
+  QString getTimeSlicingOptions() const override { return QString(); };
 };
 
 class MockDataProcessorPresenter : public DataProcessorPresenter {

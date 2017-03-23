@@ -22,6 +22,7 @@
 #include "MantidQtMantidWidgets/ProgressPresenter.h"
 #include "MantidQtMantidWidgets/ProgressableView.h"
 
+#include <boost/algorithm/string/join.hpp>
 #include <boost/regex.hpp>
 #include <boost/tokenizer.hpp>
 #include <fstream>
@@ -31,6 +32,28 @@ using namespace Mantid::API;
 using namespace Mantid::Geometry;
 using namespace Mantid::Kernel;
 using namespace MantidQt::MantidWidgets;
+
+namespace {
+std::map<std::string, std::string>
+convertStringToMap(const std::string &options) {
+
+  std::vector<std::string> optionsVec;
+  std::map<std::string, std::string> optionsMap;
+
+  boost::split(optionsVec, options, boost::is_any_of(";"));
+
+  for (const auto &option : optionsVec) {
+
+    std::vector<std::string> opt;
+    boost::split(opt, option, boost::is_any_of(","));
+
+    std::vector<std::string> temp(opt.begin() + 1, opt.end());
+
+    optionsMap[opt[0]] = boost::algorithm::join(temp, ",");
+  }
+  return optionsMap;
+}
+}
 
 namespace MantidQt {
 namespace MantidWidgets {
@@ -62,7 +85,8 @@ GenericDataProcessorPresenter::GenericDataProcessorPresenter(
 
   // Column Options must be added to the whitelist
   m_whitelist.addElement("Options", "Options",
-                         "<b>Override <samp>" + processor.name() +
+                         "<b>Override <samp>" +
+                             QString::fromStdString(processor.name()) +
                              "</samp> properties</b><br /><i>optional</i><br "
                              "/>This column allows you to "
                              "override the properties used when executing "
@@ -71,9 +95,8 @@ GenericDataProcessorPresenter::GenericDataProcessorPresenter(
                              "key=value pairs, separated by commas. Values "
                              "containing commas must be quoted. In case of "
                              "conflict between options "
-                             "specified via this column and options specified "
-                             "via the <b>Process</b> line edit, the former "
-                             "prevail.");
+                             "specified via this column and global options "
+                             "specified externally, the former prevail.");
   m_columns = static_cast<int>(m_whitelist.size());
 
   if (m_postprocessor.name().empty()) {
@@ -167,7 +190,7 @@ void GenericDataProcessorPresenter::acceptViews(
     if (m_manager->isValidModel(
             boost::dynamic_pointer_cast<ITableWorkspace>(ws),
             m_whitelist.size()))
-      m_workspaceList.insert(name);
+      m_workspaceList.insert(QString::fromStdString(name));
   }
   observeAdd();
   observePostDelete();
@@ -226,7 +249,7 @@ void GenericDataProcessorPresenter::process() {
         progressReporter.report();
 
       } catch (std::exception &ex) {
-        m_mainPresenter->giveUserCritical(ex.what(), "Error");
+        m_view->giveUserCritical(ex.what(), "Error");
         progressReporter.clear();
         return;
       }
@@ -240,7 +263,7 @@ void GenericDataProcessorPresenter::process() {
         postProcessGroup(newGroup);
         progressReporter.report();
       } catch (std::exception &ex) {
-        m_mainPresenter->giveUserCritical(ex.what(), "Error");
+        m_view->giveUserCritical(ex.what(), "Error");
         progressReporter.clear();
         return;
       }
@@ -268,12 +291,14 @@ void GenericDataProcessorPresenter::saveNotebook(const TreeData &data) {
   // Global pre-processing options as a map where keys are column
   // name and values are pre-processing options as a string
   const std::map<std::string, std::string> preprocessingOptionsMap =
-      m_mainPresenter->getPreprocessingOptions();
+      convertStringToMap(
+          m_mainPresenter->getPreprocessingOptionsAsString().toStdString());
   // Global processing options as a string
-  const std::string processingOptions = m_mainPresenter->getProcessingOptions();
+  const std::string processingOptions =
+      m_mainPresenter->getProcessingOptions().toStdString();
   // Global post-processing options as a string
   const std::string postprocessingOptions =
-      m_mainPresenter->getPostprocessingOptions();
+      m_mainPresenter->getPostprocessingOptions().toStdString();
 
   auto notebook = Mantid::Kernel::make_unique<DataProcessorGenerateNotebook>(
       m_wsName, m_view->getProcessInstrument(), m_whitelist, m_preprocessMap,
@@ -331,7 +356,8 @@ void GenericDataProcessorPresenter::postProcessGroup(
   alg->setProperty(m_postprocessor.outputProperty(), outputWSName);
 
   // Global post-processing options
-  const std::string options = m_mainPresenter->getPostprocessingOptions();
+  const std::string options =
+      m_mainPresenter->getPostprocessingOptions().toStdString();
 
   auto optionsMap = parseKeyValueString(options);
   for (auto kvp = optionsMap.begin(); kvp != optionsMap.end(); ++kvp) {
@@ -590,7 +616,8 @@ GenericDataProcessorPresenter::reduceRow(const std::vector<std::string> &data) {
   // Global pre-processing options as a map
   std::map<std::string, std::string> globalOptions;
   if (!m_preprocessMap.empty())
-    globalOptions = m_mainPresenter->getPreprocessingOptions();
+    globalOptions = convertStringToMap(
+        m_mainPresenter->getPreprocessingOptionsAsString().toStdString());
 
   // Loop over all columns in the whitelist except 'Options'
   for (int i = 0; i < m_columns - 1; i++) {
@@ -625,7 +652,7 @@ GenericDataProcessorPresenter::reduceRow(const std::vector<std::string> &data) {
   }
 
   // Global processing options as a string
-  std::string options = m_mainPresenter->getProcessingOptions();
+  std::string options = m_mainPresenter->getProcessingOptions().toStdString();
 
   // Parse and set any user-specified options
   auto optionsMap = parseKeyValueString(options);
@@ -826,8 +853,8 @@ void GenericDataProcessorPresenter::saveTable() {
 Press changes to a new item in the ADS
 */
 void GenericDataProcessorPresenter::saveTableAs() {
-  const std::string userString = m_mainPresenter->askUserString(
-      "Save As", "Enter a workspace name:", "Workspace");
+  const std::string userString =
+      m_view->askUserString("Save As", "Enter a workspace name:", "Workspace");
   if (!userString.empty()) {
     m_wsName = userString;
     saveTable();
@@ -839,10 +866,9 @@ Start a new, untitled table
 */
 void GenericDataProcessorPresenter::newTable() {
   if (m_tableDirty && m_options["WarnDiscardChanges"].toBool())
-    if (!m_mainPresenter->askUserYesNo(
-            "Your current table has unsaved changes. Are you "
-            "sure you want to discard them?",
-            "Start New Table?"))
+    if (!m_view->askUserYesNo("Your current table has unsaved changes. Are you "
+                              "sure you want to discard them?",
+                              "Start New Table?"))
       return;
 
   m_manager->newTable(m_whitelist);
@@ -857,10 +883,9 @@ Open a table from the ADS
 */
 void GenericDataProcessorPresenter::openTable() {
   if (m_tableDirty && m_options["WarnDiscardChanges"].toBool())
-    if (!m_mainPresenter->askUserYesNo(
-            "Your current table has unsaved changes. Are you "
-            "sure you want to discard them?",
-            "Open Table?"))
+    if (!m_view->askUserYesNo("Your current table has unsaved changes. Are you "
+                              "sure you want to discard them?",
+                              "Open Table?"))
       return;
 
   auto &ads = AnalysisDataService::Instance();
@@ -870,8 +895,7 @@ void GenericDataProcessorPresenter::openTable() {
     return;
 
   if (!ads.isValid(toOpen).empty()) {
-    m_mainPresenter->giveUserCritical("Could not open workspace: " + toOpen,
-                                      "Error");
+    m_view->giveUserCritical("Could not open workspace: " + toOpen, "Error");
     return;
   }
 
@@ -889,7 +913,7 @@ void GenericDataProcessorPresenter::openTable() {
     m_view->showTable(m_manager->getModel());
     m_tableDirty = false;
   } catch (std::runtime_error &e) {
-    m_mainPresenter->giveUserCritical(
+    m_view->giveUserCritical(
         "Could not open workspace: " + std::string(e.what()), "Error");
   }
 }
@@ -908,8 +932,7 @@ void GenericDataProcessorPresenter::importTable() {
   pythonSrc << "except:\n";
   pythonSrc << "  pass\n";
 
-  const std::string result =
-      m_mainPresenter->runPythonAlgorithm(pythonSrc.str());
+  const std::string result = m_view->runPythonAlgorithm(pythonSrc.str());
 
   // result will hold the name of the output workspace
   // otherwise this should be an empty string.
@@ -929,7 +952,7 @@ void GenericDataProcessorPresenter::exportTable() {
   pythonSrc << "except:\n";
   pythonSrc << "  pass\n";
 
-  m_mainPresenter->runPythonAlgorithm(pythonSrc.str());
+  m_view->runPythonAlgorithm(pythonSrc.str());
 }
 
 /**
@@ -944,18 +967,18 @@ void GenericDataProcessorPresenter::addHandle(
   if (!m_manager->isValidModel(workspace, m_columns))
     return;
 
-  m_workspaceList.insert(name);
+  m_workspaceList.insert(QString::fromStdString(name));
   m_view->setTableList(m_workspaceList);
-  m_mainPresenter->notify(DataProcessorMainPresenter::ADSChangedFlag);
+  m_mainPresenter->notifyADSChanged(m_workspaceList);
 }
 
 /**
 Handle ADS remove events
 */
 void GenericDataProcessorPresenter::postDeleteHandle(const std::string &name) {
-  m_workspaceList.erase(name);
+  m_workspaceList.remove(QString::fromStdString(name));
   m_view->setTableList(m_workspaceList);
-  m_mainPresenter->notify(DataProcessorMainPresenter::ADSChangedFlag);
+  m_mainPresenter->notifyADSChanged(m_workspaceList);
 }
 
 /**
@@ -964,7 +987,7 @@ Handle ADS clear events
 void GenericDataProcessorPresenter::clearADSHandle() {
   m_workspaceList.clear();
   m_view->setTableList(m_workspaceList);
-  m_mainPresenter->notify(DataProcessorMainPresenter::ADSChangedFlag);
+  m_mainPresenter->notifyADSChanged(m_workspaceList);
 }
 
 /**
@@ -975,13 +998,13 @@ void GenericDataProcessorPresenter::renameHandle(const std::string &oldName,
 
   // if a workspace with oldName exists then replace it for the same workspace
   // with newName
-  if (m_workspaceList.find(oldName) == m_workspaceList.end())
+  if (!m_workspaceList.contains(QString::fromStdString(oldName)))
     return;
 
-  m_workspaceList.erase(oldName);
-  m_workspaceList.insert(newName);
+  m_workspaceList.remove(QString::fromStdString(oldName));
+  m_workspaceList.insert(QString::fromStdString(newName));
   m_view->setTableList(m_workspaceList);
-  m_mainPresenter->notify(DataProcessorMainPresenter::ADSChangedFlag);
+  m_mainPresenter->notifyADSChanged(m_workspaceList);
 }
 
 /**
@@ -990,11 +1013,11 @@ Handle ADS replace events
 void GenericDataProcessorPresenter::afterReplaceHandle(
     const std::string &name, Mantid::API::Workspace_sptr workspace) {
   // Erase it
-  m_workspaceList.erase(name);
+  m_workspaceList.remove(QString::fromStdString(name));
 
   // If it's a table workspace, bring it back
   if (m_manager->isValidModel(workspace, m_columns))
-    m_workspaceList.insert(name);
+    m_workspaceList.insert(QString::fromStdString(name));
 
   m_view->setTableList(m_workspaceList);
 }
@@ -1057,7 +1080,10 @@ void GenericDataProcessorPresenter::setInstrumentList(
     const std::vector<std::string> &instruments,
     const std::string &defaultInstrument) {
 
-  m_view->setInstrumentList(instruments, defaultInstrument);
+  std::string instrList = boost::algorithm::join(instruments, ",");
+
+  m_view->setInstrumentList(QString::fromStdString(instrList),
+                            QString::fromStdString(defaultInstrument));
 }
 
 /** Plots any currently selected rows */
@@ -1084,7 +1110,7 @@ void GenericDataProcessorPresenter::plotRow() {
   }
 
   if (!notFound.empty())
-    m_mainPresenter->giveUserWarning(
+    m_view->giveUserWarning(
         "The following workspaces were not plotted because they were not "
         "found:\n" +
             boost::algorithm::join(notFound, "\n") +
@@ -1125,7 +1151,7 @@ void GenericDataProcessorPresenter::plotGroup() {
   }
 
   if (!notFound.empty())
-    m_mainPresenter->giveUserWarning(
+    m_view->giveUserWarning(
         "The following workspaces were not plotted because they were not "
         "found:\n" +
             boost::algorithm::join(notFound, "\n") +
@@ -1153,7 +1179,7 @@ void GenericDataProcessorPresenter::plotWorkspaces(
 
   pythonSrc << "base_graph.activeLayer().logLogAxes()\n";
 
-  m_mainPresenter->runPythonAlgorithm(pythonSrc.str());
+  m_view->runPythonAlgorithm(pythonSrc.str());
 }
 
 /** Shows the Refl Options dialog */
@@ -1246,7 +1272,7 @@ void GenericDataProcessorPresenter::accept(
   m_mainPresenter = mainPresenter;
   // Notify workspace receiver with the list of valid workspaces as soon as it
   // is registered
-  m_mainPresenter->notify(DataProcessorMainPresenter::ADSChangedFlag);
+  m_mainPresenter->notifyADSChanged(m_workspaceList);
 }
 
 /** Returs the list of valid workspaces currently in the ADS
@@ -1287,7 +1313,7 @@ ChildItems GenericDataProcessorPresenter::selectedChildren() const {
 bool GenericDataProcessorPresenter::askUserYesNo(
     const std::string &prompt, const std::string &title) const {
 
-  return m_mainPresenter->askUserYesNo(prompt, title);
+  return m_view->askUserYesNo(prompt, title);
 }
 
 /** Print warning message
@@ -1297,7 +1323,7 @@ bool GenericDataProcessorPresenter::askUserYesNo(
 void GenericDataProcessorPresenter::giveUserWarning(
     const std::string &prompt, const std::string &title) const {
 
-  m_mainPresenter->giveUserWarning(prompt, title);
+  m_view->giveUserWarning(prompt, title);
 }
 }
 }
