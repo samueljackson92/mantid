@@ -38,13 +38,6 @@ class Gem(AbstractInst):
     def _generate_auto_vanadium_calibration(self, run_details):
         raise NotImplementedError()
 
-    def _generate_output_file_name(self, run_number_string):
-        return self._generate_input_file_name(run_number_string)
-
-    @staticmethod
-    def _generate_input_file_name(run_number):
-        return _gem_generate_inst_name(run_number=run_number)
-
     def _apply_absorb_corrections(self, run_details, van_ws):
         return gem_algs.calculate_absorb_corrections(ws_to_correct=van_ws,
                                                      multiple_scattering=self._inst_settings.multiple_scattering)
@@ -74,15 +67,3 @@ class Gem(AbstractInst):
     def _spline_vanadium_ws(self, focused_vanadium_banks):
         return common.spline_vanadium_workspaces(focused_vanadium_spectra=focused_vanadium_banks,
                                                  spline_coefficient=self._inst_settings.spline_coeff)
-
-
-def _gem_generate_inst_name(run_number):
-    if isinstance(run_number, list):
-        # Use recursion on lists
-        updated_list = []
-        for run in run_number:
-            updated_list.append(_gem_generate_inst_name(run))
-        return updated_list
-    else:
-        # Individual entry
-        return "GEM" + str(run_number)
