@@ -92,6 +92,11 @@ public:
                             const std::string &title) const = 0;
   virtual void giveUserWarning(const std::string &prompt,
                                const std::string &title) const = 0;
+
+  virtual void setCell(int row, int column, int parentRow, int parentColumn,
+                       const std::string &value) = 0;
+  virtual std::string getCell(int row, int column, int parentRow,
+                              int parentColumn) = 0;
 };
 }
 }

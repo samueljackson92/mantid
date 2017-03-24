@@ -57,8 +57,8 @@ public:
   // Constructor: pre-processing and post-processing
   GenericDataProcessorPresenter(
       const DataProcessorWhiteList &whitelist,
-      const std::map<std::string, DataProcessorPreprocessingAlgorithm> &
-          preprocessMap,
+      const std::map<std::string, DataProcessorPreprocessingAlgorithm>
+          &preprocessMap,
       const DataProcessorProcessingAlgorithm &processor,
       const DataProcessorPostprocessingAlgorithm &postprocessor,
       const std::map<std::string, std::string> &postprocessMap =
@@ -72,8 +72,8 @@ public:
   // Constructor: pre-processing, no post-processing
   GenericDataProcessorPresenter(
       const DataProcessorWhiteList &whitelist,
-      const std::map<std::string, DataProcessorPreprocessingAlgorithm> &
-          preprocessMap,
+      const std::map<std::string, DataProcessorPreprocessingAlgorithm>
+          &preprocessMap,
       const DataProcessorProcessingAlgorithm &processor);
   // Constructor: no pre-processing, no post-processing
   GenericDataProcessorPresenter(
@@ -224,6 +224,12 @@ private:
   void saveNotebook(
       const std::map<int, std::map<int, std::vector<std::string>>> &data);
   std::vector<std::unique_ptr<DataProcessorCommand>> getTableList();
+
+  // set/get values in the table
+  void setCell(int row, int column, int parentRow, int parentColumn,
+               const std::string &value) override;
+  std::string getCell(int row, int column, int parentRow,
+                      int parentColumn) override;
 };
 }
 }

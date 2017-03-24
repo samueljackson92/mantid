@@ -568,5 +568,34 @@ void QDataProcessorWidget::transfer(const QList<QString> &runs) {
   m_presenter->transfer(runsMap);
 }
 
+/** Get a cell from the table
+ *
+ * @param row : the row index
+ * @param column : the column index
+ * @param parentRow : the row index of the parent
+ * @param parentColumn : the row index of the parent
+ * @return : the value in the cell as a string
+*/
+QString QDataProcessorWidget::getCell(int row, int column, int parentRow,
+                                      int parentColumn) {
+
+  return QString::fromStdString(
+      m_presenter->getCell(row, column, parentRow, parentColumn));
+}
+
+/** Set a value in the table
+ *
+ * @param value : the new value
+ * @param row : the row index
+ * @param column : the column index
+ * @param parentRow : the row index of the parent
+ * @param parentColumn : the row index of the parent
+*/
+void QDataProcessorWidget::setCell(const QString &value, int row, int column,
+                                   int parentRow, int parentColumn) {
+
+  m_presenter->setCell(row, column, parentRow, parentColumn,
+                       value.toStdString());
+}
 } // namespace MantidWidgets
 } // namespace Mantid

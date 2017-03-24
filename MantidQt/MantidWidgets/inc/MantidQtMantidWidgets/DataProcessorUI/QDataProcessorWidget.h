@@ -125,6 +125,12 @@ public:
   // Forward a main presenter to this view's presenter
   void accept(DataProcessorMainPresenter *);
 
+  // Get value in a cell
+  QString getCell(int row, int column, int parentRow = 0, int parentColumn = 0);
+  // Set value in a cell
+  void setCell(const QString &value, int row, int column, int parentRow = 0,
+               int parentColumn = 0);
+
 private:
   // initialise the interface
   void createTable();
