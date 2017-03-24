@@ -35,21 +35,21 @@ class MainPresenter(MantidQt.MantidWidgets.DataProcessorMainPresenter):
         Return global pre-processing options as a string.
         The string must be a sequence of key=value separated by ','.
         """
-        return "AnalysisMode=PointDetectorAnalysis"
+        return ""
 
     def getProcessingOptions(self):
         """
         Return global processing options as a string.
         The string must be a sequence of key=value separated by ','.
         """
-        return "AnalysisMode=PointDetectorAnalysis, WavelengthMin=1.5"
+        return ""
 
     def getPostprocessingOptions(self):
         """
         Return global post-processing options as a string.
         The string must be a sequence of key=value separated by ','.
         """
-        return "Params='0.03, -0.04, 0.6'"
+        return ""
 
     def notifyADSChanged(self, workspace_list):
         """
