@@ -127,6 +127,18 @@ class DataProcessorGui(QtGui.QMainWindow, ui_data_processor_window.Ui_DataProces
         # Add the widget to this interface
         self.layoutBase.addWidget(self.data_processor_table)
 
+        # Set some values in the table
+        self.data_processor_table.setCell("13460", 0, 0)
+        self.data_processor_table.setCell("0.7", 0, 1)
+        self.data_processor_table.setCell("13463,13464", 0, 2)
+        self.data_processor_table.setCell("0.01", 0, 5)
+
+        # Get values from the table
+        print(self.data_processor_table.getCell(0, 0))
+        print(self.data_processor_table.getCell(0, 1))
+        print(self.data_processor_table.getCell(0, 2))
+        print(self.data_processor_table.getCell(0, 5))
+
         return True
 
     def add_actions_to_menus(self, workspace_list):
