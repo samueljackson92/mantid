@@ -99,20 +99,6 @@ class DataProcessorGui(QtGui.QMainWindow, ui_data_processor_window.Ui_DataProces
         whitelist.addElement('dQ/Q', 'MomentumTransferStep', 'Resolution', False, '')
         whitelist.addElement('Scale', 'ScaleFactor', 'Scale Factor', False, '')
 
-        # Pre-processing instructions (optional)
-        # Indicates which columns should be pre-process and the algorithms used to pre-process
-        # Pre-processing only happens when two or more runs are specified in the same column, i.e. '1+2'
-        # For instance, runs '1+2' in column 'Runs' will be added
-        # Runs '3+4' in column 'Transmission Runs' will be combined using 'CreateTransmissionWorkspaceAuto'
-        # First argument is the column name that should be pre-processed
-        # Second argument is the algorithm used to pre-process
-        # Third argument is a prefix to name the pre-processed workspace
-        # Fourth argument is used if a 'HintingLineEdit' is used in the interface. In this case it indicates
-        # the blacklist of properties that should be hidden in the hinting line edit
-        preprocess_map = MantidQt.MantidWidgets.DataProcessorPreprocessMap()
-        preprocess_map.addElement('Runs', 'Plus', '', '')
-        preprocess_map.addElement('Transmission Runs', 'CreateTransmissionWorkspaceAuto', '', '')
-
         # Processing algorithm (mandatory)
         # The main reduction algorithm
         # A number of prefixes equal to the number of output workspace properties must be specified
@@ -124,15 +110,8 @@ class DataProcessorGui(QtGui.QMainWindow, ui_data_processor_window.Ui_DataProces
         # argument. These properties will not appear in the 'Options' column when typing
         alg = MantidQt.MantidWidgets.DataProcessorProcessingAlgorithm('ReflectometryReductionOneAuto','IvsQ_binned_, IvsQ_, IvsLam_','')
 
-        # Post-processing algorithm (optional, but functionality not well tested when not supplied)
-        # Algorithm to post-process runs belonging to the same group
-        # First argument is the name of the algorithm
-        # Second argument is the prefix to be added to the name of the post-processed workspace
-        # Third argument is a black list of properties to hide if a hinting line edit is added to the interface
-        post_alg = MantidQt.MantidWidgets.DataProcessorPostprocessingAlgorithm('Stitch1DMany', 'IvsQ_', 'InputWorkspaces, OutputWorkspaces')
-
         # The table widget
-        self.data_processor_table = MantidQt.MantidWidgets.QDataProcessorWidget(whitelist, preprocess_map, alg, post_alg, self)
+        self.data_processor_table = MantidQt.MantidWidgets.QDataProcessorWidget(whitelist, alg, self)
 
         # A main presenter
         # Needed to supply global options for pre-processing/processing/post-processing to the widget
@@ -160,18 +139,13 @@ class DataProcessorGui(QtGui.QMainWindow, ui_data_processor_window.Ui_DataProces
 
         # Actions that go in the 'Edit' menu
         self._create_action(MantidQt.MantidWidgets.DataProcessorProcessCommand(self.data_processor_table), self.menuEdit)
-        self._create_action(MantidQt.MantidWidgets.DataProcessorExpandCommand(self.data_processor_table), self.menuEdit)
         self._create_action(MantidQt.MantidWidgets.DataProcessorPlotRowCommand(self.data_processor_table), self.menuEdit)
-        self._create_action(MantidQt.MantidWidgets.DataProcessorPlotGroupCommand(self.data_processor_table), self.menuEdit)
         self._create_action(MantidQt.MantidWidgets.DataProcessorAppendRowCommand(self.data_processor_table), self.menuEdit)
-        self._create_action(MantidQt.MantidWidgets.DataProcessorAppendGroupCommand(self.data_processor_table), self.menuEdit)
-        self._create_action(MantidQt.MantidWidgets.DataProcessorGroupRowsCommand(self.data_processor_table), self.menuEdit)
         self._create_action(MantidQt.MantidWidgets.DataProcessorCopySelectedCommand(self.data_processor_table), self.menuEdit)
         self._create_action(MantidQt.MantidWidgets.DataProcessorCutSelectedCommand(self.data_processor_table), self.menuEdit)
         self._create_action(MantidQt.MantidWidgets.DataProcessorPasteSelectedCommand(self.data_processor_table), self.menuEdit)
         self._create_action(MantidQt.MantidWidgets.DataProcessorClearSelectedCommand(self.data_processor_table), self.menuEdit)
         self._create_action(MantidQt.MantidWidgets.DataProcessorDeleteRowCommand(self.data_processor_table), self.menuEdit)
-        self._create_action(MantidQt.MantidWidgets.DataProcessorDeleteGroupCommand(self.data_processor_table), self.menuEdit)
 
         # Actions that go in the 'File' menu
         self._create_action(MantidQt.MantidWidgets.DataProcessorOpenTableCommand(self.data_processor_table), self.menuFile, workspace_list)
