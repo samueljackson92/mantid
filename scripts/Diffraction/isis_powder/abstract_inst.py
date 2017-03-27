@@ -68,26 +68,6 @@ class AbstractInst(object):
         """
         raise NotImplementedError("get_run_details must be implemented per instrument")
 
-    def _generate_input_file_name(self, run_number):
-        """
-        Generates a name which Mantid uses within Load to find the file.
-        By default this appends the run number to the instrument prefix but instruments
-        may override is as needed
-        :param run_number: The run number (or list of run numbers) to convert into a valid format for Mantid
-        :return: A filename that will allow Mantid to find the correct run for that instrument.
-        """
-        return self._abs_generate_input_file_name(run_number)
-
-    def _generate_output_file_name(self, run_number_string):
-        """
-        Generates the filename which is used to uniquely identify and save the workspace.
-        By default we return the input name as the output name but individual instruments
-        can override this
-        :param run_number_string: The run string to uniquely identify the run
-        :return: The file name which identifies the run and appropriate parameter settings
-        """
-        raise self._generate_input_file_name(run_number_string)
-
     def _spline_vanadium_ws(self, focused_vanadium_banks):
         """
         Takes a background spline of the list of processed vanadium banks
@@ -131,7 +111,7 @@ class AbstractInst(object):
         :param focused_banks: The processed banks as a list to be cropped
         :return: A list of cropped banks
         """
-        return focused_banks
+        raise RuntimeError("Crop banks to user TOF has not been implemented for this instrument")
 
     def _crop_raw_to_expected_tof_range(self, ws_to_crop):
         """
@@ -140,7 +120,7 @@ class AbstractInst(object):
         :param ws_to_crop: The raw workspace to crop in TOF
         :return: The cropped workspace ready for processing
         """
-        return ws_to_crop
+        raise RuntimeError("Crop banks to raw TOF has not been implemented for this instrument")
 
     def _crop_van_to_expected_tof_range(self, van_ws_to_crop):
         """
@@ -149,7 +129,23 @@ class AbstractInst(object):
         :param van_ws_to_crop: A list of focused vanadium banks to crop
         :return: A list of cropped vanadium workspace banks
         """
-        return van_ws_to_crop
+        raise RuntimeError("Crop banks to vanadium TOF has not been implemented for this instrument")
+
+    def _get_input_batching_mode(self):
+        """
+        Returns the user specified input batching (e.g. summed or individual processing). This is set to summed
+        by default for instruments who do not with to specify it
+        :return: The current input batching type from the InputBatchingEnum
+        """
+        return common_enums.INPUT_BATCHING.Summed
+
+    def _get_monitor_spectra_index(self, run_number):
+        """
+        Returns the spectra number a monitor is located at
+        :param run_number: The run number to locate the monitor spectra of
+        :return: The monitor spectra for the current workspace
+        """
+        return str()
 
     def _get_sample_empty(self):
         """
@@ -177,21 +173,25 @@ class AbstractInst(object):
         # automatic calibration
         raise NotImplementedError("Automatic vanadium corrections have not been implemented for this instrument.")
 
-    def _get_input_batching_mode(self):
+    def _generate_input_file_name(self, run_number):
         """
-        Returns the user specified input batching (e.g. summed or individual processing). This is set to summed
-        by default for instruments who do not with to specify it
-        :return: The current input batching type from the InputBatchingEnum
+        Generates a name which Mantid uses within Load to find the file.
+        By default this appends the run number to the instrument prefix but instruments
+        may override is as needed
+        :param run_number: The run number (or list of run numbers) to convert into a valid format for Mantid
+        :return: A filename that will allow Mantid to find the correct run for that instrument.
         """
-        return common_enums.INPUT_BATCHING.Summed
+        return self._abs_generate_input_file_name(run_number)
 
-    def _get_monitor_spectra_index(self, run_number):
+    def _generate_output_file_name(self, run_number_string):
         """
-        Returns the spectra number a monitor is located at
-        :param run_number: The run number to locate the monitor spectra of
-        :return: The monitor spectra for the current workspace
+        Generates the filename which is used to uniquely identify and save the workspace.
+        By default we return the input name as the output name but individual instruments
+        can override this
+        :param run_number_string: The run string to uniquely identify the run
+        :return: The file name which identifies the run and appropriate parameter settings
         """
-        return str()
+        return self._generate_input_file_name(run_number_string)
 
     def _normalise_ws_current(self, ws_to_correct, run_details=None):
         """
@@ -213,7 +213,8 @@ class AbstractInst(object):
         :return: d-spacing group of the processed output workspaces
         """
         d_spacing_group, tof_group = common_output.split_into_tof_d_spacing_groups(run_details=run_details,
-                                                                                   processed_spectra=processed_spectra)
+                                                                                   processed_spectra=processed_spectra,
+                                                                                   inst_prefix=self._inst_prefix)
         output_paths = self._generate_out_file_paths(run_details=run_details)
 
         common_output.save_focused_data(d_spacing_group=d_spacing_group, tof_group=tof_group,
@@ -244,13 +245,15 @@ class AbstractInst(object):
         output_directory = os.path.join(self._output_dir, run_details.label, self._user_name)
         output_directory = os.path.abspath(os.path.expanduser(output_directory))
         file_name = str(self._generate_output_file_name(run_number_string=run_details.output_run_string))
-        nxs_file = os.path.join(output_directory, (file_name + ".nxs"))
+        tof_nxs_file = os.path.join(output_directory, (file_name + "-TOF" ".nxs"))
+        d_spacing_file = os.path.join(output_directory, (file_name + "-dSpacing" ".nxs"))
         gss_file = os.path.join(output_directory, (file_name + ".gsas"))
         tof_xye_file = os.path.join(output_directory, (file_name + "_tof_xye.dat"))
         d_xye_file = os.path.join(output_directory, (file_name + "_d_xye.dat"))
         out_name = file_name
 
-        out_file_names = {"nxs_filename": nxs_file,
+        out_file_names = {"nxs_filename_dSpacing": d_spacing_file,
+                          "nxs_filename_tof": tof_nxs_file,
                           "gss_filename": gss_file,
                           "tof_xye_filename": tof_xye_file,
                           "dspacing_xye_filename": d_xye_file,

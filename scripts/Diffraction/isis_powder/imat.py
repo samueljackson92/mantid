@@ -1,7 +1,7 @@
 from __future__ import (absolute_import, division, print_function)
 
 from isis_powder import abstract_inst
-from isis_powder.routines import InstrumentSettings, yaml_parser
+from isis_powder.routines import common, InstrumentSettings, yaml_parser
 from isis_powder.imat_routines import imat_advanced_config, imat_algs, imat_param_mapping
 
 
@@ -31,8 +31,21 @@ class Imat(abstract_inst.AbstractInst):
         return self._create_vanadium(run_number_string=self._inst_settings.run_in_range,
                                      do_absorb_corrections=self._inst_settings.do_absorb_corrections)
 
+    def _crop_banks_to_user_tof(self, focused_banks):
+        return common.crop_banks_using_crop_list(focused_banks, self._inst_settings.focused_cropping_values)
+
+    def _crop_raw_to_expected_tof_range(self, ws_to_crop):
+        raw_cropping_values = self._inst_settings.raw_tof_cropping_values
+        return common.crop_in_tof(ws_to_crop, raw_cropping_values[0], raw_cropping_values[1])
+
+    def _crop_van_to_expected_tof_range(self, van_ws_to_crop):
+        return common.crop_banks_using_crop_list(van_ws_to_crop, self._inst_settings.vanadium_cropping_values)
+
     def _get_run_details(self, run_number_string):
         return imat_algs.get_run_details(run_number_string=run_number_string,
                                          inst_settings=self._inst_settings,
                                          is_vanadium_run=self._is_vanadium)
 
+    def _spline_vanadium_ws(self, focused_vanadium_banks):
+        return common.spline_vanadium_workspaces(focused_vanadium_spectra=focused_vanadium_banks,
+                                                 spline_coefficient=self._inst_settings.spline_coeff)
