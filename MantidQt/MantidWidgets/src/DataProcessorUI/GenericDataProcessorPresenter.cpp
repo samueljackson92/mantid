@@ -84,19 +84,21 @@ GenericDataProcessorPresenter::GenericDataProcessorPresenter(
       m_tableDirty(false) {
 
   // Column Options must be added to the whitelist
-  m_whitelist.addElement("Options", "Options",
-                         "<b>Override <samp>" +
-                             QString::fromStdString(processor.name()) +
-                             "</samp> properties</b><br /><i>optional</i><br "
-                             "/>This column allows you to "
-                             "override the properties used when executing "
-                             "the main reduction algorithm. "
-                             "Options are given as "
-                             "key=value pairs, separated by commas. Values "
-                             "containing commas must be quoted. In case of "
-                             "conflict between options "
-                             "specified via this column and global options "
-                             "specified externally, the former prevail.");
+  // But only if a processing algorithm has been defined
+  if (!m_processor.name().empty())
+    m_whitelist.addElement("Options", "Options",
+                           "<b>Override <samp>" +
+                               QString::fromStdString(m_processor.name()) +
+                               "</samp> properties</b><br /><i>optional</i><br "
+                               "/>This column allows you to "
+                               "override the properties used when executing "
+                               "the main reduction algorithm. "
+                               "Options are given as "
+                               "key=value pairs, separated by commas. Values "
+                               "containing commas must be quoted. In case of "
+                               "conflict between options "
+                               "specified via this column and global options "
+                               "specified externally, the former prevail.");
   m_columns = static_cast<int>(m_whitelist.size());
 
   if (m_postprocessor.name().empty()) {
@@ -155,8 +157,20 @@ GenericDataProcessorPresenter::GenericDataProcessorPresenter(
           processor, DataProcessorPostprocessingAlgorithm()) {}
 
 /**
-* Destructor
-*/
+ * Delegating constructor (only whitelist specified)
+ * @param whitelist : The set of properties we want to show as columns
+ */
+GenericDataProcessorPresenter::GenericDataProcessorPresenter(
+    const DataProcessorWhiteList &whitelist)
+    : GenericDataProcessorPresenter(
+          whitelist,
+          std::map<std::string, DataProcessorPreprocessingAlgorithm>(),
+          DataProcessorProcessingAlgorithm(),
+          DataProcessorPostprocessingAlgorithm()) {}
+
+/**
+ * Destructor
+ */
 GenericDataProcessorPresenter::~GenericDataProcessorPresenter() {}
 
 /**
@@ -202,9 +216,12 @@ void GenericDataProcessorPresenter::acceptViews(
   // Provide autocompletion hints for the options column. We use the algorithm's
   // properties minus those we blacklist. We blacklist any useless properties or
   // ones we're handling that the user should'nt touch.
-  IAlgorithm_sptr alg = AlgorithmManager::Instance().create(m_processor.name());
-  m_view->setOptionsHintStrategy(
-      new AlgorithmHintStrategy(alg, m_processor.blacklist()), m_columns - 1);
+  if (!m_processor.name().empty()) {
+    IAlgorithm_sptr alg =
+        AlgorithmManager::Instance().create(m_processor.name());
+    m_view->setOptionsHintStrategy(
+        new AlgorithmHintStrategy(alg, m_processor.blacklist()), m_columns - 1);
+  }
 
   // Start with a blank table
   newTable();
@@ -214,6 +231,11 @@ void GenericDataProcessorPresenter::acceptViews(
 Process selected data
 */
 void GenericDataProcessorPresenter::process() {
+
+  if (m_processor.name().empty()) {
+    m_view->emitProcessClicked();
+    return;
+  }
 
   const auto items = m_manager->selectedData(true);
 
@@ -300,16 +322,18 @@ void GenericDataProcessorPresenter::saveNotebook(const TreeData &data) {
   const std::string postprocessingOptions =
       m_mainPresenter->getPostprocessingOptions().toStdString();
 
-  auto notebook = Mantid::Kernel::make_unique<DataProcessorGenerateNotebook>(
-      m_wsName, m_view->getProcessInstrument(), m_whitelist, m_preprocessMap,
-      m_processor, m_postprocessor, preprocessingOptionsMap, processingOptions,
-      postprocessingOptions);
-  std::string generatedNotebook = notebook->generateNotebook(data);
+  if (!m_processor.name().empty()) {
+    auto notebook = Mantid::Kernel::make_unique<DataProcessorGenerateNotebook>(
+        m_wsName, m_view->getProcessInstrument(), m_whitelist, m_preprocessMap,
+        m_processor, m_postprocessor, preprocessingOptionsMap,
+        processingOptions, postprocessingOptions);
+    std::string generatedNotebook = notebook->generateNotebook(data);
 
-  std::ofstream file(filename.c_str(), std::ofstream::trunc);
-  file << generatedNotebook;
-  file.flush();
-  file.close();
+    std::ofstream file(filename.c_str(), std::ofstream::trunc);
+    file << generatedNotebook;
+    file.flush();
+    file.close();
+  }
 }
 
 /**
@@ -1089,6 +1113,9 @@ void GenericDataProcessorPresenter::setInstrumentList(
 /** Plots any currently selected rows */
 void GenericDataProcessorPresenter::plotRow() {
 
+  if (m_processor.name().empty())
+    return;
+
   // Set of workspaces to plot
   std::set<std::string> workspaces;
   // Set of workspaces not found in the ADS
@@ -1123,6 +1150,9 @@ void GenericDataProcessorPresenter::plotRow() {
 
 /** Plots any currently selected groups */
 void GenericDataProcessorPresenter::plotGroup() {
+
+  if (m_processor.name().empty())
+    return;
 
   // This method shouldn't be called if a post-processing algorithm is not
   // defined
