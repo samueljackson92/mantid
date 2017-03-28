@@ -111,7 +111,7 @@ class DataProcessorGui(QtGui.QMainWindow, ui_data_processor_window.Ui_DataProces
         alg = MantidQt.MantidWidgets.DataProcessorProcessingAlgorithm('ReflectometryReductionOneAuto','IvsQ_binned_, IvsQ_, IvsLam_','')
 
         # The table widget
-        self.data_processor_table = MantidQt.MantidWidgets.QDataProcessorWidget(whitelist, alg, self)
+        self.data_processor_table = MantidQt.MantidWidgets.QDataProcessorWidget(whitelist, self)
 
         # A main presenter
         # Needed to supply global options for pre-processing/processing/post-processing to the widget
@@ -123,6 +123,9 @@ class DataProcessorGui(QtGui.QMainWindow, ui_data_processor_window.Ui_DataProces
         # The widget will emit a 'runAsPythonScript' signal to run python code
         # We need to re-emit this signal so that it reaches mantidplot and the code is executed as a python script
         self.data_processor_table.runAsPythonScript.connect(self._run_python_code)
+
+        # The widget will emit a 'processButtonClicked' signal when 'Process' is selected
+        self.data_processor_table.processButtonClicked.connect(self._process)
 
         # Add the widget to this interface
         self.layoutBase.addWidget(self.data_processor_table)
@@ -205,3 +208,9 @@ class DataProcessorGui(QtGui.QMainWindow, ui_data_processor_window.Ui_DataProces
         Re-emits 'runPytonScript' signal
         """
         mantidplot.runPythonScript(text, True)
+
+    def _process(self):
+        """
+        Process runs
+        """
+        print "Custom processing of runs"
