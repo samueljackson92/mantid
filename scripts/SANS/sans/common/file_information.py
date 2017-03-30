@@ -368,12 +368,13 @@ def get_geometry_information_isis_nexus(file_name):
         height = float(sample['height'][0])
         width = float(sample['width'][0])
         thickness = float(sample['thickness'][0])
-        shape_as_string = sample['shape'][0]
-        if shape_as_string == "Cylinder":
+        shape_as_string = sample['shape'][0].upper()
+
+        if shape_as_string == "CYLINDER":
             shape = SampleShape.CylinderAxisUp
-        elif shape_as_string == "Flat plate":
+        elif shape_as_string == "FLAT PLATE":
             shape = SampleShape.Cuboid
-        elif shape_as_string == "Disc":
+        elif shape_as_string == "DISC":
             shape = SampleShape.CylinderAxisAlong
         else:
             shape = None

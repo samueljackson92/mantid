@@ -96,6 +96,7 @@ def create_unmanaged_algorithm(name, **kwargs):
     alg = AlgorithmManager.createUnmanaged(name)
     alg.initialize()
     alg.setChild(True)
+    alg.setRethrows(True)
     for key, value in list(kwargs.items()):
         alg.setProperty(key, value)
     return alg
@@ -112,6 +113,7 @@ def create_managed_non_child_algorithm(name, **kwargs):
     alg = AlgorithmManager.create(name)
     alg.initialize()
     alg.setChild(False)
+    alg.setRethrows(True)
     for key, value in kwargs.items():
         alg.setProperty(key, value)
     return alg
@@ -128,6 +130,7 @@ def create_child_algorithm(parent_alg, name, **kwargs):
     """
     if parent_alg:
         alg = parent_alg.createChildAlgorithm(name)
+        alg.setRethrows(True)
         for key, value in kwargs.items():
             alg.setProperty(key, value)
     else:
