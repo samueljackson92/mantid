@@ -1,53 +1,142 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>DataProcessorWindow</class>
+ <class>dataProcessorWindow</class>
  <widget class="QMainWindow" name="dataProcessorWindow">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1000</width>
-    <height>400</height>
+    <width>1003</width>
+    <height>410</height>
    </rect>
   </property>
   <property name="acceptDrops">
    <bool>true</bool>
   </property>
   <property name="windowTitle">
-   <string>Data Processor Interface (Reflectometry)</string>
+   <string>ISIS SANS Reduction GUI</string>
   </property>
   <widget class="QWidget" name="widgetMainRow">
-   <layout class="QVBoxLayout" name="layoutBase">
+   <layout class="QVBoxLayout" name="outer_layout">
+    <item>
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="run_tab">
+       <attribute name="title">
+        <string>Run</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_3">
+        <item row="0" column="0">
+         <layout class="QGridLayout" name="header">
+          <item row="0" column="1">
+           <widget class="QLabel" name="user_file_label">
+            <property name="frameShape">
+             <enum>QFrame::NoFrame</enum>
+            </property>
+            <property name="text">
+             <string>User File:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="3">
+           <widget class="QPushButton" name="user_file_button">
+            <property name="text">
+             <string>Load User File</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QLineEdit" name="user_file_line_edit"/>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLabel" name="batch_label">
+            <property name="text">
+             <string>Batch File:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="2">
+           <widget class="QLineEdit" name="batch_line_edit"/>
+          </item>
+          <item row="1" column="3">
+           <widget class="QPushButton" name="batch_button">
+            <property name="text">
+             <string>Load Batch File</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item row="1" column="0">
+         <layout class="QVBoxLayout" name="layoutBase"/>
+        </item>
+        <item row="2" column="0">
+         <layout class="QGridLayout" name="footer">
+          <item row="0" column="2">
+           <widget class="QPushButton" name="reduce_2d">
+            <property name="text">
+             <string>2D</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QPushButton" name="reduce_1d">
+            <property name="text">
+             <string>1D</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <spacer name="horizontalSpacer">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="settings_tab">
+       <attribute name="title">
+        <string>Settings</string>
+       </attribute>
+      </widget>
+     </widget>
+    </item>
    </layout>
-   <zorder>splitterList</zorder>
-   <zorder></zorder>
-   <zorder></zorder>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1000</width>
-     <height>23</height>
+     <width>1003</width>
+     <height>19</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menuFile">
-    <property name="title">
-     <string>File</string>
-    </property>
-   </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
      <string>Edit</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
     </property>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
   </widget>
  </widget>
- <tabstops>
- </tabstops>
  <resources/>
  <connections/>
 </ui>

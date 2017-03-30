@@ -86,7 +86,7 @@ public:
   void update(int parent, int child,
               const std::vector<std::string> &data) override;
   void setCell(int row, int column, int parentRow, int parentColumn,
-               const std::__cxx11::string &value) override;
+               const std::string &value) override;
   std::string getCell(int row, int column, int parentRow,
                       int parentColumn) override;
 

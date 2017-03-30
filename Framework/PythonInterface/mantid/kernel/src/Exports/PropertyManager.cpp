@@ -7,14 +7,32 @@
 #include "MantidKernel/IPropertyManager.h"
 #include "MantidKernel/PropertyManager.h"
 
+#include <string>
 #include <boost/python/class.hpp>
+#include <boost/python/overloads.hpp>
 
 using Mantid::Kernel::IPropertyManager;
 using Mantid::Kernel::PropertyManager;
 
 using namespace boost::python;
 
-GET_POINTER_SPECIALIZATION(PropertyManager)
+GET_POINTER_SPECIALIZATION(PropertyManager);
+
+namespace {
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunknown-pragmas"
+#pragma clang diagnostic ignored "-Wunused-local-typedef"
+#endif
+  BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(asStringOverloader, asString, 0, 1)
+    BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(getPropertiesOverloader, setProperties, 1, 2)
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+
+}
+
+void (PropertyManager::*setPropertiesWrapper)(const std::string &, const std::unordered_set<std::string>&) = &PropertyManager::setProperties;
 
 void export_PropertyManager() {
   typedef boost::shared_ptr<PropertyManager> PropertyManager_sptr;
@@ -28,7 +46,18 @@ void export_PropertyManager() {
   // shared_ptr
   // type
   class_<PropertyManager, PropertyManager_sptr, bases<IPropertyManager>,
-         boost::noncopyable>("PropertyManager");
+         boost::noncopyable>("PropertyManager")
+    .def("asString", (&PropertyManager::asString), 
+      asStringOverloader((arg("self"), arg("withDefaultValues")=false),
+      "Return the property manager serialized as a string."))
+    .def("setProperties", setPropertiesWrapper,
+      getPropertiesOverloader((arg("self"), arg("propertiesJson"), arg("ignoreProperties")),
+      "Sets all the declared properties from Json-like string."));
+
+
+  //void setProperties(const std::string &propertiesJson,
+  //  const std::unordered_set<std::string> &ignoreProperties =
+  //  std::unordered_set<std::string>()) override;
 }
 
 #ifdef _MSC_VER

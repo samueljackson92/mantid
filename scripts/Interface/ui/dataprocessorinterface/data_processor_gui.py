@@ -3,13 +3,33 @@ try:
 except ImportError:
     canMantidPlot = False
 
+from functools import partial
 import ui_data_processor_window
-from PyQt4 import QtGui
+from PyQt4 import QtGui, QtCore
 from mantid.simpleapi import *
 from mantidqtpython import MantidQt
+from sans.sans_presenter import SANSPresenter
 
 canMantidPlot = True
 
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Free Functions
+# ----------------------------------------------------------------------------------------------------------------------
+
+def open_file_dialog(line_edit, filter_text):
+    dlg = QtGui.QFileDialog()
+    dlg.setFileMode(QtGui.QFileDialog.AnyFile)
+    dlg.setFilter(filter_text)
+    if dlg.exec_():
+        file_names = dlg.selectedFiles()
+        if file_names:
+            line_edit.setText(file_names[0])
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Gui Classes
+# ----------------------------------------------------------------------------------------------------------------------
 
 class MainPresenter(MantidQt.MantidWidgets.DataProcessorMainPresenter):
     """
@@ -62,7 +82,7 @@ class MainPresenter(MantidQt.MantidWidgets.DataProcessorMainPresenter):
         self.gui.add_actions_to_menus(workspace_list)
 
 
-class DataProcessorGui(QtGui.QMainWindow, ui_data_processor_window.Ui_DataProcessorWindow):
+class DataProcessorGui(QtGui.QMainWindow, ui_data_processor_window.Ui_dataProcessorWindow):
 
     data_processor_table = None
     main_presenter = None
@@ -73,6 +93,7 @@ class DataProcessorGui(QtGui.QMainWindow, ui_data_processor_window.Ui_DataProces
         """
         super(QtGui.QMainWindow, self).__init__()
         self.setupUi(self)
+        self.sans_presenter = SANSPresenter(self)
 
     def setup_layout(self):
         """
@@ -91,13 +112,18 @@ class DataProcessorGui(QtGui.QMainWindow, ui_data_processor_window.Ui_DataProces
         # (unused if the previous argument is false)
         # In addition to the specified columns, a last column 'Options' is always added
         whitelist = MantidQt.MantidWidgets.DataProcessorWhiteList()
-        whitelist.addElement('Runs', 'InputWorkspace', 'The run to reduce', True, '')
-        whitelist.addElement('Angle', 'ThetaIn', 'The incident angle', False, '')
-        whitelist.addElement('Transmission Runs', 'FirstTransmissionRun', 'Transmission runs', False, '')
-        whitelist.addElement('Q min', 'MomentumTransferMin', 'Q min', False, '')
-        whitelist.addElement('Q max', 'MomentumTransferMax', 'Q max', False, '')
-        whitelist.addElement('dQ/Q', 'MomentumTransferStep', 'Resolution', False, '')
-        whitelist.addElement('Scale', 'ScaleFactor', 'Scale Factor', False, '')
+        whitelist.addElement('SampleScatter', 'SampleScatter',
+                             'The run number of the scatter sample', False, '')
+        whitelist.addElement('SampleTransmission', 'SampleTransmission',
+                             'The run number of the transmission sample', False, '')
+        whitelist.addElement('SampleDirect', 'SampleDirect',
+                             'The run number of the direct sample', False, '')
+        whitelist.addElement('CanScatter', 'CanScatter',
+                             'The run number of the scatter can', False, '')
+        whitelist.addElement('CanTransmission', 'CanTransmission',
+                             'The run number of the transmission can', False, '')
+        whitelist.addElement('CanDirect', 'CanDirect',
+                             'The run number of the direct can', False, '')
 
         # Processing algorithm (mandatory)
         # The main reduction algorithm
@@ -110,22 +136,15 @@ class DataProcessorGui(QtGui.QMainWindow, ui_data_processor_window.Ui_DataProces
         # argument. These properties will not appear in the 'Options' column when typing
         alg = MantidQt.MantidWidgets.DataProcessorProcessingAlgorithm('ReflectometryReductionOneAuto','IvsQ_binned_, IvsQ_, IvsLam_','')
 
+        # --------------------------------------------------------------------------------------------------------------
+        # Main Tab
+        # --------------------------------------------------------------------------------------------------------------
         # The table widget
-        self.data_processor_table = MantidQt.MantidWidgets.QDataProcessorWidget(whitelist, alg, self)
-
         # A main presenter
         # Needed to supply global options for pre-processing/processing/post-processing to the widget
+        self.data_processor_table = MantidQt.MantidWidgets.QDataProcessorWidget(whitelist, alg, self)
         self.main_presenter = MainPresenter(self)
-        self.data_processor_table.accept(self.main_presenter)
-
-        # Set the list of available instruments in the widget and the default instrument
-        self.data_processor_table.setInstrumentList('INTER, POLREF, OFFSPEC', 'INTER')
-        # The widget will emit a 'runAsPythonScript' signal to run python code
-        # We need to re-emit this signal so that it reaches mantidplot and the code is executed as a python script
-        self.data_processor_table.runAsPythonScript.connect(self._run_python_code)
-
-        # Add the widget to this interface
-        self.layoutBase.addWidget(self.data_processor_table)
+        self._setup_main_tab()
 
         # Set some values in the table
         self.data_processor_table.setCell("13460", 0, 0)
@@ -140,6 +159,40 @@ class DataProcessorGui(QtGui.QMainWindow, ui_data_processor_window.Ui_DataProces
         print(self.data_processor_table.getCell(0, 5))
 
         return True
+
+    def get_cell(self, row, column, convert_to=None):
+        value = self.data_processor_table.getCell(row, column)
+        return value if convert_to is None else convert_to(value)
+
+    def _setup_main_tab(self):
+        # --------------------------------------------------------------------------------------------------------------
+        # Header setup
+        # --------------------------------------------------------------------------------------------------------------
+        self.user_file_button.clicked.connect(self._load_user_file)
+
+        # --------------------------------------------------------------------------------------------------------------
+        # Table setup
+        # --------------------------------------------------------------------------------------------------------------
+        # Add the presenter to the data processor
+        self.data_processor_table.accept(self.main_presenter)
+
+        # Set the list of available instruments in the widget and the default instrument
+        self.data_processor_table.setInstrumentList('SANS2D, LOQ, LARMOR', 'SANS2D')
+
+        # The widget will emit a 'runAsPythonScript' signal to run python code
+        self.data_processor_table.runAsPythonScript.connect(self._run_python_code)
+
+        self.layoutBase.addWidget(self.data_processor_table)
+
+        # --------------------------------------------------------------------------------------------------------------
+        # Footer setup
+        # --------------------------------------------------------------------------------------------------------------
+
+    def _load_user_file(self):
+        open_file_dialog(self.user_file_line_edit, "User file (*.txt)")
+
+    def _load_batch_file(self):
+        open_file_dialog(self.batch_line_edit, "User file (*.txt)")
 
     def add_actions_to_menus(self, workspace_list):
         """
@@ -175,7 +228,6 @@ class DataProcessorGui(QtGui.QMainWindow, ui_data_processor_window.Ui_DataProces
         It refers to the list of table workspaces in the ADS that could be loaded into the widget. Note that only
         table workspaces with an appropriate number of columns and column types can be loaded.
         """
-
         if (workspace_list is not None and command.name() == "Open Table"):
             submenu = QtGui.QMenu(command.name(), self)
             submenu.setIcon(QtGui.QIcon(command.icon()))
