@@ -34,6 +34,16 @@ QDataProcessorWidget::QDataProcessorWidget(
 }
 
 /** Delegating constructor
+ * @param whitelist :: [input] The white list
+ * @param parent :: [input] The parent of this view
+ */
+QDataProcessorWidget::QDataProcessorWidget(
+    const DataProcessorWhiteList &whitelist, QWidget *parent)
+    : QDataProcessorWidget(
+          Mantid::Kernel::make_unique<GenericDataProcessorPresenter>(whitelist),
+          parent) {}
+
+/** Delegating constructor
 * @param whitelist :: [input] The white list
 * @param algorithm :: [input] The processing algorithm
 * @param parent :: [input] The parent of this view

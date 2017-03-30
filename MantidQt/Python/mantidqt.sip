@@ -1537,6 +1537,8 @@ class QDataProcessorWidget : QWidget
 %End
 public:
 QDataProcessorWidget(const MantidQt::MantidWidgets::DataProcessorWhiteList &,
+                     QWidget *parent );
+QDataProcessorWidget(const MantidQt::MantidWidgets::DataProcessorWhiteList &,
                      const MantidQt::MantidWidgets::DataProcessorProcessingAlgorithm &,
                      QWidget *parent );
 QDataProcessorWidget(const MantidQt::MantidWidgets::DataProcessorWhiteList &,
@@ -1560,6 +1562,7 @@ QString getCell(int, int, int parentRow = 0, int parentColumn = 0);
 
 signals:
 void runPythonCode(const QString &);
+void processButtonClicked();
 
 private:
 QDataProcessorWidget(const MantidQt::MantidWidgets::QDataProcessorWidget &);

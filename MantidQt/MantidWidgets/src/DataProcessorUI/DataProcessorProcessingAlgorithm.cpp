@@ -48,6 +48,10 @@ DataProcessorProcessingAlgorithm::DataProcessorProcessingAlgorithm(
           name.toStdString(), convertStringToVector(prefix.toStdString()),
           convertStringToSet(blacklist.toStdString())) {}
 
+/** Default constructor: no algorithm defined */
+DataProcessorProcessingAlgorithm::DataProcessorProcessingAlgorithm()
+    : m_prefix(), m_inputProperties(), m_outputProperties() {}
+
 // Destructor
 DataProcessorProcessingAlgorithm::~DataProcessorProcessingAlgorithm() {}
 

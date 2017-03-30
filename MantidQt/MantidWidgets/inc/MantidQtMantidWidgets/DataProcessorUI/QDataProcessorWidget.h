@@ -52,6 +52,7 @@ class EXPORT_OPT_MANTIDQT_MANTIDWIDGETS QDataProcessorWidget
 public:
   QDataProcessorWidget(std::unique_ptr<DataProcessorPresenter> presenter,
                        QWidget *parent = 0);
+  QDataProcessorWidget(const DataProcessorWhiteList &, QWidget *parent);
   QDataProcessorWidget(const DataProcessorWhiteList &,
                        const DataProcessorProcessingAlgorithm &,
                        QWidget *parent);
@@ -130,6 +131,12 @@ public:
   // Set value in a cell
   void setCell(const QString &value, int row, int column, int parentRow = 0,
                int parentColumn = 0);
+
+  // Methods to emit signals
+  void emitProcessClicked() override { emit processButtonClicked(); };
+
+signals:
+  void processButtonClicked();
 
 private:
   // initialise the interface

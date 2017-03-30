@@ -146,6 +146,9 @@ class DataProcessorGui(QtGui.QMainWindow, ui_data_processor_window.Ui_dataProces
         self.main_presenter = MainPresenter(self)
         self._setup_main_tab()
 
+        # The widget will emit a 'processButtonClicked' signal when 'Process' is selected
+        self.data_processor_table.processButtonClicked.connect(self._process)
+
         # Set some values in the table
         self.data_processor_table.setCell("13460", 0, 0)
         self.data_processor_table.setCell("0.7", 0, 1)
@@ -257,3 +260,9 @@ class DataProcessorGui(QtGui.QMainWindow, ui_data_processor_window.Ui_dataProces
         Re-emits 'runPytonScript' signal
         """
         mantidplot.runPythonScript(text, True)
+
+    def _process(self):
+        """
+        Process runs
+        """
+        print "Custom processing of runs"

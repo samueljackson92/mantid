@@ -45,6 +45,7 @@ public:
   MOCK_CONST_METHOD0(getSelectedChildren, std::map<int, std::set<int>>());
   MOCK_CONST_METHOD0(getSelectedParents, std::set<int>());
   MOCK_CONST_METHOD0(getClipboard, std::string());
+  MOCK_CONST_METHOD0(getProcessInstrument, std::string());
   MOCK_METHOD0(getEnableNotebook, bool());
   MOCK_METHOD1(setSelection, void(const std::set<int> &rows));
   MOCK_METHOD1(setClipboard, void(const std::string &text));
@@ -58,7 +59,7 @@ public:
   // Settings
   MOCK_METHOD1(loadSettings, void(std::map<std::string, QVariant> &));
 
-  // Acctions/commands
+  // Actions/commands
   // Gmock requires parameters and return values of mocked methods to be
   // copyable which means we have to mock addActions() via a proxy method
   void addActions(std::vector<DataProcessorCommand_uptr>) override {
@@ -69,7 +70,6 @@ public:
   // Calls we don't care about
   void showTable(boost::shared_ptr<QAbstractItemModel>) override{};
   void saveSettings(const std::map<std::string, QVariant> &) override{};
-  std::string getProcessInstrument() const override { return "FAKE"; }
 
   DataProcessorPresenter *getPresenter() const override { return nullptr; }
 };
@@ -96,9 +96,7 @@ public:
   MOCK_CONST_METHOD0(getPreprocessingOptionsAsString, QString());
   MOCK_CONST_METHOD0(getProcessingOptions, QString());
   MOCK_CONST_METHOD0(getPostprocessingOptions, QString());
-
-  // Methods we don't care about
-  QString getTimeSlicingOptions() const override { return QString(); };
+  MOCK_CONST_METHOD0(getTimeSlicingOptions, QString());
 };
 
 class MockDataProcessorPresenter : public DataProcessorPresenter {
@@ -143,6 +141,13 @@ private:
                          const std::string &) override{};
   // void accept(WorkspaceReceiver *) {};
   void acceptViews(DataProcessorView *, ProgressableView *) override{};
+
+  void setCell(int row, int column, int parentRow, int parentColumn,
+               const std::string &value) override{};
+  std::string getCell(int row, int column, int parentRow,
+                      int parentColumn) override {
+    return "";
+  };
 
   std::map<std::string, QVariant> m_options;
 };
