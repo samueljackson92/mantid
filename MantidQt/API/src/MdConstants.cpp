@@ -20,7 +20,7 @@ const QString MdConstants::Delimiter = "Delimiter";
 const QString MdConstants::WorkspaceName = "WorkspaceName";
 const QString MdConstants::ProbePoint = "ProbePoint";
 const QString MdConstants::Threshold = "Threshold";
-const QString MdConstants::ThresholdPoints = "ThresholdPoints";
+const QString MdConstants::ThresholdPolyData = "ThresholdPolyData";
 
 MdConstants::MdConstants()
     : m_colorScaleStandardMax(0.1), m_logScaleDefaultValue(0.1) {

@@ -278,7 +278,7 @@ void SplatterPlotView::checkPeaksCoordinates() {
 void SplatterPlotView::onThresholdButtonClicked() {
   pqObjectBuilder *builder = pqApplicationCore::instance()->getObjectBuilder();
   this->m_threshSource = builder->createFilter(
-      "filters", MantidQt::API::MdConstants::Threshold, this->m_splatSource);
+      "filters", MantidQt::API::MdConstants::ThresholdPolyData, this->m_splatSource);
   auto filterProxy =
       builder->createDataRepresentation(this->m_threshSource->getOutputPort(0),
                                         this->m_view)->getProxy();

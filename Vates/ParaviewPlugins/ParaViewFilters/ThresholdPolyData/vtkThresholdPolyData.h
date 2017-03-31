@@ -1,7 +1,7 @@
 /*=========================================================================
 
   Program:   Visualization Toolkit
-  Module:    vtkThresholdPoints.h
+  Module:    vtkThresholdPolyData.h
 
   Copyright (c) Ken Martin, Will Schroeder, Bill Lorensen
   All rights reserved.
@@ -13,10 +13,10 @@
 
 =========================================================================*/
 /**
- * @class   vtkThresholdPoints
+ * @class   vtkThresholdPolyData
  * @brief   extracts cells where scalar value in cell satisfies threshold criterion
  *
- * vtkThresholdPoints is a filter that extracts cells from any dataset type that
+ * vtkThresholdPolyData is a filter that extracts cells from any dataset type that
  * satisfy a threshold criterion. A cell satisfies the criterion if the
  * scalar value of (every or any) point satisfies the criterion. The
  * criterion can take three forms: 1) greater than a particular value; 2)
@@ -31,14 +31,14 @@
  * and SelectedComponent ivars to control this behavior.
  *
  * @sa
- * vtkThresholdPointsPoints vtkThresholdPointsTextureCoords
+ * vtkThresholdPolyDataPoints vtkThresholdPolyDataTextureCoords
 */
 
-#ifndef vtkThresholdPoints_h
-#define vtkThresholdPoints_h
+#ifndef vtkThresholdPolyData_h
+#define vtkThresholdPolyData_h
 
 #include "vtkFiltersCoreModule.h" // For export macro
-#include "vtkUnstructuredGridAlgorithm.h"
+#include "vtkPolyDataAlgorithm.h"
 
 #define VTK_ATTRIBUTE_MODE_DEFAULT         0
 #define VTK_ATTRIBUTE_MODE_USE_POINT_DATA  1
@@ -52,11 +52,11 @@
 class vtkDataArray;
 class vtkIdList;
 
-class VTKFILTERSCORE_EXPORT vtkThresholdPoints : public vtkUnstructuredGridAlgorithm
+class VTKFILTERSCORE_EXPORT vtkThresholdPolyData : public vtkPolyDataAlgorithm
 {
 public:
-  static vtkThresholdPoints *New();
-  vtkTypeMacro(vtkThresholdPoints,vtkUnstructuredGridAlgorithm);
+  static vtkThresholdPolyData *New();
+  vtkTypeMacro(vtkThresholdPolyData,vtkPolyDataAlgorithm);
   void PrintSelf(ostream& os, vtkIndent indent) VTK_OVERRIDE;
 
   /**
@@ -183,12 +183,12 @@ public:
   int GetOutputPointsPrecision() const;
   //@}
 
-  void vtkPointsThreshold(const vtkThresholdPoints&) = delete;
-  void operator=(const vtkThresholdPoints&) = delete;
+  void vtkPointsThreshold(const vtkThresholdPolyData&) = delete;
+  void operator=(const vtkThresholdPolyData&) = delete;
 
 protected:
-  vtkThresholdPoints();
-  ~vtkThresholdPoints() VTK_OVERRIDE;
+  vtkThresholdPolyData();
+  ~vtkThresholdPolyData() VTK_OVERRIDE;
 
   // Usual data generation method
   int RequestData(vtkInformation *, vtkInformationVector **, vtkInformationVector *) VTK_OVERRIDE;
@@ -205,7 +205,7 @@ protected:
   int OutputPointsPrecision;
   int UseContinuousCellRange;
 
-  int (vtkThresholdPoints::*ThresholdFunction)(double s);
+  int (vtkThresholdPolyData::*ThresholdFunction)(double s);
 
   int Lower(double s) {return ( s <= this->LowerThreshold ? 1 : 0 );};
   int Upper(double s) {return ( s >= this->UpperThreshold ? 1 : 0 );};

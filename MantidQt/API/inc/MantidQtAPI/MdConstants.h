@@ -49,7 +49,7 @@ public:
   static const QString WorkspaceName;
   static const QString ProbePoint;
   static const QString Threshold;
-  static const QString ThresholdPoints;
+  static const QString ThresholdPolyData;
 
   MdConstants();
 
