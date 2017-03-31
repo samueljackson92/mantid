@@ -2,7 +2,7 @@
 #define _vtkSplatterPlot_h
 
 #include "MantidKernel/make_unique.h"
-#include "vtkUnstructuredGridAlgorithm.h"
+#include "vtkPolyDataAlgorithm.h"
 #include <string>
 
 namespace Mantid {
@@ -12,11 +12,11 @@ class vtkSplatterPlotFactory;
 }
 
 // cppcheck-suppress class_X_Y
-class VTK_EXPORT vtkSplatterPlot : public vtkUnstructuredGridAlgorithm {
+class VTK_EXPORT vtkSplatterPlot : public vtkPolyDataAlgorithm {
 public:
   static vtkSplatterPlot *New();
   vtkTypeMacro(vtkSplatterPlot,
-               vtkUnstructuredGridAlgorithm) double getTime() const;
+               vtkPolyDataAlgorithm) double getTime() const;
   void PrintSelf(ostream &os, vtkIndent indent) override;
   void SetNumberOfPoints(int nPoints);
   void SetTopPercentile(double topPercentile);
@@ -35,6 +35,7 @@ protected:
                          vtkInformationVector *) override;
   int RequestData(vtkInformation *, vtkInformationVector **,
                   vtkInformationVector *) override;
+  int FillInputPortInformation(int port, vtkInformation* info) override;
 
 private:
   /// Number of total points to plot

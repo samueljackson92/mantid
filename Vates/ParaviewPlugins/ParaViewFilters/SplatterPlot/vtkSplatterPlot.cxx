@@ -3,8 +3,6 @@
 #include "vtkInformationVector.h"
 #include "vtkObjectFactory.h"
 #include "vtkStreamingDemandDrivenPipeline.h"
-#include "vtkUnstructuredGridAlgorithm.h"
-#include "vtkUnstructuredGrid.h"
 #include "vtkFieldData.h"
 #include "vtkSmartPointer.h"
 
@@ -160,6 +158,12 @@ int vtkSplatterPlot::RequestInformation(vtkInformation *,
     }
 
   }
+  return 1;
+}
+
+int vtkSplatterPlot::FillInputPortInformation(int vtkNotUsed(port), vtkInformation* info)
+{
+  info->Set(vtkAlgorithm::INPUT_REQUIRED_DATA_TYPE(), "vtkUnstructuredGrid");
   return 1;
 }
 

@@ -19,7 +19,6 @@
 #include "MantidVatesAPI/Normalization.h"
 
 #include <vtkCellData.h>
-#include <vtkCellType.h>
 #include <vtkFloatArray.h>
 #include <vtkHexahedron.h>
 #include <vtkNew.h>
@@ -27,7 +26,7 @@
 #include <vtkPoints.h>
 #include <vtkPolyVertex.h>
 #include <vtkSystemIncludes.h>
-#include <vtkUnstructuredGrid.h>
+#include <vtkPolyData.h>
 #include <vtkVertex.h>
 
 #include <algorithm>
@@ -169,7 +168,7 @@ void vtkSplatterPlotFactory::doCreate(
   float *signal_ptr = signal->WritePointer(0, numPoints);
 
   // Create the data set.
-  auto visualDataSet = vtkSmartPointer<vtkUnstructuredGrid>::New();
+  auto visualDataSet = vtkSmartPointer<vtkPolyData>::New();
   this->dataSet = visualDataSet;
 
   size_t pointIndex = 0;
@@ -212,12 +211,6 @@ void vtkSplatterPlotFactory::doCreate(
   // Add points and scalars
   visualDataSet->SetPoints(points.GetPointer());
   visualDataSet->GetPointData()->SetScalars(signal.GetPointer());
-  visualDataSet->GetCellData()->SetScalars(signal.GetPointer());
-
-  visualDataSet->Allocate(points->GetNumberOfPoints());
-  for (vtkIdType ptId = 0; ptId < points->GetNumberOfPoints(); ++ptId) {
-    visualDataSet->InsertNextCell(VTK_VERTEX, 1, &ptId);
-  }
 }
 
 /**
@@ -284,7 +277,7 @@ void vtkSplatterPlotFactory::doCreateMDHisto(
 
   // Set up the actual vtkDataSet, here the vtkUnstructuredGrid, the cell type
   // we choose here is the vtk_poly_vertex
-  auto visualDataSet = vtkSmartPointer<vtkUnstructuredGrid>::New();
+  auto visualDataSet = vtkSmartPointer<vtkPolyData>::New();
   this->dataSet = visualDataSet;
   visualDataSet->Allocate(imageSize);
 
@@ -324,22 +317,16 @@ void vtkSplatterPlotFactory::doCreateMDHisto(
           } else {
             memcpy(&out, &in, sizeof in);
           }
-
           // Store the signal
           signal->InsertNextValue(static_cast<float>(signalScalar));
-
-          vtkIdType id = points->InsertNextPoint(out);
-
-          vertex->GetPointIds()->SetId(0, id);
-
-          visualDataSet->InsertNextCell(VTK_VERTEX, vertex->GetPointIds());
+          points->InsertNextPoint(out);
         }
       }
     }
   }
 
-  visualDataSet->SetPoints(points.GetPointer());
-  visualDataSet->GetCellData()->SetScalars(signal.GetPointer());
+  visualDataSet->SetPoints(points.Get());
+  visualDataSet->GetPointData()->SetScalars(signal.Get());
   visualDataSet->Squeeze();
 }
 
