@@ -1,5 +1,6 @@
 <ServerManagerConfiguration>
-<SourceProxy class="vtkThresholdPolyData"
+<ProxyGroup name="filters">
+  <SourceProxy class="vtkThresholdPolyData"
                  name="MantidParaViewThresholdPolyData">
       <Documentation long_help="This filter extracts cells that have point or cell scalars in the specified range."
                      short_help="Extract cells that satisfy a threshold criterion.">
@@ -75,34 +76,10 @@
         <Documentation>The values of this property specify the upper and lower
         bounds of the thresholding operation.</Documentation>
       </DoubleVectorProperty>
-      <IntVectorProperty command="SetAllScalars"
-                         default_values="1"
-                         name="AllScalars"
-                         number_of_elements="1">
-        <BooleanDomain name="bool" />
-        <Documentation>If the value of this property is 1, then a cell is only
-        included in the output if the value of the selected array for all its
-        points is within the threshold. This is only relevant when thresholding
-        by a point-centered array.</Documentation>
-      </IntVectorProperty>
-      <IntVectorProperty command="SetUseContinuousCellRange"
-                         default_values="0"
-                         name="UseContinuousCellRange"
-                         number_of_elements="1">
-        <BooleanDomain name="bool" />
-        <Documentation>
-          If off, the vertex scalars are treated as a discrete set. If on, they
-          are treated as a continuous interval over the minimum and maximum. One
-          important "on" use case: When setting lower and upper threshold
-          equal to some value and turning AllScalars off, the results are
-          cells containing the iso-surface for that value.  WARNING: Whether on
-          or off, for higher order input, the filter will not give accurate
-          results.
-        </Documentation>
-      </IntVectorProperty>
       <Hints>
         <Visibility replace_input="2" />
       </Hints>
       <!-- End Threshold -->
     </SourceProxy>
+  </ProxyGroup>
 </ServerManagerConfiguration>
