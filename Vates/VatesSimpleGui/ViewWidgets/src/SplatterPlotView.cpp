@@ -8,40 +8,32 @@
 #include "MantidVatesAPI/vtkPeakMarkerFactory.h"
 #include "MantidVatesAPI/ViewFrustum.h"
 #include "MantidKernel/Logger.h"
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
 
-// Have to deal with ParaView warnings and Intel compiler the hard way.
-#if defined(__INTEL_COMPILER)
-#pragma warning disable 1170
-#endif
-
-#include <pqActiveObjects.h>
-#include <pqApplicationCore.h>
-#include <pqDataRepresentation.h>
-#include <pqObjectBuilder.h>
-#include <pqPipelineRepresentation.h>
-#include <pqPipelineSource.h>
-#include <pqPipelineFilter.h>
-#include <pqRenderView.h>
-#include <pqServerManagerModel.h>
-#include <vtkDataObject.h>
-#include <vtkProperty.h>
-#include <vtkPVRenderView.h>
-#include <vtkSMDoubleVectorProperty.h>
-#include <vtkSMPropertyHelper.h>
-#include <vtkSMPVRepresentationProxy.h>
-#include <vtkSMSourceProxy.h>
-
-#if defined(__INTEL_COMPILER)
-#pragma warning enable 1170
-#endif
+#include "pqActiveObjects.h"
+#include "pqApplicationCore.h"
+#include "pqDataRepresentation.h"
+#include "pqObjectBuilder.h"
+#include "pqPipelineFilter.h"
+#include "pqPipelineRepresentation.h"
+#include "pqPipelineSource.h"
+#include "pqRenderView.h"
+#include "pqServerManagerModel.h"
+#include "vtkDataObject.h"
+#include "vtkPVRenderView.h"
+#include "vtkProperty.h"
+#include "vtkSMDoubleVectorProperty.h"
+#include "vtkSMPVRepresentationProxy.h"
+#include "vtkSMPropertyHelper.h"
+#include "vtkSMSourceProxy.h"
 
 #include <QKeyEvent>
 #include <QMessageBox>
 #include <QToolButton>
 #include <QMenu>
 #include <QAction>
+
+#include "boost/make_shared.hpp"
+#include "boost/shared_ptr.hpp"
 
 using namespace MantidQt::API;
 using namespace Mantid::VATES;
