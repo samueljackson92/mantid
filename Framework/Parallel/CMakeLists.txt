@@ -26,6 +26,7 @@ set ( SRC_FILES
 set ( INC_FILES
   ${MPI_INC_FILES}
   inc/MantidParallel/Communicator.h
+  inc/MantidParallel/parallel_stable_sort.h
 )
 
 set ( TEST_FILES

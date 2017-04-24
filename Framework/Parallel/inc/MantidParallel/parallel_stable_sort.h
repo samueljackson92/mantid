@@ -108,7 +108,7 @@ public:
   raw_buffer(size_t bytes) : ptr(operator new(bytes, std::nothrow)) {}
   //! True if buffer was successfully obtained, zero otherwise.
   operator bool() const { return ptr; }
-  //! Return pointer to buffer, or  NULL if buffer could not be obtained.
+  //! Return pointer to buffer, or  nullptr if buffer could not be obtained.
   void *get() const { return ptr; }
   //! Destroy buffer
   ~raw_buffer() { operator delete(ptr); }
@@ -144,7 +144,7 @@ tbb::task *merge_task<RandomAccessIterator1, RandomAccessIterator2,
       serial_destroy(xs, xe);
       serial_destroy(ys, ye);
     }
-    return NULL;
+    return nullptr;
   } else {
     RandomAccessIterator1 xm;
     RandomAccessIterator2 ym;
@@ -188,7 +188,7 @@ tbb::task *stable_sort_task<RandomAccessIterator1, RandomAccessIterator2,
   const size_t SORT_CUT_OFF = 500;
   if (xe - xs <= SORT_CUT_OFF) {
     stable_sort_base_case(xs, xe, zs, inplace, comp);
-    return NULL;
+    return nullptr;
   } else {
     RandomAccessIterator1 xm = xs + (xe - xs) / 2;
     RandomAccessIterator2 zm = zs + (xm - xs);
