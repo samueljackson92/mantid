@@ -435,7 +435,7 @@ void LoadILLReflectometry::loadNexusEntriesIntoProperties(
  */
 void LoadILLReflectometry::centerDetector(double xCenter) {
 
-  std::string componentName("uniq_detector");
+  std::string componentName("bank");
   V3D pos = m_loader.getComponentPosition(m_localWorkspace, componentName);
   // TODO confirm!
   pos.setX(pos.X() - xCenter);
