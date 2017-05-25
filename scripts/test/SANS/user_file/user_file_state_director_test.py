@@ -10,7 +10,7 @@ from sans.common.enums import (SANSFacility, ISISReductionMode, RangeStepType, R
 from sans.common.configurations import Configurations
 from sans.state.data import get_data_builder
 
-from user_file_test_helper import create_user_file, sample_user_file
+from sans.test_helper.user_file_test_helper import create_user_file, sample_user_file
 
 
 # -----------------------------------------------------------------

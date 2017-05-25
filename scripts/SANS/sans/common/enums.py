@@ -246,7 +246,7 @@ class RebinType(object):
 #  SaveType
 # --------------------------
 @string_convertible
-@serializable_enum("Nexus", "NistQxy", "CanSAS", "RKH", "CSV", "NXcanSAS", "Nexus")
+@serializable_enum("Nexus", "NistQxy", "CanSAS", "RKH", "CSV", "NXcanSAS")
 class SaveType(object):
     """
     Defines the save types available
@@ -269,6 +269,7 @@ class FitType(object):
 # --------------------------
 #  SampleShape
 # --------------------------
+@string_convertible
 @serializable_enum("CylinderAxisUp", "Cuboid", "CylinderAxisAlong")
 class SampleShape(object):
     """

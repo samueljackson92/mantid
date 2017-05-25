@@ -11,7 +11,7 @@ from sans.user_file.user_file_common import (DetectorId, BackId, range_entry, ba
                                              position_entry, TransId, TubeCalibrationFileId, QResolutionId, FitId,
                                              fit_general, MonId, monitor_length, monitor_file, GravityId,
                                              monitor_spectrum, PrintId, q_rebin_values)
-from user_file_test_helper import create_user_file, sample_user_file
+from sans.test_helper.user_file_test_helper import create_user_file, sample_user_file
 
 
 # -----------------------------------------------------------------
@@ -98,8 +98,6 @@ class UserFileReaderTest(unittest.TestCase):
         if os.path.exists(user_file_path):
             os.remove(user_file_path)
 
-if __name__ == "__main__":
-    unittest.main()
     def _sort_list(elements):
         if len(elements) == 1:
             return

@@ -23,7 +23,6 @@ DataProcessorProcessingAlgorithmBase::~DataProcessorProcessingAlgorithmBase() {}
 
 /** Counts the number of input/output workspace properties */
 void DataProcessorProcessingAlgorithmBase::countWsProperties() {
-
   Mantid::API::IAlgorithm_sptr alg =
       Mantid::API::AlgorithmManager::Instance().create(m_algName);
 

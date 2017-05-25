@@ -696,5 +696,14 @@ std::string DataProcessorTwoLevelTreeManager::getCell(int row, int column,
       .toString()
       .toStdString();
 }
+
+/**
+ * Get number of rows.
+ * @return the number of rows.
+ */
+int DataProcessorTwoLevelTreeManager::getNumberOfRows() {
+  return m_model->rowCount();
+}
+
 }
 }

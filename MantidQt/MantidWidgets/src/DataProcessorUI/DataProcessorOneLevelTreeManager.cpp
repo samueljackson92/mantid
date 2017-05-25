@@ -500,5 +500,14 @@ std::string DataProcessorOneLevelTreeManager::getCell(int row, int column,
 
   return m_model->data(m_model->index(row, column)).toString().toStdString();
 }
+
+/**
+ * Gets the number of rows.
+ * @return : the number of rows.
+ */
+int DataProcessorOneLevelTreeManager::getNumberOfRows() {
+  return m_model->rowCount();
+}
+
 }
 }

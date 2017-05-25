@@ -89,6 +89,7 @@ public:
                const std::string &value) override;
   std::string getCell(int row, int column, int parentRow,
                       int parentColumn) override;
+  int getNumberOfRows() override;
 
   /// Validate a table workspace
   bool isValidModel(Mantid::API::Workspace_sptr ws,

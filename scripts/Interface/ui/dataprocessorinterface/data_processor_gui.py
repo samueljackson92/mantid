@@ -61,6 +61,9 @@ class MainPresenter(MantidQt.MantidWidgets.DataProcessorMainPresenter):
         """
         self.gui.add_actions_to_menus(workspace_list)
 
+    def other(self, ininin):
+        pass
+
 
 class DataProcessorGui(QtGui.QMainWindow, ui_data_processor_window.Ui_DataProcessorWindow):
 

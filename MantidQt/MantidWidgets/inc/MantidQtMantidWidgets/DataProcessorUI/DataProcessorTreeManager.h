@@ -96,6 +96,8 @@ public:
   virtual std::string getCell(int row, int column, int parentRow,
                               int parentColumn) = 0;
 
+  virtual int getNumberOfRows() = 0;
+
   /// Validate a table workspace
   virtual bool isValidModel(Mantid::API::Workspace_sptr ws,
                             size_t whitelistColumns) const = 0;

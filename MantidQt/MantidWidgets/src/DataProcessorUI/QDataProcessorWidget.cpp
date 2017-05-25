@@ -9,6 +9,7 @@
 #include <qabstractitemmodel.h>
 #include <qinputdialog.h>
 #include <qmessagebox.h>
+#include <iostream>
 
 namespace {
 const QString DataProcessorSettingsGroup =
@@ -55,6 +56,7 @@ QDataProcessorWidget::QDataProcessorWidget(
           Mantid::Kernel::make_unique<GenericDataProcessorPresenter>(whitelist,
                                                                      algorithm),
           parent) {}
+
 
 /** Delegating constructor: pre-processing, no post-processing
 * @param whitelist :: [input] The white list
@@ -607,5 +609,20 @@ void QDataProcessorWidget::setCell(const QString &value, int row, int column,
   m_presenter->setCell(row, column, parentRow, parentColumn,
                        value.toStdString());
 }
+
+int QDataProcessorWidget::getNumberOfRows() {
+  return m_presenter->getNumberOfRows();
+}
+
+void QDataProcessorWidget::clearTable() {
+  const auto numberOfRows = getNumberOfRows();
+  std::set<int> groups;
+  for (int index = 0; index < numberOfRows; ++index) {
+    groups.insert(groups.end(), index);
+  }
+  setSelection(groups);
+  m_presenter->clearTable();
+}
+
 } // namespace MantidWidgets
 } // namespace Mantid

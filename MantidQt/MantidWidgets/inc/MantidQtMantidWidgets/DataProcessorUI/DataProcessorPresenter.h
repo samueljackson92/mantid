@@ -97,6 +97,8 @@ public:
                        const std::string &value) = 0;
   virtual std::string getCell(int row, int column, int parentRow,
                               int parentColumn) = 0;
+  virtual int getNumberOfRows() = 0;
+  virtual void clearTable() = 0;
 };
 }
 }

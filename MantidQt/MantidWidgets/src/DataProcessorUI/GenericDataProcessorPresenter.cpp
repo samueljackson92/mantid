@@ -231,11 +231,8 @@ void GenericDataProcessorPresenter::acceptViews(
 Process selected data
 */
 void GenericDataProcessorPresenter::process() {
-
-  if (m_processor.name().empty()) {
-    m_view->emitProcessClicked();
-    return;
-  }
+  // Emit a signal hat the process is starting
+  m_view->emitProcessClicked();
 
   const auto items = m_manager->selectedData(true);
 
@@ -296,6 +293,9 @@ void GenericDataProcessorPresenter::process() {
   if (m_view->getEnableNotebook()) {
     saveNotebook(items);
   }
+
+  // Emit signal that processing is complete
+  m_view->emitProcessingFinished();
 }
 
 /**
@@ -1385,5 +1385,22 @@ std::string GenericDataProcessorPresenter::getCell(int row, int column,
 
   return m_manager->getCell(row, column, parentRow, parentColumn);
 }
+
+/**
+ * Gets the number of rows.
+ * @return : the number of rows.
+ */
+int GenericDataProcessorPresenter::getNumberOfRows() {
+  return m_manager->getNumberOfRows();
+}
+
+/**
+  * Clear the table
+ **/
+void GenericDataProcessorPresenter::clearTable() {
+  m_manager->deleteRow();
+
+}
+
 }
 }
