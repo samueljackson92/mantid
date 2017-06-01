@@ -28,6 +28,14 @@ Performance
 CurveFitting
 ------------
 
+New
+###
+
+- :ref:`PrimStretchedExpFT <func-PrimStretchedExpFT>` Provides the Fourier Transform of the
+Symmetrized Stretched Exponential Function integrated over each energy bin. Use in place of
+:ref:`StretchedExpFT <func-StretchedExpFT>` for fitting sample data featuring relaxation times
+longer than the resolution of the instrument.
+
 Improved
 ########
 
