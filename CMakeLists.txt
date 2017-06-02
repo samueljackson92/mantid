@@ -132,6 +132,13 @@ if (ENABLE_MANTIDPLOT)
 endif(ENABLE_MANTIDPLOT)
 
 ###########################################################################
+# Add QtPropertyBrowser to build
+###########################################################################
+if (ENABLE_MANTIDPLOT)
+  option(LOGMODALS "Log when modal dialogs open." OFF)
+endif(ENABLE_MANTIDPLOT)
+
+###########################################################################
 # Now add in all the components
 ###########################################################################
 # Flag that this is a full build, i.e not framework only
