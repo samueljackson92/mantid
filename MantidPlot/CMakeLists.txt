@@ -65,6 +65,7 @@ set ( QTIPLOT_SRCS src/ApplicationWindow.cpp
                    src/LineDialog.cpp
                    src/LineProfileTool.cpp
                    src/LogisticFit.cpp
+                   src/MantidWarningDialog.cpp
                    src/MatrixCommand.cpp
                    src/Matrix.cpp
                    src/MatrixDialog.cpp
@@ -262,6 +263,7 @@ set ( QTIPLOT_HDRS src/ApplicationWindow.h
                    src/LineDialog.h
                    src/LineProfileTool.h
                    src/LogisticFit.h
+                   src/MantidWarningDialog.h
                    src/MatrixCommand.h
                    src/MatrixDialog.h
                    src/Matrix.h
@@ -516,6 +518,7 @@ set ( QTIPLOT_MOC_FILES src/ApplicationWindow.h
                         src/LineDialog.h
                         src/LineProfileTool.h
                         src/LogisticFit.h
+                        src/MantidWarningDialog.h
                         src/MatrixDialog.h
                         src/Matrix.h
                         src/MatrixModel.h

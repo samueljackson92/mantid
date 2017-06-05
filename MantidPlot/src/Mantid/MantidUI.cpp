@@ -17,6 +17,7 @@
 #include "MantidTable.h"
 #include "MantidUI.h"
 #include "ProjectSerialiser.h"
+#include "MantidWarningDialog.h"
 
 #include "../../MantidQt/MantidWidgets/ui_SequentialFitDialog.h"
 #include "../Folder.h"
@@ -63,7 +64,6 @@
 #include <QMdiArea>
 #include <QMenu>
 #include <QMenuBar>
-#include <QMessageBox>
 #include <QMessageBox>
 #include <QTextEdit>
 #include <QTextEdit>
@@ -499,7 +499,7 @@ void MantidUI::deleteWorkspaces(const QStringList &wsNames) {
       deleteWorkspace(m->workspaceName());
     }
   } catch (...) {
-    QMessageBox::warning(m_appWindow, "",
+    MantidWarningDialog::warning(m_appWindow, "",
                          "Could not delete selected workspaces.");
   }
 }
@@ -1024,7 +1024,7 @@ void MantidUI::showAlgorithmHistory() {
       }
     }
   } else {
-    QMessageBox::information(appWindow(), "Mantid", "Invalid WorkSpace");
+    MantidWarningDialog::information(appWindow(), "Mantid", "Invalid WorkSpace");
     return;
   }
 }
@@ -1772,7 +1772,7 @@ bool MantidUI::hasUB(const QString &wsName) {
 
     alg = Mantid::API::AlgorithmManager::Instance().create(algName);
   } catch (...) {
-    QMessageBox::critical(appWindow(), "MantidPlot - Algorithm error",
+    MantidWarningDialog::critical(appWindow(), "MantidPlot - Algorithm error",
                           "Cannot create algorithm " +
                               QString::fromStdString(algName));
     return false;
@@ -1801,7 +1801,7 @@ void MantidUI::clearUB(const QStringList &wsName) {
     try {
       alg = Mantid::API::AlgorithmManager::Instance().create(algName, version);
     } catch (...) {
-      QMessageBox::critical(appWindow(), "MantidPlot - Algorithm error",
+      MantidWarningDialog::critical(appWindow(), "MantidPlot - Algorithm error",
                             "Cannot create algorithm " +
                                 QString::fromStdString(algName) + " version " +
                                 QString::number(version));
@@ -1866,7 +1866,7 @@ void MantidUI::groupWorkspaces() {
       throw std::runtime_error("Select atleast two workspaces to group ");
     }
     if (Mantid::API::AnalysisDataService::Instance().doesExist(sgrpName)) {
-      if (QMessageBox::question(
+      if (MantidWarningDialog::question(
               appWindow(), "",
               "Workspace " + qwsGrpName +
                   " already exists. Do you want to replace it?",
@@ -1883,24 +1883,24 @@ void MantidUI::groupWorkspaces() {
     // execute the algorithm
     bool bStatus = alg->execute();
     if (!bStatus) {
-      QMessageBox::critical(appWindow(), "MantidPlot - Algorithm error",
+      MantidWarningDialog::critical(appWindow(), "MantidPlot - Algorithm error",
                             " Error in GroupWorkspaces algorithm");
     }
 
   } catch (std::invalid_argument &) {
-    QMessageBox::critical(appWindow(), "MantidPlot - Algorithm error",
+    MantidWarningDialog::critical(appWindow(), "MantidPlot - Algorithm error",
                           " Error in GroupWorkspaces algorithm");
   } catch (Mantid::Kernel::Exception::NotFoundError &) // if not a valid object
                                                        // in analysis data
                                                        // service
   {
-    QMessageBox::critical(appWindow(), "MantidPlot - Algorithm error",
+    MantidWarningDialog::critical(appWindow(), "MantidPlot - Algorithm error",
                           " Error in GroupWorkspaces algorithm");
   } catch (std::runtime_error &) {
-    QMessageBox::critical(appWindow(), "MantidPlot - Algorithm error",
+    MantidWarningDialog::critical(appWindow(), "MantidPlot - Algorithm error",
                           " Error in GroupWorkspaces algorithm");
   } catch (std::exception &) {
-    QMessageBox::critical(appWindow(), "MantidPlot - Algorithm error",
+    MantidWarningDialog::critical(appWindow(), "MantidPlot - Algorithm error",
                           " Error in GroupWorkspaces algorithm");
   }
 }
@@ -1923,18 +1923,18 @@ void MantidUI::ungroupWorkspaces() {
     // execute the algorithm
     bool bStatus = alg->execute();
     if (!bStatus) {
-      QMessageBox::critical(appWindow(), "MantidPlot - Algorithm error",
+      MantidWarningDialog::critical(appWindow(), "MantidPlot - Algorithm error",
                             " Error in UnGroupWorkspace algorithm");
     }
 
   } catch (std::invalid_argument &) {
-    QMessageBox::critical(appWindow(), "MantidPlot - Algorithm error",
+    MantidWarningDialog::critical(appWindow(), "MantidPlot - Algorithm error",
                           " Error in UnGroupWorkspace algorithm");
   } catch (std::runtime_error &) {
-    QMessageBox::critical(appWindow(), "MantidPlot - Algorithm error",
+    MantidWarningDialog::critical(appWindow(), "MantidPlot - Algorithm error",
                           " Error in UnGroupWorkspace algorithm");
   } catch (std::exception &) {
-    QMessageBox::critical(appWindow(), "MantidPlot - Algorithm error",
+    MantidWarningDialog::critical(appWindow(), "MantidPlot - Algorithm error",
                           " Error in UnGroupWorkspace algorithm");
   }
 }
@@ -1951,7 +1951,7 @@ Mantid::API::IAlgorithm_sptr MantidUI::createAlgorithm(const QString &algName,
     if (version != -1) {
       message += " version " + QString::number(version);
     }
-    QMessageBox::warning(appWindow(), "MantidPlot", message);
+    MantidWarningDialog::warning(appWindow(), "MantidPlot", message);
     alg = Mantid::API::IAlgorithm_sptr();
   }
   return alg;
@@ -2012,7 +2012,7 @@ void MantidUI::createLoadDAEMantidMatrix(const QString &wsQName) {
   Workspace_sptr ws = AnalysisDataService::Instance().retrieve(wsName);
 
   if (ws.use_count() == 0) {
-    QMessageBox::warning(m_appWindow, tr("Mantid"),
+    MantidWarningDialog::warning(m_appWindow, tr("Mantid"),
                          tr("A workspace with this name already exists.\n"),
                          QMessageBox::Ok, QMessageBox::Ok);
     return;
@@ -2031,7 +2031,7 @@ void MantidUI::createLoadDAEMantidMatrix(const QString &wsQName) {
 }
 
 void MantidUI::showCritical(const QString &text) {
-  QMessageBox::critical(appWindow(), "Mantid - Error", text);
+  MantidWarningDialog::critical(appWindow(), "Mantid - Error", text);
 }
 
 void MantidUI::showAlgMonitor() { m_algMonitor->showDialog(); }
@@ -2065,7 +2065,7 @@ void MantidUI::manageMantidWorkspaces() {
 #ifdef _WIN32
   memoryImage();
 #else
-  QMessageBox::warning(appWindow(), tr("Mantid Workspace"),
+  MantidWarningDialog::warning(appWindow(), tr("Mantid Workspace"),
                        tr("Clicked on Manage Workspace"), tr("Ok"),
                        tr("Cancel"), QString(), 0, 1);
 #endif
@@ -2090,7 +2090,7 @@ InstrumentWindow *MantidUI::getInstrumentView(const QString &wsName, int tab) {
   ScopedOverrideCursor waitCursor;
   Mantid::Geometry::Instrument_const_sptr instr = ws->getInstrument();
   if (!instr || instr->getName().empty()) {
-    QMessageBox::critical(appWindow(), "MantidPlot - Error",
+    MantidWarningDialog::critical(appWindow(), "MantidPlot - Error",
                           "Instrument view cannot be opened");
     return NULL;
   }
@@ -2110,7 +2110,7 @@ InstrumentWindow *MantidUI::getInstrumentView(const QString &wsName, int tab) {
   } catch (const std::exception &e) {
     QString errorMessage =
         "Instrument view cannot be created:\n\n" + QString(e.what());
-    QMessageBox::critical(appWindow(), "MantidPlot - Error", errorMessage);
+    MantidWarningDialog::critical(appWindow(), "MantidPlot - Error", errorMessage);
 
     return NULL;
   }
@@ -2179,7 +2179,7 @@ void MantidUI::insertMenu() {
 
 void MantidUI::clearAllMemory(const bool prompt) {
   if (prompt) {
-    QMessageBox::StandardButton pressed = QMessageBox::question(
+    QMessageBox::StandardButton pressed = MantidWarningDialog::question(
         appWindow(), "MantidPlot",
         "All workspaces and windows will be removed. Are you sure?",
         QMessageBox::Ok | QMessageBox::Cancel, QMessageBox::Ok);
@@ -2200,7 +2200,7 @@ void MantidUI::saveProject(bool saved) {
   if (!saved) {
     QString savemsg =
         tr("Save changes to project: <p><b> %1 </b> ?").arg("untitled");
-    int result = QMessageBox::information(appWindow(), tr("MantidPlot"),
+    int result = MantidWarningDialog::information(appWindow(), tr("MantidPlot"),
                                           savemsg, tr("Yes"), tr("No"), 0, 2);
     if (result == 0)
       appWindow()->saveProject();
@@ -2277,7 +2277,7 @@ void MantidUI::menuMantidMatrixAboutToShow() {
 
 /// Catches the signal from InstrumentWindow to plot a spectrum.
 MultiLayer *MantidUI::plotInstrumentSpectrum(const QString &wsName, int spec) {
-  QMessageBox::information(appWindow(), "OK",
+  MantidWarningDialog::information(appWindow(), "OK",
                            wsName + " " + QString::number(spec));
   return plotSpectraRange(wsName, spec, spec, MantidQt::DistributionDefault,
                           false);
@@ -3096,7 +3096,7 @@ MultiLayer *MantidUI::plot1D(const QMultiMap<QString, int> &toPlot,
     return NULL;
 
   if (toPlot.size() > 10) {
-    QMessageBox ask(appWindow());
+    MantidWarningDialog ask(appWindow());
     QAbstractButton *confirmButton =
         ask.addButton(tr("Confirm"), QMessageBox::ActionRole);
     ask.addButton(tr("Cancel"), QMessageBox::ActionRole);
@@ -3502,7 +3502,7 @@ MultiLayer *MantidUI::plotSubplots(const QMultiMap<QString, set<int>> &toPlot,
 
   // If user has selected a large number, check if they want to plot that many
   if (nSubplots > REASONABLE_NUM_SUBPLOTS) {
-    const auto &answer = QMessageBox::question(
+    const auto &answer = MantidWarningDialog::question(
         appWindow(), "MantidPlot",
         "Are you sure you want to plot " + QString::number(nSubplots) +
             " subplots?",
