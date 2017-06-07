@@ -5,6 +5,9 @@ add_subdirectory(reflectometer)
 add_subdirectory(sans)
 add_subdirectory(dataprocessorinterface)
 add_subdirectory(poldi)
+add_subdirectory(developer_workshop_reference)
+#add_subdirectory(developer_workshop)
+
 
 SET(UI_FILES
 cluster_details_dialog.ui
@@ -28,6 +31,8 @@ add_custom_target(CompileUIUI DEPENDS
   CompileUISANS
   CompileUIDataProcessorInterface
   CompileUIPoldi
+  CompileUIDeveloperWorkshopReference
+  #CompileUIDeveloperWorkshop
 )
 
 # Put all ui targets inside the 'CompilePyUI' folder or group in VS and the like, for convenience
@@ -38,3 +43,5 @@ set_property ( TARGET CompileUIReflectometer PROPERTY FOLDER "CompilePyUI" )
 set_property ( TARGET CompileUISANS PROPERTY FOLDER "CompilePyUI" )
 set_property ( TARGET CompileUIDataProcessorInterface PROPERTY FOLDER "CompilePyUI" )
 set_property ( TARGET CompileUIPoldi PROPERTY FOLDER "CompilePyUI" )
+set_property ( TARGET CompileUIDeveloperWorkshopReference PROPERTY FOLDER "CompilePyUI" )
+#set_property ( TARGET CompileUIDeveloperWorkshop PROPERTY FOLDER "CompilePyUI" )
