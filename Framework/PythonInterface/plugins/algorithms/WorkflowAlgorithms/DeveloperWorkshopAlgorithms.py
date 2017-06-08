@@ -7,9 +7,9 @@ from mantid.kernel import (Direction)
 from mantid.api import (DataProcessorAlgorithm, MatrixWorkspaceProperty, AlgorithmFactory, PropertyMode)
 
 
-# ------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 # Pre-processing algorithm
-# ------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 class DWPreProcessingAlgorithm(DataProcessorAlgorithm):
     def category(self):
         return 'Dummy\\DW'
@@ -45,9 +45,9 @@ class DWPreProcessingAlgorithm(DataProcessorAlgorithm):
         self.setProperty("OutputWorkspace", output_workspace)
 
 
-# ------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 # Processing algorithm
-# ------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 class DWProcessingAlgorithm(DataProcessorAlgorithm):
     def category(self):
         return 'Dummy\\DW'
@@ -71,7 +71,7 @@ class DWProcessingAlgorithm(DataProcessorAlgorithm):
         self.declareProperty('PropertyE', 1., direction=Direction.Input, doc='Property E scales the input')
 
     def PyExec(self):
-        workspace = self.getProperty("InputWorkspace")
+        workspace = self.getProperty("InputWorkspace").value
 
         # Get multiplication properties
         prop_a = self.getProperty("PropertyA").value
@@ -83,17 +83,18 @@ class DWProcessingAlgorithm(DataProcessorAlgorithm):
         scale_alg = self.createChildAlgorithm("Scale")
         scale_alg.setProperty("InputWorkspace", workspace)
         scale_alg.setProperty("OutputWorkspace", "out_ws")
+        scale_alg.setProperty("Operation", "Multiply")
         scale_alg.setProperty("Factor", total)
         scale_alg.execute()
         output_workspace = scale_alg.getProperty("OutputWorkspace").value
 
         # Get addition properties
         prop_b = self.getProperty("PropertyB").value
-        plus_alg = self.createChildAlgorithm("Plus")
-        plus_alg.setProperty("InputWorkspace", output_workspace)
-        plus_alg.setProperty("Factor", prop_b)
-        plus_alg.setProperty("OutputWorkspace", "out_ws")
-        output_workspace = plus_alg.getProperty("OutputWorkspace").value
+        scale_alg.setProperty("InputWorkspace", output_workspace)
+        scale_alg.setProperty("Operation", "Add")
+        scale_alg.setProperty("Factor", prop_b)
+        scale_alg.execute()
+        output_workspace = scale_alg.getProperty("OutputWorkspace").value
 
         # Set output
         self.setProperty("OutputWorkspace", output_workspace)

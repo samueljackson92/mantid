@@ -21,12 +21,12 @@
     <item>
      <layout class="QGridLayout" name="gridLayout">
       <item row="0" column="1">
-       <widget class="QLineEdit" name="lineEdit"/>
+       <widget class="QLineEdit" name="global_line_edit"/>
       </item>
       <item row="0" column="0">
        <widget class="QLabel" name="global_input_label">
         <property name="text">
-         <string>Global input 1:</string>
+         <string>Global Property E:</string>
         </property>
        </widget>
       </item>
@@ -40,7 +40,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>25</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>
