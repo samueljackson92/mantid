@@ -42,7 +42,7 @@ void DataProcessorProcessingAlgorithmBase::countWsProperties() {
       m_inputStrListProperties.push_back(prop->name());
     }
     if (prop->direction() == Mantid::Kernel::Direction::Output &&
-        (prop->type() == "MatrixWorkspace" || prop->type() == "Workspace")) {
+        (prop->type() == "MatrixWorkspace" || prop->type() == "Workspace" || prop->type() == "WorkspaceGroup")) {
 
       m_OutputWsProperties.push_back(prop->name());
     }

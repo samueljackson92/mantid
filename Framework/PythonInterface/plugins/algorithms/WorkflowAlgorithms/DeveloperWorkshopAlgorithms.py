@@ -28,6 +28,8 @@ class DWPreProcessingAlgorithm(DataProcessorAlgorithm):
         self.declareProperty(MatrixWorkspaceProperty("OutputWorkspace", '',
                                                      optional=PropertyMode.Mandatory, direction=Direction.Output),
                              doc='Output workspace')
+        self.declareProperty('PrePropertyA', 1., direction=Direction.Input, doc='Property A does nothing')
+
 
     def PyExec(self):
         first_workspace = self.getProperty("InputWorkspace1")

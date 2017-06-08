@@ -52,8 +52,11 @@ class DeveloperWorkshopReferenceGui(QtGui.QMainWindow, ui_developer_workshop_ref
         pre_process_map = MantidQt.MantidWidgets.DataProcessorPreprocessMap()
         pre_process_map.addElement('Runs', 'Plus', '', '')
 
+        # Define a blacklist
+        black_list = 'PropertyA,PropertyB,PropertyC,PropertyD,InputWorkspace,OutputWorkspace'
+
         # Define processing algorithm
-        alg = MantidQt.MantidWidgets.DataProcessorProcessingAlgorithm('DWProcessingAlgorithm', 'AlgPrefix_', '')
+        alg = MantidQt.MantidWidgets.DataProcessorProcessingAlgorithm('DWProcessingAlgorithm', 'AlgPrefix_', black_list)
 
         # Add post-processing algorithm
         post_alg = MantidQt.MantidWidgets.DataProcessorPostprocessingAlgorithm('GroupWorkspaces', 'Grouped_', '')
