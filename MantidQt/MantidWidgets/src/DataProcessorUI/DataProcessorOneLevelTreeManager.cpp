@@ -464,5 +464,25 @@ bool DataProcessorOneLevelTreeManager::isValidModel(
   }
   return true;
 }
+
+/** Sets a value in a cell
+ *
+ * @param row : the row index
+ * @param column : the column index
+ * @param parentRow : the row index of the parent item (unused)
+ * @param parentColumn : the column index of the parent item (unused)
+ * @param value : the new value to populate the cell with
+*/
+void DataProcessorOneLevelTreeManager::setCell(int row, int column,
+                                               int parentRow, int parentColumn,
+                                               const std::string &value) {
+
+  UNUSED_ARG(parentRow);
+  UNUSED_ARG(parentColumn);
+
+  m_model->setData(m_model->index(row, column),
+                   QVariant(QString::fromStdString(value)));
+}
+
 }
 }

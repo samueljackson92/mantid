@@ -102,7 +102,8 @@ public:
   virtual boost::shared_ptr<QAbstractItemModel> getModel() = 0;
   /// Return the table ws
   virtual Mantid::API::ITableWorkspace_sptr getTableWorkspace() = 0;
-
+  virtual void setCell(int row, int column, int parentRow, int parentColumn,
+                       const std::string &value) = 0;
 protected:
   /// Add a command to the list of available commands
   void addCommand(std::vector<std::unique_ptr<DataProcessorCommand>> &commands,

@@ -1450,5 +1450,20 @@ void GenericDataProcessorPresenter::giveUserWarning(
 
   m_view->giveUserWarning(prompt, title);
 }
+
+/** Set a value in the table
+ *
+ * @param row : the row index
+ * @param column : the column index
+ * @param parentRow : the row index of the parent item
+ * @param parentColumn : the column index of the parent item
+ * @param value : the new value
+*/
+void GenericDataProcessorPresenter::setCell(int row, int column, int parentRow,
+                                            int parentColumn,
+                                            const std::string &value) {
+
+  m_manager->setCell(row, column, parentRow, parentColumn, value);
+}
 }
 }

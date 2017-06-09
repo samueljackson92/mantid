@@ -62,7 +62,7 @@ class DeveloperWorkshopReferenceGui(QtGui.QMainWindow, ui_developer_workshop_ref
         post_alg = MantidQt.MantidWidgets.DataProcessorPostprocessingAlgorithm('GroupWorkspaces', 'Grouped_', '')
 
         # Create table
-        self.data_processor_table = MantidQt.MantidWidgets.QDataProcessorWidget(whitelist, pre_process_map, alg, post_alg, self)
+        self.data_processor_table = MantidQt.MantidWidgets.QDataProcessorWidget(whitelist, pre_process_map, alg, self)
 
         # Add presenter
         self.main_presenter = MainPresenter(self)
@@ -73,6 +73,8 @@ class DeveloperWorkshopReferenceGui(QtGui.QMainWindow, ui_developer_workshop_ref
         self.data_processor_table.setInstrumentList('LOQ', 'LOQ')
         self.dw_layout.addWidget(self.data_processor_table)
 
+        # Add extended functionality
+        self.data_processor_table.setCell("80520", 0, 0)
         return True
 
     def _run_python_code(self, text):

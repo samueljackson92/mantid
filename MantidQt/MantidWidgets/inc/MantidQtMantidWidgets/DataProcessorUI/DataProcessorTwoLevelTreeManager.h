@@ -94,6 +94,9 @@ public:
   boost::shared_ptr<QAbstractItemModel> getModel() override;
   /// Return the table workspace
   Mantid::API::ITableWorkspace_sptr getTableWorkspace() override;
+  /// Set Cell
+  void setCell(int row, int column, int parentRow, int parentColumn,
+               const std::string &value) override;
 
 private:
   /// The DataProcessor presenter

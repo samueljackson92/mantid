@@ -666,5 +666,22 @@ bool DataProcessorTwoLevelTreeManager::isValidModel(
   }
   return true;
 }
+
+/** Sets a value in a cell
+ *
+ * @param row : the row index
+ * @param column : the column index
+ * @param parentRow : the row index of the parent item
+ * @param parentColumn : the column index of the parent item
+ * @param value : the new value to populate the cell with
+*/
+void DataProcessorTwoLevelTreeManager::setCell(int row, int column,
+                                               int parentRow, int parentColumn,
+                                               const std::string &value) {
+
+  m_model->setData(
+      m_model->index(row, column, m_model->index(parentRow, parentColumn)),
+      QVariant(QString::fromStdString(value)));
+}
 }
 }

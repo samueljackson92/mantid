@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>800</width>
-    <height>614</height>
+    <height>354</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,15 +16,7 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout_2">
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout">
-      <item>
-       <widget class="QLabel" name="label">
-        <property name="text">
-         <string>Add DataProcessorWidget here</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
+     <layout class="QVBoxLayout" name="verticalLayout"/>
     </item>
     <item>
      <layout class="QGridLayout" name="gridLayout">
@@ -34,7 +26,7 @@
       <item row="0" column="0">
        <widget class="QLabel" name="global_input_label">
         <property name="text">
-         <string>Global input 1:</string>
+         <string>Global PropertyE:</string>
         </property>
        </widget>
       </item>
@@ -48,7 +40,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>25</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>

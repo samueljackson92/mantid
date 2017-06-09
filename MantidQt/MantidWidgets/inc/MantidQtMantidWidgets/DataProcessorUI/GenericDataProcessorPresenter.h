@@ -236,6 +236,8 @@ private:
   void saveNotebook(
       const std::map<int, std::map<int, std::vector<std::string>>> &data);
   std::vector<std::unique_ptr<DataProcessorCommand>> getTableList();
+  void setCell(int row, int column, int parentRow, int parentColumn,
+               const std::string &value) override;
 };
 }
 }
