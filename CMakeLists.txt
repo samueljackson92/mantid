@@ -13,6 +13,8 @@ set ( SYSTEM_PACKAGE_TARGET "")
 # Add the path to our custom 'find' modules
 set ( CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/buildconfig/CMake")
 
+include(cotire)
+
 set ( ENABLE_MANTIDPLOT ON CACHE BOOL "Switch for compiling the gui components")
 
 SET (CPACK_INSTALL_CMAKE_PROJECTS
