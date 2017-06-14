@@ -45,7 +45,7 @@ void export_WorkspaceHistory() {
       .def("getAlgorithmHistory", &WorkspaceHistory::getAlgorithmHistory,
            (arg("self"), arg("index")),
            return_value_policy<Policies::RemoveConstSharedPtr>(),
-           "Returns the algorithm history at the given index in the history")
+           "Returns the :class:`~mantid.api.AlgorithmHistory` at the given index in the history")
 
       .def("size", &WorkspaceHistory::size, arg("self"),
            "Returns the number of algorithms in the immediate history")
@@ -54,12 +54,12 @@ void export_WorkspaceHistory() {
            "Returns whether the history has any entries")
 
       .def("lastAlgorithm", &WorkspaceHistory::lastAlgorithm, arg("self"),
-           "Returns the last algorithm run on this workspace so that its "
+           "Returns the last :class:`~mantid.api.IAlgorithm` run on this workspace so that its "
            "properties can be accessed")
 
       .def("getAlgorithm", &WorkspaceHistory::getAlgorithm,
            (arg("self"), arg("index")),
-           "Returns the algorithm at the given index in the history")
+           "Returns the :class:`~mantid.api.IAlgorithm` at the given index in the history")
 
       // ----------------- Operators --------------------------------------
       .def("__getitem__", &WorkspaceHistory::getAlgorithm,

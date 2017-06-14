@@ -65,7 +65,7 @@ void export_AlgorithmHistory() {
            arg("self"), "Returns the execution duration of the algorithm.")
 
       .def("executionDate", &AlgorithmHistory::executionDate, arg("self"),
-           "Returns the execution date of the algorithm.")
+           "Returns the :class:`~mantid.kernel.DateAndTime` of the algorithm.")
 
       .def("execCount", &AlgorithmHistory::execCount, arg("self"),
            return_value_policy<copy_const_reference>(),
@@ -77,7 +77,7 @@ void export_AlgorithmHistory() {
       .def("getChildAlgorithmHistory",
            &AlgorithmHistory::getChildAlgorithmHistory,
            (arg("self"), arg("index")),
-           "Returns the child algorithm at the given index in the history")
+           "Returns the child :class:`~mantid.api.AlgorithmHistory`")
 
       .def("getChildHistories", &getChildrenAsList, arg("self"),
            "Returns a list of child "
@@ -94,7 +94,7 @@ void export_AlgorithmHistory() {
 
       .def("getChildAlgorithm", &AlgorithmHistory::getChildAlgorithm,
            (arg("self"), arg("index")),
-           "Returns the algorithm at the given index in the history")
+           "Returns the :class:`~mantid.api.IAlgorithm` at the given index in the history")
       // ----------------- Operators --------------------------------------
       .def(self_ns::str(self));
 }
