@@ -40,13 +40,34 @@ This is the documentation for Mantid |release|.
    :align: right
 
 * `Algorithms <algorithms/index.html>`_
+
+  `List of algorithms available in Mantid for loading, processing and saving data.`
+
 * `Concepts <concepts/index.html>`_
+
+  `The basic ideas and principles behind Mantid`
+
 * `Interfaces <interfaces/index.html>`_
+
+  `List of interfaces containing the tools used for a specific neutron or muon technique`
+
 * `Fit Functions <fitfunctions/index.html>`_
+
+  `Functions to fit to your data`
+
 * `Fit Minimizers <fitminimizers/index.html>`_
+
+  `Algorithms for determining the fit of the functions`
+
 * `API <api/index.html>`_
     - `Python <api/python/index.html>`_
+
+      `Reference pages documenting the Python API available from Mantid`
+
     - `C++ <http://doxygen.mantidproject.org/>`_ (Doxygen)
+
+      `Reference pages containing the C++ developer documentation`
+
 * `Release Notes <release/index.html>`_
 
-
+  `Details of new or changed features in all previous releases`
