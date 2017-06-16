@@ -16,6 +16,20 @@
 #include "MantidKernel/TimeSeriesProperty.h"
 #include "MantidKernel/VectorHelper.h"
 
+#include "MantidMDAlgorithms/ska_sort.hpp"
+
+/*template<typename It, typename ExtractKey>
+static void inplace_radix_sort(It begin, It end, ExtractKey && extract_key)
+{
+  detail::inplace_radix_sort<1, 1>(begin, end, extract_key);
+}
+
+template<typename It>
+static void inplace_radix_sort(It begin, It end)
+{
+  inplace_radix_sort(begin, end, detail::IdentityFunctor());
+}*/
+
 namespace Mantid {
 namespace MDAlgorithms {
 
@@ -27,10 +41,7 @@ using namespace Mantid::Kernel;
 
 namespace {
 // function to  compare two intersections (h,k,l,Momentum) by Momentum
-bool compareMomentum(const std::array<double, 4> &v1,
-                     const std::array<double, 4> &v2) {
-  return (v1[3] < v2[3]);
-}
+double compareMomentum(const std::array<double, 4> &v1) { return v1[3]; }
 }
 
 // Register the algorithm into the AlgorithmFactory
@@ -762,7 +773,7 @@ void MDNormSCD::calculateIntersections(
   }
 
   // sort intersections by momentum
-  std::stable_sort(intersections.begin(), intersections.end(), compareMomentum);
+  ska_sort(intersections.begin(), intersections.end(), compareMomentum);
 }
 
 } // namespace MDAlgorithms
