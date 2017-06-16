@@ -16,19 +16,27 @@
 #include "MantidKernel/TimeSeriesProperty.h"
 #include "MantidKernel/VectorHelper.h"
 
-#include "MantidMDAlgorithms/ska_sort.hpp"
+#include "boost/sort/sort.hpp"
 
-/*template<typename It, typename ExtractKey>
-static void inplace_radix_sort(It begin, It end, ExtractKey && extract_key)
-{
-  detail::inplace_radix_sort<1, 1>(begin, end, extract_key);
-}
+//[float_functor_rightshift
+// Casting to an integer before bitshifting
+struct rightshift {
+  int64_t operator()(const std::array<double, 4> &x,
+                     const uint64_t offset) const {
+    return boost::sort::spreadsort::float_mem_cast<double, boost::int64_t>(
+               x[3]) >>
+           offset;
+  }
+};
+//] [/float_functor_rightshift]
 
-template<typename It>
-static void inplace_radix_sort(It begin, It end)
-{
-  inplace_radix_sort(begin, end, detail::IdentityFunctor());
-}*/
+//[float_functor_lessthan
+struct lessthan {
+  bool operator()(const std::array<double, 4> &x,
+                  const std::array<double, 4> &y) const {
+    return x[3] < y[3];
+  }
+};
 
 namespace Mantid {
 namespace MDAlgorithms {
@@ -773,7 +781,8 @@ void MDNormSCD::calculateIntersections(
   }
 
   // sort intersections by momentum
-  ska_sort(intersections.begin(), intersections.end(), compareMomentum);
+  boost::sort::spreadsort::float_sort(
+      intersections.begin(), intersections.end(), rightshift(), lessthan());
 }
 
 } // namespace MDAlgorithms
