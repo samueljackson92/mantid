@@ -42,7 +42,6 @@ class SettingsDiagnosticPresenter(object):
     def set_row(self, index):
         pass
 
-
     def set_view(self, view):
         if view:
             self._view = view

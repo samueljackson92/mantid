@@ -133,7 +133,6 @@ class RunTabPresenter(object):
 
             # 4. Populate the model
             self._state_model = StateGuiModel(user_file_items)
-
             # 5. Update the views.
             self._update_view_from_state_model()
         except Exception as e:
@@ -331,7 +330,8 @@ class RunTabPresenter(object):
         self._set_on_view("reduction_mode")
         self._set_on_view("event_slices")
 
-        self._set_on_view("wavelength_rebin_type")
+        #self._set_on_view("wavelength_rebin_type")
+
         # self._set_on_view("wavelength_step_type")
         # self._set_on_view("wavelength_min")
         # self._set_on_view("wavelength_max")

@@ -232,22 +232,34 @@ class SANSDataProcessorGui(QtGui.QMainWindow, ui_sans_data_processor_window.Ui_S
         # There are two types of values that can be passed:
         # Lists: we set the combo box to the values in the list
         # expected_type: we set the expected type
-        print(value)
         if isinstance(value, list):
             gui_element = getattr(self, combo_box)
             gui_element.clear()
             for element in value:
-                gui_element.addItem(element)
+                self._add_list_element_to_combo_box(gui_element=gui_element, element=element,
+                                                    expected_type=expected_type)
         else:
             # Convert the value to the correct GUI string
             if isinstance(value, expected_type):
                 gui_element = getattr(self, combo_box)
-                value_as_string = expected_type.to_string(value)
-                index = gui_element.findText(value_as_string)
-                if index != -1:
-                    gui_element.setCurrentIndex(index)
+                self._set_enum_as_element_in_combo_box(gui_element=gui_element, element=value,
+                                                       expected_type=expected_type)
             else:
                 raise RuntimeError("Expected an input of type {}, but got {}".format(expected_type, type(value)))
+
+    def _add_list_element_to_combo_box(self, gui_element, element, expected_type=None):
+        if expected_type is not None and isinstance(element, expected_type):
+            self._set_enum_as_element_in_combo_box(gui_element=gui_element, element=element,
+                                                   expected_type=expected_type)
+        else:
+            gui_element.addItem(element)
+
+    @staticmethod
+    def _set_enum_as_element_in_combo_box(gui_element, element, expected_type):
+        value_as_string = expected_type.to_string(element)
+        index = gui_element.findText(value_as_string)
+        if index != -1:
+            gui_element.setCurrentIndex(index)
 
     def get_simple_line_edit_field(self, expected_type, line_edit):
         gui_element = getattr(self, line_edit)
@@ -305,7 +317,7 @@ class SANSDataProcessorGui(QtGui.QMainWindow, ui_sans_data_processor_window.Ui_S
             # Convert the value to the correct GUI string
             reduction_mode_as_string = get_string_for_gui_from_reduction_mode(value, self._instrument)
             if reduction_mode_as_string:
-                index = value in self.reduction_mode_combo_box.findText(value)
+                index = value in self.reduction_mode_combo_box.findText(reduction_mode_as_string)
                 if index != -1:
                     self.reduction_mode_combo_box.setCurrentIndex(index)
 

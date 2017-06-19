@@ -38,9 +38,10 @@ def get_reduction_selection(instrument):
         selection.update({ISISReductionMode.LAB: LOQ_LAB,
                           ISISReductionMode.HAB: LOQ_HAB})
     elif instrument is SANSInstrument.LARMOR:
-        selection = {ISISReductionMode.LAB: SANS2D_LAB}
+        selection = {ISISReductionMode.LAB: LARMOR_LAB}
     else:
-        selection = None
+        selection.update({ISISReductionMode.LAB: DEFAULT_LAB,
+                          ISISReductionMode.HAB: DEFAULT_HAB})
     return selection
 
 
