@@ -62,7 +62,7 @@ class DeveloperWorkshopReferenceGui(QtGui.QMainWindow, ui_developer_workshop_ref
         post_alg = MantidQt.MantidWidgets.DataProcessorPostprocessingAlgorithm('GroupWorkspaces', 'Grouped_', '')
 
         # Create table
-        self.data_processor_table = MantidQt.MantidWidgets.QDataProcessorWidget(whitelist, pre_process_map, alg, self)
+        self.data_processor_table = MantidQt.MantidWidgets.QDataProcessorWidget(whitelist, pre_process_map, alg, post_alg, self)
 
         # Add presenter
         self.main_presenter = MainPresenter(self)

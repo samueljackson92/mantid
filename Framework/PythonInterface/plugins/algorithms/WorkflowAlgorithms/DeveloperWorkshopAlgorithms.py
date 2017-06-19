@@ -1,6 +1,5 @@
 # pylint: disable=too-few-public-methods
 
-""" SANSMaskWorkspace algorithm applies the masks of SANSMask state to a workspace."""
 
 from __future__ import (absolute_import, division, print_function)
 from mantid.kernel import (Direction)
