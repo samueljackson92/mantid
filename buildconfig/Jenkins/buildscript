@@ -265,6 +265,7 @@ $SCL_ON_RHEL6 "cmake --build . --target AllTests -- -j$BUILD_THREADS"
 # Remove any Mantid.user.properties file
 userprops=~/.mantid/Mantid.user.properties
 rm -f $userprops
+ulimit -c unlimited
 $SCL_ON_RHEL6 "ctest -j$BUILD_THREADS --schedule-random --output-on-failure"
 
 ###############################################################################
