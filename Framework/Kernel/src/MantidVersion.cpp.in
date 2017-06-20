@@ -72,7 +72,7 @@ const char* MantidVersion::releaseDate()
 
 std::string MantidVersion::doi()
 {
-  const std::string MAIN = "http://dx.doi.org/10.5286/Software/Mantid";
+  static const std::string MAIN_DOI = "http://dx.doi.org/10.5286/Software/Mantid";
   // Cast here in those cases where patch number is of the form 20131022.1356.
   const unsigned int patchVersion = static_cast<unsigned int>(@VERSION_PATCH@);
 
@@ -81,10 +81,10 @@ std::string MantidVersion::doi()
   // we're currently in a dev version is to check if the patch version is larger than
   // some arbitrarily low value.
   if( patchVersion > 100 )
-    return MAIN;
+    return MAIN_DOI;
 
   std::stringstream doi;
-  doi << MAIN << @VERSION_MAJOR@ << "." << @VERSION_MINOR@;
+  doi << MAIN_DOI << @VERSION_MAJOR@ << "." << @VERSION_MINOR@;
 
   // Keep to the convention where we write a version number like "3.0.0" as "3.0".
   if( patchVersion != 0 )
