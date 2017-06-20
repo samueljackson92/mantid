@@ -9,6 +9,7 @@ from PyQt4 import QtGui, QtCore
 from mantid.simpleapi import *
 from abc import ABCMeta, abstractmethod
 from six import with_metaclass
+from inspect import isclass
 from mantidqtpython import MantidQt
 from sans.common.enums import (ReductionDimensionality, OutputMode, SaveType, SANSInstrument, RebinType,
                                RangeStepType, SampleShape)
@@ -240,7 +241,7 @@ class SANSDataProcessorGui(QtGui.QMainWindow, ui_sans_data_processor_window.Ui_S
                                                     expected_type=expected_type)
         else:
             # Convert the value to the correct GUI string
-            if isinstance(value, expected_type):
+            if issubclass(value, expected_type):
                 gui_element = getattr(self, combo_box)
                 self._set_enum_as_element_in_combo_box(gui_element=gui_element, element=value,
                                                        expected_type=expected_type)
@@ -248,7 +249,7 @@ class SANSDataProcessorGui(QtGui.QMainWindow, ui_sans_data_processor_window.Ui_S
                 raise RuntimeError("Expected an input of type {}, but got {}".format(expected_type, type(value)))
 
     def _add_list_element_to_combo_box(self, gui_element, element, expected_type=None):
-        if expected_type is not None and isinstance(element, expected_type):
+        if expected_type is not None and isclass(element) and issubclass(element, expected_type):
             self._set_enum_as_element_in_combo_box(gui_element=gui_element, element=element,
                                                    expected_type=expected_type)
         else:
@@ -317,7 +318,7 @@ class SANSDataProcessorGui(QtGui.QMainWindow, ui_sans_data_processor_window.Ui_S
             # Convert the value to the correct GUI string
             reduction_mode_as_string = get_string_for_gui_from_reduction_mode(value, self._instrument)
             if reduction_mode_as_string:
-                index = value in self.reduction_mode_combo_box.findText(reduction_mode_as_string)
+                index = self.reduction_mode_combo_box.findText(reduction_mode_as_string)
                 if index != -1:
                     self.reduction_mode_combo_box.setCurrentIndex(index)
 
@@ -325,18 +326,9 @@ class SANSDataProcessorGui(QtGui.QMainWindow, ui_sans_data_processor_window.Ui_S
     # Wavelength Group
     # ------------------------------------------------------------------------------------------------------------------
     @property
-    def wavelength_rebin_type(self):
-        rebin_type_as_string = self.wavelength_rebin_type_combo_box.currentText()
-        return RebinType.to_string(rebin_type_as_string)
-
-    @wavelength_rebin_type.setter
-    def wavelength_rebin_type(self, value):
-        self.update_gui_combo_box(value=value, expected_type=RebinType, combo_box="wavelength_rebin_type_combo_box")
-
-    @property
     def wavelength_step_type(self):
-        rebin_type_as_string = self.wavelength_rebin_type_combo_box.currentText()
-        return RebinType.to_string(rebin_type_as_string)
+        step_type_as_string = self.wavelength_step_type_combo_box.currentText()
+        return RangeStepType.to_string(step_type_as_string)
 
     @wavelength_step_type.setter
     def wavelength_step_type(self, value):

@@ -114,29 +114,29 @@ class RunTabPresenter(object):
         """
         Loads the user file. Populates the models and the view.
         """
-        try:
-            # 1. Get the user file path from the view
-            user_file_path = self._view.get_user_file_path()
+        # try:
+        # 1. Get the user file path from the view
+        user_file_path = self._view.get_user_file_path()
 
-            if not user_file_path:
-                return
+        if not user_file_path:
+            return
 
-            # 2. Get the full file path
-            user_file_path = FileFinder.getFullPath(user_file_path)
-            if not os.path.exists(user_file_path):
-                raise RuntimeError("The user path {} does not exist. Make sure a valid user file path"
-                                   " has been specified.".format(user_file_path))
+        # 2. Get the full file path
+        user_file_path = FileFinder.getFullPath(user_file_path)
+        if not os.path.exists(user_file_path):
+            raise RuntimeError("The user path {} does not exist. Make sure a valid user file path"
+                               " has been specified.".format(user_file_path))
 
-            # 3. Read and parse the user file
-            user_file_reader = UserFileReader(user_file_path)
-            user_file_items = user_file_reader.read_user_file()
+        # 3. Read and parse the user file
+        user_file_reader = UserFileReader(user_file_path)
+        user_file_items = user_file_reader.read_user_file()
 
-            # 4. Populate the model
-            self._state_model = StateGuiModel(user_file_items)
-            # 5. Update the views.
-            self._update_view_from_state_model()
-        except Exception as e:
-            sans_logger.error("Loading of the user file failed. See here for more details: {}".format(str(e)))
+        # 4. Populate the model
+        self._state_model = StateGuiModel(user_file_items)
+        # 5. Update the views.
+        self._update_view_from_state_model()
+        # except Exception as e:
+        #    sans_logger.error("Loading of the user file failed. See here for more details: {}".format(str(e)))
 
     def on_batch_file_load(self):
         """
@@ -330,18 +330,16 @@ class RunTabPresenter(object):
         self._set_on_view("reduction_mode")
         self._set_on_view("event_slices")
 
-        #self._set_on_view("wavelength_rebin_type")
+        self._set_on_view("wavelength_step_type")
+        self._set_on_view("wavelength_min")
+        self._set_on_view("wavelength_max")
+        self._set_on_view("wavelength_step")
 
-        # self._set_on_view("wavelength_step_type")
-        # self._set_on_view("wavelength_min")
-        # self._set_on_view("wavelength_max")
-        # self._set_on_view("wavelength_step")
-        #
-        # self._set_on_view("sample_shape")
-        # self._set_on_view("absolute_scale")
-        # self._set_on_view("sample_height")
-        # self._set_on_view("sample_width")
-        # self._set_on_view("sample_thickness")
+        self._set_on_view("sample_shape")
+        self._set_on_view("absolute_scale")
+        self._set_on_view("sample_height")
+        self._set_on_view("sample_width")
+        self._set_on_view("sample_thickness")
 
     def _set_on_view(self, attribute_name):
         attribute = getattr(self._state_model, attribute_name)
@@ -362,12 +360,11 @@ class RunTabPresenter(object):
         self._set_on_state_model("reduction_mode", state_model)
         self._set_on_state_model("event_slices", state_model)
 
-        # self._set_on_state_model("wavelength_rebin_type", state_model)
         # self._set_on_state_model("wavelength_step_type", state_model)
         # self._set_on_state_model("wavelength_min", state_model)
         # self._set_on_state_model("wavelength_max", state_model)
         # self._set_on_state_model("wavelength_step", state_model)
-        #
+
         # self._set_on_state_model("sample_shape", state_model)
         # self._set_on_state_model("absolute_scale", state_model)
         # self._set_on_state_model("sample_height", state_model)
