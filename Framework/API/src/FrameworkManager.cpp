@@ -104,10 +104,10 @@ FrameworkManagerImpl::FrameworkManagerImpl()
     : m_mpi_environment(argc, argv)
 #endif
 {
-#ifdef __linux__
-  std::set_terminate(terminateHandler);
-  std::signal(SIGSEGV, sigsegvHandler);
-#endif
+//#ifdef __linux__
+//  std::set_terminate(terminateHandler);
+//  std::signal(SIGSEGV, sigsegvHandler);
+//#endif
   setGlobalNumericLocaleToC();
   Kernel::MemoryOptions::initAllocatorOptions();
 
