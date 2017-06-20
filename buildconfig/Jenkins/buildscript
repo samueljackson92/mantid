@@ -267,5 +267,5 @@ userprops=~/.mantid/Mantid.user.properties
 rm -f $userprops
 ulimit -c unlimited
 for i in `seq 1 $NUM_TRIES`; do
-    $SCL_ON_RHEL6 "ctest -j$BUILD_THREADS --schedule-random --output-on-failure";
+    $SCL_ON_RHEL6 "ctest -j$BUILD_THREADS --schedule-random --output-on-failure -R $TEST_REGEX";
 done
