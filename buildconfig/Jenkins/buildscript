@@ -68,8 +68,8 @@ if [[ ${PRBUILD} == true ]]; then
     if ${SCRIPT_DIR}/check_for_changes docs-gui-only; then
       SYSTEMTESTS=false
     else
-      BUILDPKG=true
-      SYSTEMTESTS=true
+      BUILDPKG=false
+      SYSTEMTESTS=false
     fi
   fi
 fi
