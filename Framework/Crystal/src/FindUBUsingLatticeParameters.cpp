@@ -4,6 +4,7 @@
 #include "MantidGeometry/Crystal/OrientedLattice.h"
 #include "MantidKernel/BoundedValidator.h"
 #include "MantidAPI/Sample.h"
+#include "MantidCrystal/UnitCellProperty.h"
 
 namespace Mantid {
 namespace Crystal {
@@ -48,6 +49,8 @@ void FindUBUsingLatticeParameters::init() {
                         "Indexing Tolerance (0.15)");
   this->declareProperty("FixParameters", false,
                         "Do not optimise the UB after finding the orientation");
+
+  this->declareProperty(make_unique<UnitCellProperty>("UnitCell"), "Unit cell property");
 }
 
 /** Execute the algorithm.

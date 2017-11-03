@@ -70,6 +70,7 @@ set ( SRC_FILES
 	src/StatisticsOfPeaksWorkspace.cpp
 	src/TOFExtinction.cpp
 	src/TransformHKL.cpp
+        src/UnitCellProperty.cpp
 )
 
 set ( SRC_UNITY_IGNORE_FILES )
@@ -147,6 +148,7 @@ set ( INC_FILES
 	inc/MantidCrystal/StatisticsOfPeaksWorkspace.h
 	inc/MantidCrystal/TOFExtinction.h
 	inc/MantidCrystal/TransformHKL.h
+        inc/MantidCrystal/UnitCellProperty.h
 )
 
 set ( TEST_FILES
