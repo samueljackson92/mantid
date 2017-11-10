@@ -1,19 +1,20 @@
 #ifndef TESTTABLEWORKSPACE_
 #define TESTTABLEWORKSPACE_
 
-#include <vector>
-#include <algorithm>
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
 #include <cxxtest/TestSuite.h>
 
 #include "MantidDataObjects/TableWorkspace.h"
-#include "MantidAPI/TableRow.h"
+#include "MantidAPI/AnalysisDataService.h"
 #include "MantidAPI/ColumnFactory.h"
+#include "MantidAPI/TableRow.h"
 #include "MantidAPI/WorkspaceProperty.h"
 #include "PropertyManagerHelper.h"
 
+#include <algorithm>
+#include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <limits>
+#include <vector>
 
 using namespace Mantid::API;
 using namespace Mantid::DataObjects;
@@ -305,7 +306,7 @@ public:
     tw.getColumn(1)->cell<std::string>(0) = "b";
     tw.getColumn(2)->cell<std::string>(0) = "c";
 
-    boost::scoped_ptr<TableWorkspace> cloned(tw.clone().release());
+    boost::scoped_ptr<ITableWorkspace> cloned(tw.clone().release());
 
     // Check clone is same as original.
     TS_ASSERT_EQUALS(tw.columnCount(), cloned->columnCount());
@@ -313,6 +314,38 @@ public:
     TS_ASSERT_EQUALS("a", cloned->getColumn(0)->cell<std::string>(0));
     TS_ASSERT_EQUALS("b", cloned->getColumn(1)->cell<std::string>(0));
     TS_ASSERT_EQUALS("c", cloned->getColumn(2)->cell<std::string>(0));
+  }
+
+  void testCloneClearsWorkspaceName() {
+    auto ws = boost::make_shared<TableWorkspace>();
+    const std::string name{"MatrixWorkspace_testCloneClearsWorkspaceName"};
+    AnalysisDataService::Instance().add(name, ws);
+    TS_ASSERT_EQUALS(ws->getName(), name)
+    auto cloned = ws->clone();
+    TS_ASSERT(cloned->getName().empty())
+    AnalysisDataService::Instance().clear();
+  }
+
+  void testCloneColumns() {
+    TableWorkspace tw(1);
+    tw.addColumn("str", "X");
+    tw.addColumn("str", "Y");
+    tw.addColumn("str", "Z");
+
+    tw.getColumn(0)->cell<std::string>(0) = "a";
+    tw.getColumn(1)->cell<std::string>(0) = "b";
+    tw.getColumn(2)->cell<std::string>(0) = "c";
+
+    std::vector<std::string> colNames{"X", "Z"};
+
+    boost::scoped_ptr<ITableWorkspace> cloned(
+        tw.cloneColumns(colNames).release());
+
+    // Check clone is same as original.
+    TS_ASSERT_EQUALS(colNames.size(), cloned->columnCount());
+    TS_ASSERT_EQUALS(tw.rowCount(), cloned->rowCount());
+    TS_ASSERT_EQUALS("a", cloned->getColumn(0)->cell<std::string>(0));
+    TS_ASSERT_EQUALS("c", cloned->getColumn(1)->cell<std::string>(0));
   }
 
   void test_toDouble() {
@@ -339,7 +372,7 @@ public:
     TS_ASSERT_EQUALS(d, 0.0);
     TS_ASSERT_THROWS_NOTHING(d = tw.getColumn("T")->toDouble(0));
     TS_ASSERT_EQUALS(d, 1.0);
-    TS_ASSERT_THROWS(d = tw.getColumn("S")->toDouble(0), std::runtime_error);
+    TS_ASSERT_THROWS(d = tw.getColumn("S")->toDouble(0), std::invalid_argument);
   }
   void testGetVectorSetVectorValues() {
 
@@ -658,10 +691,10 @@ public:
     TableWorkspace_sptr wsNonConst;
     TS_ASSERT_THROWS_NOTHING(
         wsConst = manager.getValue<TableWorkspace_const_sptr>(wsName));
-    TS_ASSERT(wsConst != NULL);
+    TS_ASSERT(wsConst != nullptr);
     TS_ASSERT_THROWS_NOTHING(wsNonConst =
                                  manager.getValue<TableWorkspace_sptr>(wsName));
-    TS_ASSERT(wsNonConst != NULL);
+    TS_ASSERT(wsNonConst != nullptr);
     TS_ASSERT_EQUALS(wsConst, wsNonConst);
 
     // Check TypedValue can be cast to const_sptr or to sptr
@@ -669,9 +702,9 @@ public:
     TableWorkspace_const_sptr wsCastConst;
     TableWorkspace_sptr wsCastNonConst;
     TS_ASSERT_THROWS_NOTHING(wsCastConst = (TableWorkspace_const_sptr)val);
-    TS_ASSERT(wsCastConst != NULL);
+    TS_ASSERT(wsCastConst != nullptr);
     TS_ASSERT_THROWS_NOTHING(wsCastNonConst = (TableWorkspace_sptr)val);
-    TS_ASSERT(wsCastNonConst != NULL);
+    TS_ASSERT(wsCastNonConst != nullptr);
     TS_ASSERT_EQUALS(wsCastConst, wsCastNonConst);
   }
 
@@ -690,10 +723,10 @@ public:
     ITableWorkspace_sptr wsNonConst;
     TS_ASSERT_THROWS_NOTHING(
         wsConst = manager.getValue<ITableWorkspace_const_sptr>(wsName));
-    TS_ASSERT(wsConst != NULL);
+    TS_ASSERT(wsConst != nullptr);
     TS_ASSERT_THROWS_NOTHING(
         wsNonConst = manager.getValue<ITableWorkspace_sptr>(wsName));
-    TS_ASSERT(wsNonConst != NULL);
+    TS_ASSERT(wsNonConst != nullptr);
     TS_ASSERT_EQUALS(wsConst, wsNonConst);
 
     // Check TypedValue can be cast to const_sptr or to sptr
@@ -701,9 +734,9 @@ public:
     ITableWorkspace_const_sptr wsCastConst;
     ITableWorkspace_sptr wsCastNonConst;
     TS_ASSERT_THROWS_NOTHING(wsCastConst = (ITableWorkspace_const_sptr)val);
-    TS_ASSERT(wsCastConst != NULL);
+    TS_ASSERT(wsCastConst != nullptr);
     TS_ASSERT_THROWS_NOTHING(wsCastNonConst = (ITableWorkspace_sptr)val);
-    TS_ASSERT(wsCastNonConst != NULL);
+    TS_ASSERT(wsCastNonConst != nullptr);
     TS_ASSERT_EQUALS(wsCastConst, wsCastNonConst);
   }
 };

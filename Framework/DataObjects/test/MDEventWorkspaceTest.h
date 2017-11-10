@@ -1,6 +1,7 @@
 #ifndef MDEVENTWORKSPACETEST_H
 #define MDEVENTWORKSPACETEST_H
 
+#include "MantidAPI/AnalysisDataService.h"
 #include "MantidAPI/IMDIterator.h"
 #include "MantidAPI/ITableWorkspace.h"
 #include "MantidGeometry/MDGeometry/MDDimensionExtents.h"
@@ -28,7 +29,7 @@
 #include <memory>
 #include <vector>
 #include <typeinfo>
-#include <boost/math/special_functions/fpclassify.hpp>
+#include <cmath>
 
 using namespace Mantid;
 using namespace Mantid::Kernel;
@@ -151,6 +152,22 @@ public:
           "BoxController on copied box does not match that in copied workspace",
           copy.getBoxController().get(), copiedMDBox->getBoxController());
     }
+  }
+
+  void test_clone_clear_workspace_name() {
+    auto ws = boost::make_shared<MDEventWorkspace<MDLeanEvent<3>, 3>>();
+    Mantid::Geometry::GeneralFrame frame("m", "m");
+    for (size_t i = 0; i < 3; i++) {
+      ws->addDimension(MDHistoDimension_sptr(
+          new MDHistoDimension("x", "x", frame, -1, 1, 0)));
+    }
+    ws->initialize();
+    const std::string name{"MatrixWorkspace_testCloneClearsWorkspaceName"};
+    AnalysisDataService::Instance().add(name, ws);
+    TS_ASSERT_EQUALS(ws->getName(), name)
+    auto cloned = ws->clone();
+    TS_ASSERT(cloned->getName().empty())
+    AnalysisDataService::Instance().clear();
   }
 
   void test_initialize_throws() {
@@ -287,11 +304,11 @@ public:
         "The box with 2 events",
         ew->getSignalAtCoord(coords2, Mantid::API::NoNormalization), 3.0, 1e-5);
     TSM_ASSERT("Out of bounds returns NAN",
-               boost::math::isnan(ew->getSignalAtCoord(
-                   coords3, Mantid::API::NoNormalization)));
+               std::isnan(ew->getSignalAtCoord(coords3,
+                                               Mantid::API::NoNormalization)));
     TSM_ASSERT("Out of bounds returns NAN",
-               boost::math::isnan(ew->getSignalAtCoord(
-                   coords4, Mantid::API::NoNormalization)));
+               std::isnan(ew->getSignalAtCoord(coords4,
+                                               Mantid::API::NoNormalization)));
   }
 
   void test_getBoxBoundaryBisectsOnLine() {
@@ -316,7 +333,7 @@ public:
     // Each box (cube) has edges 0.5 long, so a face diagonal is sqrt(2)/2
     for (size_t i = 0; i < mid_points_vect.size(); ++i) {
       TS_ASSERT_DELTA(mid_points_vect[i],
-                      (static_cast<double>(i) + 0.5) * 0.5 * sqrt(2.0), 1e-5);
+                      (static_cast<double>(i) + 0.5) * 0.5 * M_SQRT2, 1e-5);
     }
   }
 
@@ -413,10 +430,10 @@ public:
     ew->refreshCache();
 
     TSM_ASSERT_DELTA(
-        "Value ignoring mask is 1.0",
-        ew->getSignalAtCoord(coords1, Mantid::API::NoNormalization), 1.0, 1e-5);
+        "Value ignoring mask is 0.0 as masking deletes the events",
+        ew->getSignalAtCoord(coords1, Mantid::API::NoNormalization), 0.0, 1e-5);
     TSM_ASSERT("Masked returns NaN",
-               boost::math::isnan(ew->getSignalWithMaskAtCoord(
+               std::isnan(ew->getSignalWithMaskAtCoord(
                    coords1, Mantid::API::NoNormalization)));
   }
 
@@ -577,7 +594,7 @@ public:
 
   void test_maskNULL() {
     // Should do nothing in terms of masking, but should not throw.
-    doTestMasking(NULL, 0); // 0 out of 1000 bins masked
+    doTestMasking(nullptr, 0); // 0 out of 1000 bins masked
   }
 
   void test_maskNothing() {
@@ -751,6 +768,13 @@ public:
     TSM_ASSERT_EQUALS(
         "Should be set to number of events normalizationnormalization",
         ew->displayNormalizationHisto(), histoSetting);
+  }
+
+  void test_is_histogram_is_false() {
+    MDEventWorkspace3Lean::sptr ew =
+        MDEventsTestHelper::makeMDEW<3>(4, 0.0, 7.0, 3);
+    TSM_ASSERT("Should always be false for event workspace",
+               !ew->isMDHistoWorkspace());
   }
 
   /**

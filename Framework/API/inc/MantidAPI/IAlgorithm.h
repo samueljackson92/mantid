@@ -80,6 +80,10 @@ public:
   /// function to return any aliases of the algorithm.
   virtual const std::string alias() const = 0;
 
+  /// function to return an optional URL for documentation.
+  /// Override if the algorithm is not part of the Mantid distribution
+  virtual const std::string helpURL() const = 0;
+
   /** @name Algorithms As Methods */
   ///@{
   /// Returns a name that will be used when attached as a workspace method.
@@ -133,6 +137,9 @@ public:
 
   /// To query whether algorithm is a child. Default to false
   virtual bool isChild() const = 0;
+
+  /// To query whether the output is stored in the analysis data service.
+  virtual bool getAlwaysStoreInADS() const = 0;
 
   /** To set whether algorithm is a child.
    *  @param isChild :: True - the algorithm is a child algorithm.  False - this
