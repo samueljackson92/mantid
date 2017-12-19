@@ -448,6 +448,21 @@ void setCell(ITableWorkspace &self, const bpl::object &col_or_row,
 }
 }
 
+/**
+ * Get a column from a TableWorkspace using the square bracket notation
+ * @param self :: A reference to the TableWorkspace python object that we were
+ * called on
+ * @param value :: A python object containing a column name
+ * @returns a python list with every value of the column
+ */
+PyObject *getItem(ITableWorkspace &self, const bpl::object &columnName) {
+  if (STR_CHECK(columnName.ptr())) {
+    return column(self, columnName);
+  } else {
+    throw std::invalid_argument("Column name must be a string");
+  }
+}
+
 void export_ITableWorkspace() {
   using Mantid::PythonInterface::Policies::VectorToNumpy;
 
@@ -533,7 +548,9 @@ void export_ITableWorkspace() {
                                  arg("column_or_row"), arg("value")),
            "Sets the value of a given cell. If the first argument is a "
            "number then it is interpreted as a row otherwise it is interpreted "
-           "as a column name");
+           "as a column name")
+
+      .def("__getitem__", &getItem, "Return all values of a specific column as a list");
 
   //-------------------------------------------------------------------------------------------------
 

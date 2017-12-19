@@ -200,6 +200,17 @@ class ITableWorkspaceTest(unittest.TestCase):
         table.addRow([3, 4])
         self.assertEquals(table.rowCount(), 2)
 
+    def test_get_column_with_string_index(self):
+        table = WorkspaceFactory.createTable()
+
+        table.addColumn("int", "index")
+        table.addColumn("int", "value", 3)
+        table.addRow([1, 2])
+        table.addRow([3, 4])
+
+        self.assertEquals(table["index"], [1, 3])
+        self.assertEquals(table["value"], [2, 4])
+
 
 if __name__ == '__main__':
     unittest.main()
