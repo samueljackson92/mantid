@@ -127,17 +127,17 @@ bool SXPeak::compare(const SXPeak &rhs, const double xTolerance,
                      const double phiTolerance, const double thetaTolerance,
                      const XAxisUnit units) const {
 
-  const auto x_1 = (units == XAxisUnit::TOF) ? m_tof : m_dSpacing;
-  const auto x_2 = (units == XAxisUnit::TOF) ? rhs.m_tof : rhs.m_dSpacing;
+  const auto x_1 = (units == XAxisUnit::TOF) ? m_tof / m_nPixels : m_dSpacing / m_nPixels;
+  const auto x_2 = (units == XAxisUnit::TOF) ? rhs.m_tof  / rhs.m_nPixels: rhs.m_dSpacing / rhs.m_nPixels;
 
   if (std::abs(x_1 - x_2) > xTolerance) {
     return false;
   }
 
-  if (isDifferenceLargerThanTolerance(m_phi, rhs.m_phi, phiTolerance)) {
+  if (isDifferenceLargerThanTolerance(m_phi / m_nPixels, rhs.m_phi / rhs.m_nPixels, phiTolerance)) {
     return false;
   }
-  if (isDifferenceLargerThanTolerance(m_twoTheta, rhs.m_twoTheta,
+  if (isDifferenceLargerThanTolerance(m_twoTheta / m_nPixels, rhs.m_twoTheta / rhs.m_nPixels,
                                       thetaTolerance)) {
     return false;
   }
@@ -553,10 +553,9 @@ SimpleReduceStrategy::reduce(const std::vector<SXPeak> &peaks,
                             [&currentPeak, this](SXPeak &peak) {
                               auto result = this->m_compareStrategy->compare(
                                   currentPeak, peak);
-                              // bool result = currentPeak.compare(peak,
-                              // resolution);
-                              if (result)
+                              if (result) {
                                 peak += currentPeak;
+                              }
                               return result;
                             });
     if (pos == finalPeaks.end()) {

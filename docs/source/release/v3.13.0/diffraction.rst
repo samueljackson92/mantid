@@ -82,3 +82,8 @@ Improvements
 - PeaksWorkspace has column added for the unique peak number so peaks can be found after sorting or filtering.
 
 - :ref:`StatisticsOfPeaksWorkspace <algm-StatisticsOfPeaksWorkspace>` has option to use a weighted Z score for determining which peaks are outliers and has a new output workspace for plotting intensities of equivalent peaks.
+
+Bug fixes
+#########
+
+- A bug was fixed in :ref:`FindSXPeaks <algm-FindSXPeaks>` that was causing the angular resolution parameters to give incorrect results when using the absolute comparision strategy.
