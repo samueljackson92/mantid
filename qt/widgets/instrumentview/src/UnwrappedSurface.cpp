@@ -311,8 +311,7 @@ void UnwrappedSurface::getSelectedDetectors(std::vector<size_t> &detIndices) {
   }
 
   // select detectors with u,v within the allowed boundaries
-  for (size_t i = 0; i < m_unwrappedDetectors.size(); ++i) {
-    UnwrappedDetector &udet = m_unwrappedDetectors[i];
+  for (auto & udet : m_unwrappedDetectors) {
     if (udet.u >= uleft && udet.u <= uright && udet.v >= vbottom &&
         udet.v <= vtop) {
       detIndices.push_back(udet.detIndex);
@@ -325,8 +324,7 @@ void UnwrappedSurface::getMaskedDetectors(
   detIndices.clear();
   if (m_maskShapes.isEmpty())
     return;
-  for (size_t i = 0; i < m_unwrappedDetectors.size(); ++i) {
-    const UnwrappedDetector &udet = m_unwrappedDetectors[i];
+  for (const auto & udet : m_unwrappedDetectors) {
     if (m_maskShapes.isMasked(udet.u, udet.v)) {
       detIndices.push_back(udet.detIndex);
     }
@@ -334,8 +332,7 @@ void UnwrappedSurface::getMaskedDetectors(
 }
 
 void UnwrappedSurface::changeColorMap() {
-  for (size_t i = 0; i < m_unwrappedDetectors.size(); ++i) {
-    UnwrappedDetector &udet = m_unwrappedDetectors[i];
+  for (auto & udet : m_unwrappedDetectors) {
     udet.color = m_instrActor->getColor(udet.detIndex);
   }
 }

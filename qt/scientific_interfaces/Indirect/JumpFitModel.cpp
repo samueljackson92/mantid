@@ -145,8 +145,8 @@ subdivideWidthWorkspace(MatrixWorkspace_sptr workspace,
   subworkspaces.reserve(1 + 2 * widthSpectra.size());
 
   int start = 0;
-  for (auto i = 0u; i < widthSpectra.size(); ++i) {
-    const auto spectrum = static_cast<int>(widthSpectra[i]);
+  for (unsigned long i : widthSpectra) {
+    const auto spectrum = static_cast<int>(i);
     if (spectrum > start)
       subworkspaces.emplace_back(
           extractSpectra(workspace, start, spectrum - 1));

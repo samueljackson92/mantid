@@ -136,8 +136,7 @@ void PeaksViewer::clearPeaksModeRequest(
   if (on) {
     QList<PeaksWorkspaceWidget *> children =
         this->findChildren<PeaksWorkspaceWidget *>();
-    for (int i = 0; i < children.size(); ++i) {
-      PeaksWorkspaceWidget *candidateWidget = children.at(i);
+    for (auto candidateWidget : children) {
       // For all but the most recently selected peaks workspace. Exit clear
       // mode.
       if (candidateWidget != originWidget) {
@@ -161,8 +160,7 @@ void PeaksViewer::addPeaksModeRequest(
   if (on) {
     QList<PeaksWorkspaceWidget *> children =
         this->findChildren<PeaksWorkspaceWidget *>();
-    for (int i = 0; i < children.size(); ++i) {
-      PeaksWorkspaceWidget *candidateWidget = children.at(i);
+    for (auto candidateWidget : children) {
       // For all but the most recently selected peaks workspace. Exit clear
       // mode.
       if (candidateWidget != originWidget) {
@@ -393,9 +391,7 @@ void PeaksViewer::onZoomToPeak(Mantid::API::IPeaksWorkspace_const_sptr peaksWS,
  */
 void PeaksViewer::performUpdate() {
   auto allWS = m_presenter->presentedWorkspaces();
-  for (auto it = allWS.begin(); it != allWS.end(); ++it) {
-    auto ws = *it;
-
+  for (auto ws : allWS) {
     auto backgroundPeakViewColor = m_presenter->getBackgroundPeakViewColor(ws);
     auto foregroundPeakViewColor = m_presenter->getForegroundPeakViewColor(ws);
 
@@ -407,8 +403,7 @@ void PeaksViewer::performUpdate() {
     // Now find the PeaksWorkspaceWidget corresponding to this workspace name.
     QList<PeaksWorkspaceWidget *> children =
         this->findChildren<PeaksWorkspaceWidget *>();
-    for (int i = 0; i < children.size(); ++i) {
-      PeaksWorkspaceWidget *candidateWidget = children.at(i);
+    for (auto candidateWidget : children) {
       Mantid::API::IPeaksWorkspace_const_sptr candidateWorkspace =
           candidateWidget->getPeaksWorkspace();
       if (candidateWorkspace == ws) {
@@ -448,8 +443,7 @@ void PeaksViewer::updatePeaksWorkspace(
   QList<PeaksWorkspaceWidget *> children =
       this->findChildren<PeaksWorkspaceWidget *>();
 
-  for (int i = 0; i < children.size(); ++i) {
-    PeaksWorkspaceWidget *candidateWidget = children.at(i);
+  for (auto candidateWidget : children) {
     const std::string candidateName = candidateWidget->getWSName();
     if (candidateName == toName) {
       // We have the right widget to update. Swap the workspace and redraw the
@@ -458,8 +452,7 @@ void PeaksViewer::updatePeaksWorkspace(
       return;
     }
   }
-  for (int i = 0; i < children.size(); ++i) {
-    PeaksWorkspaceWidget *candidateWidget = children.at(i);
+  for (auto candidateWidget : children) {
     Mantid::API::IPeaksWorkspace_const_sptr candidateWorkspace =
         candidateWidget->getPeaksWorkspace();
     if (candidateWorkspace == toWorkspace) {

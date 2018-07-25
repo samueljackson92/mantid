@@ -83,9 +83,9 @@ void BatchAlgorithmRunner::executeBatchAsync() {
 bool BatchAlgorithmRunner::executeBatchAsyncImpl(const Poco::Void &) {
   bool cancelFlag = false;
 
-  for (auto it = m_algorithms.begin(); it != m_algorithms.end(); ++it) {
+  for (auto & m_algorithm : m_algorithms) {
     // Try to execute the algorithm
-    if (!executeAlgo(*it)) {
+    if (!executeAlgo(m_algorithm)) {
       g_log.warning() << "Got error from algorithm \""
                       << m_currentAlgorithm->name() << "\"\n";
 
@@ -122,9 +122,8 @@ bool BatchAlgorithmRunner::executeAlgo(ConfiguredAlgorithm algorithm) {
     m_currentAlgorithm = algorithm.first;
 
     // Assign the properties to be set at runtime
-    for (auto it = algorithm.second.begin(); it != algorithm.second.end();
-         ++it) {
-      m_currentAlgorithm->setProperty(it->first, it->second);
+    for (auto & it : algorithm.second) {
+      m_currentAlgorithm->setProperty(it.first, it.second);
     }
 
     g_log.information() << "Starting next algorithm in queue: "

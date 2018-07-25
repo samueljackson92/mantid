@@ -245,8 +245,8 @@ void QtReflRunsTabView::setSearchButtonEnabled(bool enabled) {
 */
 void QtReflRunsTabView::setTransferMethods(
     const std::set<std::string> &methods) {
-  for (auto method = methods.begin(); method != methods.end(); ++method) {
-    ui.comboTransferMethod->addItem((*method).c_str());
+  for (const auto & method : methods) {
+    ui.comboTransferMethod->addItem(method.c_str());
   }
 }
 
@@ -261,8 +261,8 @@ void QtReflRunsTabView::setInstrumentList(
     const std::string &defaultInstrument) {
   ui.comboSearchInstrument->clear();
 
-  for (auto it = instruments.begin(); it != instruments.end(); ++it) {
-    QString instrument = QString::fromStdString(*it);
+  for (const auto & it : instruments) {
+    QString instrument = QString::fromStdString(it);
     ui.comboSearchInstrument->addItem(instrument);
   }
 
@@ -423,8 +423,8 @@ std::set<int> QtReflRunsTabView::getSelectedSearchRows() const {
   auto selectionModel = ui.tableSearchResults->selectionModel();
   if (selectionModel) {
     auto selectedRows = selectionModel->selectedRows();
-    for (auto it = selectedRows.begin(); it != selectedRows.end(); ++it)
-      rows.insert(it->row());
+    for (auto & selectedRow : selectedRows)
+      rows.insert(selectedRow.row());
   }
   return rows;
 }

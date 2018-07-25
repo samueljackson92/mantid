@@ -627,9 +627,9 @@ void FunctionBrowser::addAttributeAndParameterProperties(
 
   // add attribute properties
   auto attributeNames = fun->getAttributeNames();
-  for (auto att = attributeNames.begin(); att != attributeNames.end(); ++att) {
-    QString attName = QString::fromStdString(*att);
-    addAttributeProperty(prop, attName, fun->getAttribute(*att));
+  for (auto & attributeName : attributeNames) {
+    QString attName = QString::fromStdString(attributeName);
+    addAttributeProperty(prop, attName, fun->getAttribute(attributeName));
   }
 
   auto cf = boost::dynamic_pointer_cast<Mantid::API::CompositeFunction>(fun);
@@ -735,9 +735,8 @@ FunctionBrowser::AProperty FunctionBrowser::getFunctionProperty() const {
  */
 QStringList FunctionBrowser::getGlobalParameters() const {
   QStringList out;
-  for (auto propIt = m_properties.begin(); propIt != m_properties.end();
-       ++propIt) {
-    QtProperty *prop = propIt->prop;
+  for (const auto & m_propertie : m_properties) {
+    QtProperty *prop = m_propertie.prop;
     if (isGlobalParameterProperty(prop)) {
       out << getIndex(prop) + prop->propertyName();
     }
@@ -748,9 +747,8 @@ QStringList FunctionBrowser::getGlobalParameters() const {
 * Get a list of names of global parameters
 */
 void FunctionBrowser::setGlobalParameters(QStringList &globals) {
-  for (auto propIt = m_properties.begin(); propIt != m_properties.end();
-       ++propIt) {
-    QtProperty *prop = propIt->prop;
+  for (auto & m_propertie : m_properties) {
+    QtProperty *prop = m_propertie.prop;
     QString tmp = getIndex(prop) + prop->propertyName();
     for (auto &global : globals) {
       if (tmp == global) {
@@ -764,9 +762,8 @@ void FunctionBrowser::setGlobalParameters(QStringList &globals) {
  */
 QStringList FunctionBrowser::getLocalParameters() const {
   QStringList out;
-  for (auto propIt = m_properties.begin(); propIt != m_properties.end();
-       ++propIt) {
-    QtProperty *prop = propIt->prop;
+  for (const auto & m_propertie : m_properties) {
+    QtProperty *prop = m_propertie.prop;
     if (isLocalParameterProperty(prop)) {
       out << getIndex(prop) + prop->propertyName();
     }
@@ -889,9 +886,9 @@ QString FunctionBrowser::getIndex(QtProperty *prop) const {
     auto props = prop->subProperties();
     if (props.isEmpty())
       return "";
-    for (auto it = props.begin(); it != props.end(); ++it) {
-      if (isIndex(*it)) {
-        return m_indexManager->value(*it);
+    for (auto & prop : props) {
+      if (isIndex(prop)) {
+        return m_indexManager->value(prop);
       }
     }
     return "";

@@ -44222,9 +44222,8 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__sampleParameter(
     struct soap *soap, const std::vector<ns1__sampleParameter *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__sampleParameter *>::const_iterator i = a->begin();
-       i != a->end(); ++i)
-    soap_serialize_PointerTons1__sampleParameter(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__sampleParameter(soap, &i);
 #endif
 }
 
@@ -44232,9 +44231,8 @@ SOAP_FMAC3 int SOAP_FMAC4
 soap_out_std__vectorTemplateOfPointerTons1__sampleParameter(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__sampleParameter *> *a, const char *type) {
-  for (std::vector<ns1__sampleParameter *>::const_iterator i = a->begin();
-       i != a->end(); ++i) {
-    if (soap_out_PointerTons1__sampleParameter(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__sampleParameter(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -44341,10 +44339,8 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__permissibleStringValue(
     struct soap *soap, const std::vector<ns1__permissibleStringValue *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__permissibleStringValue *>::const_iterator i =
-           a->begin();
-       i != a->end(); ++i)
-    soap_serialize_PointerTons1__permissibleStringValue(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__permissibleStringValue(soap, &i);
 #endif
 }
 
@@ -44352,10 +44348,8 @@ SOAP_FMAC3 int SOAP_FMAC4
 soap_out_std__vectorTemplateOfPointerTons1__permissibleStringValue(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__permissibleStringValue *> *a, const char *type) {
-  for (std::vector<ns1__permissibleStringValue *>::const_iterator i =
-           a->begin();
-       i != a->end(); ++i) {
-    if (soap_out_PointerTons1__permissibleStringValue(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__permissibleStringValue(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -44463,18 +44457,16 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__rule(
     struct soap *soap, const std::vector<ns1__rule *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__rule *>::const_iterator i = a->begin(); i != a->end();
-       ++i)
-    soap_serialize_PointerTons1__rule(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__rule(soap, &i);
 #endif
 }
 
 SOAP_FMAC3 int SOAP_FMAC4 soap_out_std__vectorTemplateOfPointerTons1__rule(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__rule *> *a, const char *type) {
-  for (std::vector<ns1__rule *>::const_iterator i = a->begin(); i != a->end();
-       ++i) {
-    if (soap_out_PointerTons1__rule(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__rule(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -44577,18 +44569,16 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__userGroup(
     struct soap *soap, const std::vector<ns1__userGroup *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__userGroup *>::const_iterator i = a->begin();
-       i != a->end(); ++i)
-    soap_serialize_PointerTons1__userGroup(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__userGroup(soap, &i);
 #endif
 }
 
 SOAP_FMAC3 int SOAP_FMAC4 soap_out_std__vectorTemplateOfPointerTons1__userGroup(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__userGroup *> *a, const char *type) {
-  for (std::vector<ns1__userGroup *>::const_iterator i = a->begin();
-       i != a->end(); ++i) {
-    if (soap_out_PointerTons1__userGroup(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__userGroup(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -44691,18 +44681,16 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__study(
     struct soap *soap, const std::vector<ns1__study *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__study *>::const_iterator i = a->begin(); i != a->end();
-       ++i)
-    soap_serialize_PointerTons1__study(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__study(soap, &i);
 #endif
 }
 
 SOAP_FMAC3 int SOAP_FMAC4 soap_out_std__vectorTemplateOfPointerTons1__study(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__study *> *a, const char *type) {
-  for (std::vector<ns1__study *>::const_iterator i = a->begin(); i != a->end();
-       ++i) {
-    if (soap_out_PointerTons1__study(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__study(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -44806,9 +44794,8 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__instrumentScientist(
     struct soap *soap, const std::vector<ns1__instrumentScientist *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__instrumentScientist *>::const_iterator i = a->begin();
-       i != a->end(); ++i)
-    soap_serialize_PointerTons1__instrumentScientist(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__instrumentScientist(soap, &i);
 #endif
 }
 
@@ -44816,9 +44803,8 @@ SOAP_FMAC3 int SOAP_FMAC4
 soap_out_std__vectorTemplateOfPointerTons1__instrumentScientist(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__instrumentScientist *> *a, const char *type) {
-  for (std::vector<ns1__instrumentScientist *>::const_iterator i = a->begin();
-       i != a->end(); ++i) {
-    if (soap_out_PointerTons1__instrumentScientist(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__instrumentScientist(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -44927,9 +44913,8 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__sampleType(
     struct soap *soap, const std::vector<ns1__sampleType *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__sampleType *>::const_iterator i = a->begin();
-       i != a->end(); ++i)
-    soap_serialize_PointerTons1__sampleType(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__sampleType(soap, &i);
 #endif
 }
 
@@ -44937,9 +44922,8 @@ SOAP_FMAC3 int SOAP_FMAC4
 soap_out_std__vectorTemplateOfPointerTons1__sampleType(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__sampleType *> *a, const char *type) {
-  for (std::vector<ns1__sampleType *>::const_iterator i = a->begin();
-       i != a->end(); ++i) {
-    if (soap_out_PointerTons1__sampleType(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__sampleType(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -45043,9 +45027,8 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__parameterType(
     struct soap *soap, const std::vector<ns1__parameterType *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__parameterType *>::const_iterator i = a->begin();
-       i != a->end(); ++i)
-    soap_serialize_PointerTons1__parameterType(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__parameterType(soap, &i);
 #endif
 }
 
@@ -45053,9 +45036,8 @@ SOAP_FMAC3 int SOAP_FMAC4
 soap_out_std__vectorTemplateOfPointerTons1__parameterType(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__parameterType *> *a, const char *type) {
-  for (std::vector<ns1__parameterType *>::const_iterator i = a->begin();
-       i != a->end(); ++i) {
-    if (soap_out_PointerTons1__parameterType(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__parameterType(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -45164,9 +45146,8 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__investigation(
     struct soap *soap, const std::vector<ns1__investigation *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__investigation *>::const_iterator i = a->begin();
-       i != a->end(); ++i)
-    soap_serialize_PointerTons1__investigation(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__investigation(soap, &i);
 #endif
 }
 
@@ -45174,9 +45155,8 @@ SOAP_FMAC3 int SOAP_FMAC4
 soap_out_std__vectorTemplateOfPointerTons1__investigation(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__investigation *> *a, const char *type) {
-  for (std::vector<ns1__investigation *>::const_iterator i = a->begin();
-       i != a->end(); ++i) {
-    if (soap_out_PointerTons1__investigation(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__investigation(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -45285,9 +45265,8 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__investigationType(
     struct soap *soap, const std::vector<ns1__investigationType *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__investigationType *>::const_iterator i = a->begin();
-       i != a->end(); ++i)
-    soap_serialize_PointerTons1__investigationType(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__investigationType(soap, &i);
 #endif
 }
 
@@ -45295,9 +45274,8 @@ SOAP_FMAC3 int SOAP_FMAC4
 soap_out_std__vectorTemplateOfPointerTons1__investigationType(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__investigationType *> *a, const char *type) {
-  for (std::vector<ns1__investigationType *>::const_iterator i = a->begin();
-       i != a->end(); ++i) {
-    if (soap_out_PointerTons1__investigationType(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__investigationType(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -45404,9 +45382,8 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__instrument(
     struct soap *soap, const std::vector<ns1__instrument *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__instrument *>::const_iterator i = a->begin();
-       i != a->end(); ++i)
-    soap_serialize_PointerTons1__instrument(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__instrument(soap, &i);
 #endif
 }
 
@@ -45414,9 +45391,8 @@ SOAP_FMAC3 int SOAP_FMAC4
 soap_out_std__vectorTemplateOfPointerTons1__instrument(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__instrument *> *a, const char *type) {
-  for (std::vector<ns1__instrument *>::const_iterator i = a->begin();
-       i != a->end(); ++i) {
-    if (soap_out_PointerTons1__instrument(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__instrument(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -45520,9 +45496,8 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__facilityCycle(
     struct soap *soap, const std::vector<ns1__facilityCycle *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__facilityCycle *>::const_iterator i = a->begin();
-       i != a->end(); ++i)
-    soap_serialize_PointerTons1__facilityCycle(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__facilityCycle(soap, &i);
 #endif
 }
 
@@ -45530,9 +45505,8 @@ SOAP_FMAC3 int SOAP_FMAC4
 soap_out_std__vectorTemplateOfPointerTons1__facilityCycle(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__facilityCycle *> *a, const char *type) {
-  for (std::vector<ns1__facilityCycle *>::const_iterator i = a->begin();
-       i != a->end(); ++i) {
-    if (soap_out_PointerTons1__facilityCycle(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__facilityCycle(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -45641,9 +45615,8 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__datasetType(
     struct soap *soap, const std::vector<ns1__datasetType *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__datasetType *>::const_iterator i = a->begin();
-       i != a->end(); ++i)
-    soap_serialize_PointerTons1__datasetType(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__datasetType(soap, &i);
 #endif
 }
 
@@ -45651,9 +45624,8 @@ SOAP_FMAC3 int SOAP_FMAC4
 soap_out_std__vectorTemplateOfPointerTons1__datasetType(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__datasetType *> *a, const char *type) {
-  for (std::vector<ns1__datasetType *>::const_iterator i = a->begin();
-       i != a->end(); ++i) {
-    if (soap_out_PointerTons1__datasetType(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__datasetType(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -45761,9 +45733,8 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__datafileFormat(
     struct soap *soap, const std::vector<ns1__datafileFormat *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__datafileFormat *>::const_iterator i = a->begin();
-       i != a->end(); ++i)
-    soap_serialize_PointerTons1__datafileFormat(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__datafileFormat(soap, &i);
 #endif
 }
 
@@ -45771,9 +45742,8 @@ SOAP_FMAC3 int SOAP_FMAC4
 soap_out_std__vectorTemplateOfPointerTons1__datafileFormat(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__datafileFormat *> *a, const char *type) {
-  for (std::vector<ns1__datafileFormat *>::const_iterator i = a->begin();
-       i != a->end(); ++i) {
-    if (soap_out_PointerTons1__datafileFormat(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__datafileFormat(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -45882,9 +45852,8 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__application(
     struct soap *soap, const std::vector<ns1__application *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__application *>::const_iterator i = a->begin();
-       i != a->end(); ++i)
-    soap_serialize_PointerTons1__application(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__application(soap, &i);
 #endif
 }
 
@@ -45892,9 +45861,8 @@ SOAP_FMAC3 int SOAP_FMAC4
 soap_out_std__vectorTemplateOfPointerTons1__application(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__application *> *a, const char *type) {
-  for (std::vector<ns1__application *>::const_iterator i = a->begin();
-       i != a->end(); ++i) {
-    if (soap_out_PointerTons1__application(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__application(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -46002,9 +45970,8 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__studyInvestigation(
     struct soap *soap, const std::vector<ns1__studyInvestigation *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__studyInvestigation *>::const_iterator i = a->begin();
-       i != a->end(); ++i)
-    soap_serialize_PointerTons1__studyInvestigation(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__studyInvestigation(soap, &i);
 #endif
 }
 
@@ -46012,9 +45979,8 @@ SOAP_FMAC3 int SOAP_FMAC4
 soap_out_std__vectorTemplateOfPointerTons1__studyInvestigation(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__studyInvestigation *> *a, const char *type) {
-  for (std::vector<ns1__studyInvestigation *>::const_iterator i = a->begin();
-       i != a->end(); ++i) {
-    if (soap_out_PointerTons1__studyInvestigation(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__studyInvestigation(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -46121,18 +46087,16 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__shift(
     struct soap *soap, const std::vector<ns1__shift *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__shift *>::const_iterator i = a->begin(); i != a->end();
-       ++i)
-    soap_serialize_PointerTons1__shift(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__shift(soap, &i);
 #endif
 }
 
 SOAP_FMAC3 int SOAP_FMAC4 soap_out_std__vectorTemplateOfPointerTons1__shift(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__shift *> *a, const char *type) {
-  for (std::vector<ns1__shift *>::const_iterator i = a->begin(); i != a->end();
-       ++i) {
-    if (soap_out_PointerTons1__shift(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__shift(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -46236,18 +46200,16 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__sample(
     struct soap *soap, const std::vector<ns1__sample *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__sample *>::const_iterator i = a->begin(); i != a->end();
-       ++i)
-    soap_serialize_PointerTons1__sample(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__sample(soap, &i);
 #endif
 }
 
 SOAP_FMAC3 int SOAP_FMAC4 soap_out_std__vectorTemplateOfPointerTons1__sample(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__sample *> *a, const char *type) {
-  for (std::vector<ns1__sample *>::const_iterator i = a->begin(); i != a->end();
-       ++i) {
-    if (soap_out_PointerTons1__sample(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__sample(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -46349,9 +46311,8 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__publication(
     struct soap *soap, const std::vector<ns1__publication *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__publication *>::const_iterator i = a->begin();
-       i != a->end(); ++i)
-    soap_serialize_PointerTons1__publication(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__publication(soap, &i);
 #endif
 }
 
@@ -46359,9 +46320,8 @@ SOAP_FMAC3 int SOAP_FMAC4
 soap_out_std__vectorTemplateOfPointerTons1__publication(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__publication *> *a, const char *type) {
-  for (std::vector<ns1__publication *>::const_iterator i = a->begin();
-       i != a->end(); ++i) {
-    if (soap_out_PointerTons1__publication(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__publication(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -46469,10 +46429,8 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__investigationParameter(
     struct soap *soap, const std::vector<ns1__investigationParameter *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__investigationParameter *>::const_iterator i =
-           a->begin();
-       i != a->end(); ++i)
-    soap_serialize_PointerTons1__investigationParameter(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__investigationParameter(soap, &i);
 #endif
 }
 
@@ -46480,10 +46438,8 @@ SOAP_FMAC3 int SOAP_FMAC4
 soap_out_std__vectorTemplateOfPointerTons1__investigationParameter(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__investigationParameter *> *a, const char *type) {
-  for (std::vector<ns1__investigationParameter *>::const_iterator i =
-           a->begin();
-       i != a->end(); ++i) {
-    if (soap_out_PointerTons1__investigationParameter(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__investigationParameter(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -46592,18 +46548,16 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__keyword(
     struct soap *soap, const std::vector<ns1__keyword *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__keyword *>::const_iterator i = a->begin();
-       i != a->end(); ++i)
-    soap_serialize_PointerTons1__keyword(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__keyword(soap, &i);
 #endif
 }
 
 SOAP_FMAC3 int SOAP_FMAC4 soap_out_std__vectorTemplateOfPointerTons1__keyword(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__keyword *> *a, const char *type) {
-  for (std::vector<ns1__keyword *>::const_iterator i = a->begin();
-       i != a->end(); ++i) {
-    if (soap_out_PointerTons1__keyword(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__keyword(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -46705,9 +46659,8 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__investigationUser(
     struct soap *soap, const std::vector<ns1__investigationUser *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__investigationUser *>::const_iterator i = a->begin();
-       i != a->end(); ++i)
-    soap_serialize_PointerTons1__investigationUser(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__investigationUser(soap, &i);
 #endif
 }
 
@@ -46715,9 +46668,8 @@ SOAP_FMAC3 int SOAP_FMAC4
 soap_out_std__vectorTemplateOfPointerTons1__investigationUser(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__investigationUser *> *a, const char *type) {
-  for (std::vector<ns1__investigationUser *>::const_iterator i = a->begin();
-       i != a->end(); ++i) {
-    if (soap_out_PointerTons1__investigationUser(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__investigationUser(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -46824,10 +46776,8 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__investigationInstrument(
     struct soap *soap, const std::vector<ns1__investigationInstrument *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__investigationInstrument *>::const_iterator i =
-           a->begin();
-       i != a->end(); ++i)
-    soap_serialize_PointerTons1__investigationInstrument(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__investigationInstrument(soap, &i);
 #endif
 }
 
@@ -46835,10 +46785,8 @@ SOAP_FMAC3 int SOAP_FMAC4
 soap_out_std__vectorTemplateOfPointerTons1__investigationInstrument(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__investigationInstrument *> *a, const char *type) {
-  for (std::vector<ns1__investigationInstrument *>::const_iterator i =
-           a->begin();
-       i != a->end(); ++i) {
-    if (soap_out_PointerTons1__investigationInstrument(soap, tag, id, &(*i),
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__investigationInstrument(soap, tag, id, &i,
                                                        ""))
       return soap->error;
   }
@@ -46948,18 +46896,16 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__dataset(
     struct soap *soap, const std::vector<ns1__dataset *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__dataset *>::const_iterator i = a->begin();
-       i != a->end(); ++i)
-    soap_serialize_PointerTons1__dataset(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__dataset(soap, &i);
 #endif
 }
 
 SOAP_FMAC3 int SOAP_FMAC4 soap_out_std__vectorTemplateOfPointerTons1__dataset(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__dataset *> *a, const char *type) {
-  for (std::vector<ns1__dataset *>::const_iterator i = a->begin();
-       i != a->end(); ++i) {
-    if (soap_out_PointerTons1__dataset(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__dataset(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -47061,9 +47007,8 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__datasetParameter(
     struct soap *soap, const std::vector<ns1__datasetParameter *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__datasetParameter *>::const_iterator i = a->begin();
-       i != a->end(); ++i)
-    soap_serialize_PointerTons1__datasetParameter(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__datasetParameter(soap, &i);
 #endif
 }
 
@@ -47071,9 +47016,8 @@ SOAP_FMAC3 int SOAP_FMAC4
 soap_out_std__vectorTemplateOfPointerTons1__datasetParameter(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__datasetParameter *> *a, const char *type) {
-  for (std::vector<ns1__datasetParameter *>::const_iterator i = a->begin();
-       i != a->end(); ++i) {
-    if (soap_out_PointerTons1__datasetParameter(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__datasetParameter(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -47180,18 +47124,16 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__datafile(
     struct soap *soap, const std::vector<ns1__datafile *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__datafile *>::const_iterator i = a->begin();
-       i != a->end(); ++i)
-    soap_serialize_PointerTons1__datafile(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__datafile(soap, &i);
 #endif
 }
 
 SOAP_FMAC3 int SOAP_FMAC4 soap_out_std__vectorTemplateOfPointerTons1__datafile(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__datafile *> *a, const char *type) {
-  for (std::vector<ns1__datafile *>::const_iterator i = a->begin();
-       i != a->end(); ++i) {
-    if (soap_out_PointerTons1__datafile(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__datafile(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -47293,10 +47235,8 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__dataCollectionParameter(
     struct soap *soap, const std::vector<ns1__dataCollectionParameter *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__dataCollectionParameter *>::const_iterator i =
-           a->begin();
-       i != a->end(); ++i)
-    soap_serialize_PointerTons1__dataCollectionParameter(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__dataCollectionParameter(soap, &i);
 #endif
 }
 
@@ -47304,10 +47244,8 @@ SOAP_FMAC3 int SOAP_FMAC4
 soap_out_std__vectorTemplateOfPointerTons1__dataCollectionParameter(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__dataCollectionParameter *> *a, const char *type) {
-  for (std::vector<ns1__dataCollectionParameter *>::const_iterator i =
-           a->begin();
-       i != a->end(); ++i) {
-    if (soap_out_PointerTons1__dataCollectionParameter(soap, tag, id, &(*i),
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__dataCollectionParameter(soap, tag, id, &i,
                                                        ""))
       return soap->error;
   }
@@ -47416,18 +47354,16 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__job(
     struct soap *soap, const std::vector<ns1__job *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__job *>::const_iterator i = a->begin(); i != a->end();
-       ++i)
-    soap_serialize_PointerTons1__job(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__job(soap, &i);
 #endif
 }
 
 SOAP_FMAC3 int SOAP_FMAC4 soap_out_std__vectorTemplateOfPointerTons1__job(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__job *> *a, const char *type) {
-  for (std::vector<ns1__job *>::const_iterator i = a->begin(); i != a->end();
-       ++i) {
-    if (soap_out_PointerTons1__job(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__job(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -47529,9 +47465,8 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__dataCollectionDataset(
     struct soap *soap, const std::vector<ns1__dataCollectionDataset *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__dataCollectionDataset *>::const_iterator i = a->begin();
-       i != a->end(); ++i)
-    soap_serialize_PointerTons1__dataCollectionDataset(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__dataCollectionDataset(soap, &i);
 #endif
 }
 
@@ -47539,9 +47474,8 @@ SOAP_FMAC3 int SOAP_FMAC4
 soap_out_std__vectorTemplateOfPointerTons1__dataCollectionDataset(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__dataCollectionDataset *> *a, const char *type) {
-  for (std::vector<ns1__dataCollectionDataset *>::const_iterator i = a->begin();
-       i != a->end(); ++i) {
-    if (soap_out_PointerTons1__dataCollectionDataset(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__dataCollectionDataset(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -47650,9 +47584,8 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__datafileParameter(
     struct soap *soap, const std::vector<ns1__datafileParameter *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__datafileParameter *>::const_iterator i = a->begin();
-       i != a->end(); ++i)
-    soap_serialize_PointerTons1__datafileParameter(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__datafileParameter(soap, &i);
 #endif
 }
 
@@ -47660,9 +47593,8 @@ SOAP_FMAC3 int SOAP_FMAC4
 soap_out_std__vectorTemplateOfPointerTons1__datafileParameter(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__datafileParameter *> *a, const char *type) {
-  for (std::vector<ns1__datafileParameter *>::const_iterator i = a->begin();
-       i != a->end(); ++i) {
-    if (soap_out_PointerTons1__datafileParameter(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__datafileParameter(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -47769,9 +47701,8 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__relatedDatafile(
     struct soap *soap, const std::vector<ns1__relatedDatafile *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__relatedDatafile *>::const_iterator i = a->begin();
-       i != a->end(); ++i)
-    soap_serialize_PointerTons1__relatedDatafile(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__relatedDatafile(soap, &i);
 #endif
 }
 
@@ -47779,9 +47710,8 @@ SOAP_FMAC3 int SOAP_FMAC4
 soap_out_std__vectorTemplateOfPointerTons1__relatedDatafile(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__relatedDatafile *> *a, const char *type) {
-  for (std::vector<ns1__relatedDatafile *>::const_iterator i = a->begin();
-       i != a->end(); ++i) {
-    if (soap_out_PointerTons1__relatedDatafile(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__relatedDatafile(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -47888,10 +47818,8 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__dataCollectionDatafile(
     struct soap *soap, const std::vector<ns1__dataCollectionDatafile *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__dataCollectionDatafile *>::const_iterator i =
-           a->begin();
-       i != a->end(); ++i)
-    soap_serialize_PointerTons1__dataCollectionDatafile(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__dataCollectionDatafile(soap, &i);
 #endif
 }
 
@@ -47899,10 +47827,8 @@ SOAP_FMAC3 int SOAP_FMAC4
 soap_out_std__vectorTemplateOfPointerTons1__dataCollectionDatafile(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__dataCollectionDatafile *> *a, const char *type) {
-  for (std::vector<ns1__dataCollectionDatafile *>::const_iterator i =
-           a->begin();
-       i != a->end(); ++i) {
-    if (soap_out_PointerTons1__dataCollectionDatafile(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__dataCollectionDatafile(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -48011,18 +47937,16 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerToxsd__anyType(
     struct soap *soap, const std::vector<xsd__anyType *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<xsd__anyType *>::const_iterator i = a->begin();
-       i != a->end(); ++i)
-    soap_serialize_PointerToxsd__anyType(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerToxsd__anyType(soap, &i);
 #endif
 }
 
 SOAP_FMAC3 int SOAP_FMAC4 soap_out_std__vectorTemplateOfPointerToxsd__anyType(
     struct soap *soap, const char *tag, int id,
     const std::vector<xsd__anyType *> *a, const char *type) {
-  for (std::vector<xsd__anyType *>::const_iterator i = a->begin();
-       i != a->end(); ++i) {
-    if (soap_out_PointerToxsd__anyType(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerToxsd__anyType(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -48124,9 +48048,8 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__entityField(
     struct soap *soap, const std::vector<ns1__entityField *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__entityField *>::const_iterator i = a->begin();
-       i != a->end(); ++i)
-    soap_serialize_PointerTons1__entityField(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__entityField(soap, &i);
 #endif
 }
 
@@ -48134,9 +48057,8 @@ SOAP_FMAC3 int SOAP_FMAC4
 soap_out_std__vectorTemplateOfPointerTons1__entityField(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__entityField *> *a, const char *type) {
-  for (std::vector<ns1__entityField *>::const_iterator i = a->begin();
-       i != a->end(); ++i) {
-    if (soap_out_PointerTons1__entityField(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__entityField(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -48244,9 +48166,8 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__constraint(
     struct soap *soap, const std::vector<ns1__constraint *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__constraint *>::const_iterator i = a->begin();
-       i != a->end(); ++i)
-    soap_serialize_PointerTons1__constraint(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__constraint(soap, &i);
 #endif
 }
 
@@ -48254,9 +48175,8 @@ SOAP_FMAC3 int SOAP_FMAC4
 soap_out_std__vectorTemplateOfPointerTons1__constraint(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__constraint *> *a, const char *type) {
-  for (std::vector<ns1__constraint *>::const_iterator i = a->begin();
-       i != a->end(); ++i) {
-    if (soap_out_PointerTons1__constraint(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__constraint(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -48360,10 +48280,8 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOf_ns1__login_credentials_entry(
     struct soap *soap, const std::vector<_ns1__login_credentials_entry> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<_ns1__login_credentials_entry>::const_iterator i =
-           a->begin();
-       i != a->end(); ++i)
-    (*i).soap_serialize(soap);
+  for (const auto & i : *a)
+    i.soap_serialize(soap);
 #endif
 }
 
@@ -48371,10 +48289,8 @@ SOAP_FMAC3 int SOAP_FMAC4
 soap_out_std__vectorTemplateOf_ns1__login_credentials_entry(
     struct soap *soap, const char *tag, int id,
     const std::vector<_ns1__login_credentials_entry> *a, const char *type) {
-  for (std::vector<_ns1__login_credentials_entry>::const_iterator i =
-           a->begin();
-       i != a->end(); ++i) {
-    if ((*i).soap_out(soap, tag, id, ""))
+  for (const auto & i : *a) {
+    if (i.soap_out(soap, tag, id, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -48481,9 +48397,8 @@ soap_default_std__vectorTemplateOfstd__string(struct soap *soap,
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_std__vectorTemplateOfstd__string(
     struct soap *soap, const std::vector<std::string> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<std::string>::const_iterator i = a->begin(); i != a->end();
-       ++i)
-    soap_serialize_std__string(soap, &(*i));
+  for (const auto & i : *a)
+    soap_serialize_std__string(soap, &i);
 #endif
 }
 
@@ -48492,9 +48407,8 @@ soap_out_std__vectorTemplateOfstd__string(struct soap *soap, const char *tag,
                                           int id,
                                           const std::vector<std::string> *a,
                                           const char *type) {
-  for (std::vector<std::string>::const_iterator i = a->begin(); i != a->end();
-       ++i) {
-    if (soap_out_std__string(soap, tag, id, &(*i), ""))
+  for (const auto & i : *a) {
+    if (soap_out_std__string(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -48604,8 +48518,8 @@ SOAP_FMAC3 int SOAP_FMAC4
 soap_out_std__vectorTemplateOfLONG64(struct soap *soap, const char *tag, int id,
                                      const std::vector<LONG64> *a,
                                      const char *type) {
-  for (std::vector<LONG64>::const_iterator i = a->begin(); i != a->end(); ++i) {
-    if (soap_out_LONG64(soap, tag, id, &(*i), ""))
+  for (long long i : *a) {
+    if (soap_out_LONG64(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;
@@ -48703,9 +48617,8 @@ SOAP_FMAC3 void SOAP_FMAC4
 soap_serialize_std__vectorTemplateOfPointerTons1__entityBaseBean(
     struct soap *soap, const std::vector<ns1__entityBaseBean *> *a) {
 #ifndef WITH_NOIDREF
-  for (std::vector<ns1__entityBaseBean *>::const_iterator i = a->begin();
-       i != a->end(); ++i)
-    soap_serialize_PointerTons1__entityBaseBean(soap, &(*i));
+  for (auto i : *a)
+    soap_serialize_PointerTons1__entityBaseBean(soap, &i);
 #endif
 }
 
@@ -48713,9 +48626,8 @@ SOAP_FMAC3 int SOAP_FMAC4
 soap_out_std__vectorTemplateOfPointerTons1__entityBaseBean(
     struct soap *soap, const char *tag, int id,
     const std::vector<ns1__entityBaseBean *> *a, const char *type) {
-  for (std::vector<ns1__entityBaseBean *>::const_iterator i = a->begin();
-       i != a->end(); ++i) {
-    if (soap_out_PointerTons1__entityBaseBean(soap, tag, id, &(*i), ""))
+  for (auto i : *a) {
+    if (soap_out_PointerTons1__entityBaseBean(soap, tag, id, &i, ""))
       return soap->error;
   }
   return SOAP_OK;

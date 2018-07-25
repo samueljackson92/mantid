@@ -65,8 +65,8 @@ public:
   }
 
   void tearDown() override {
-    for (unsigned int i = 0; i < m_testWS.size(); ++i) {
-      removeWS(m_testWS[i]);
+    for (const auto & i : m_testWS) {
+      removeWS(i);
     }
     m_testWS.clear();
   }

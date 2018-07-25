@@ -94,8 +94,8 @@ void HintingLineEdit::updateMatches() {
   m_curMatch.clear();
   m_matches.clear();
 
-  for (auto it = m_hints.begin(); it != m_hints.end(); ++it) {
-    const std::string &hint = it->first;
+  for (auto & m_hint : m_hints) {
+    const std::string &hint = m_hint.first;
 
     if (hint.length() < m_curKey.length())
       continue;
@@ -103,17 +103,17 @@ void HintingLineEdit::updateMatches() {
     const std::string hintPrefix = hint.substr(0, m_curKey.length());
 
     if (m_curKey == hintPrefix)
-      m_matches[hint] = it->second;
+      m_matches[hint] = m_hint.second;
   }
 }
 
 /** Show a tooltip with the current relevant hints */
 void HintingLineEdit::showToolTip() {
   QString hintList;
-  for (auto mIt = m_matches.begin(); mIt != m_matches.end(); ++mIt) {
-    hintList += "<b>" + QString::fromStdString(mIt->first) + "</b><br />\n";
-    if (!mIt->second.empty())
-      hintList += QString::fromStdString(mIt->second) + "<br />\n";
+  for (auto & m_matche : m_matches) {
+    hintList += "<b>" + QString::fromStdString(m_matche.first) + "</b><br />\n";
+    if (!m_matche.second.empty())
+      hintList += QString::fromStdString(m_matche.second) + "<br />\n";
   }
 
   if (!hintList.trimmed().isEmpty()) {

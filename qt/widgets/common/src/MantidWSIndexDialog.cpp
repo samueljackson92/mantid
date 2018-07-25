@@ -193,20 +193,20 @@ QMultiMap<QString, std::set<int>> MantidWSIndexWidget::getPlots() const {
   // If the user typed in the wsField ...
   if (m_wsIndexChoice.getList().size() > 0) {
 
-    for (int i = 0; i < m_wsNames.size(); i++) {
+    for (const auto & m_wsName : m_wsNames) {
       std::set<int> intSet = m_wsIndexChoice.getIntSet();
-      plots.insert(m_wsNames[i], intSet);
+      plots.insert(m_wsName, intSet);
     }
   }
   // Else if the user typed in the spectraField ...
   else if (m_spectraNumChoice.getList().size() > 0) {
-    for (int i = 0; i < m_wsNames.size(); i++) {
+    for (const auto & m_wsName : m_wsNames) {
       // Convert the spectra choices of the user into workspace indices for us
       // to use.
       Mantid::API::MatrixWorkspace_const_sptr ws =
           boost::dynamic_pointer_cast<const Mantid::API::MatrixWorkspace>(
               Mantid::API::AnalysisDataService::Instance().retrieve(
-                  m_wsNames[i].toStdString()));
+                  m_wsName.toStdString()));
       if (nullptr == ws)
         continue;
 
@@ -223,7 +223,7 @@ QMultiMap<QString, std::set<int>> MantidWSIndexWidget::getPlots() const {
         convertedSet.insert(convertedInt);
       }
 
-      plots.insert(m_wsNames[i], convertedSet);
+      plots.insert(m_wsName, convertedSet);
     }
   }
 
@@ -753,8 +753,8 @@ void MantidWSIndexWidget::generateSpectraNumIntervals() {
         ws->getSpectrumToWorkspaceIndexMap();
 
     IntervalList spectraIntervalList;
-    for (auto pair = spec2index.begin(); pair != spec2index.end(); ++pair) {
-      spectraIntervalList.addInterval(static_cast<int>(pair->first));
+    for (auto pair : spec2index) {
+      spectraIntervalList.addInterval(static_cast<int>(pair.first));
     }
 
     if (firstWs) {
@@ -1057,8 +1057,8 @@ int IntervalList::totalIntervalLength() const {
 
   int total = 0;
 
-  for (int i = 0; i < m_list.size(); i++) {
-    total += (m_list.at(i).length());
+  for (const auto & i : m_list) {
+    total += (i.length());
   }
 
   return total;
@@ -1200,8 +1200,8 @@ void IntervalList::clear() { m_list = QList<Interval>(); }
 std::set<int> IntervalList::getIntSet() const {
   std::set<int> intSet;
 
-  for (int i = 0; i < m_list.size(); i++) {
-    std::set<int> intervalSet = m_list.at(i).getIntSet();
+  for (const auto & i : m_list) {
+    std::set<int> intervalSet = i.getIntSet();
     intSet.insert(intervalSet.begin(), intervalSet.end());
   }
 
@@ -1209,8 +1209,8 @@ std::set<int> IntervalList::getIntSet() const {
 }
 
 bool IntervalList::contains(const Interval &other) const {
-  for (int i = 0; i < m_list.size(); i++) {
-    if (m_list.at(i).contains(other))
+  for (const auto & i : m_list) {
+    if (i.contains(other))
       return true;
   }
 
@@ -1218,8 +1218,8 @@ bool IntervalList::contains(const Interval &other) const {
 }
 
 bool IntervalList::contains(const IntervalList &other) const {
-  for (int i = 0; i < other.m_list.size(); i++) {
-    if (!IntervalList::contains(other.m_list.at(i)))
+  for (const auto & i : other.m_list) {
+    if (!IntervalList::contains(i))
       return false;
   }
 
@@ -1259,10 +1259,10 @@ IntervalList IntervalList::intersect(const IntervalList &a,
   const std::set<int> aInts = a.getIntSet();
   const std::set<int> bInts = b.getIntSet();
 
-  for (auto aInt = aInts.begin(); aInt != aInts.end(); ++aInt) {
-    const bool inIntervalListB = bInts.find(*aInt) != bInts.end();
+  for (std::__1::__tree_const_iterator<int, std::__1::__tree_node<int, void *> *, long>::value_type aInt : aInts) {
+    const bool inIntervalListB = bInts.find(aInt) != bInts.end();
     if (inIntervalListB)
-      output.addInterval(*aInt);
+      output.addInterval(aInt);
   }
 
   return output;

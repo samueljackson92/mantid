@@ -72,8 +72,7 @@ WidgetFactory::createSliceViewerWindow(const QString &wsName,
 MantidQt::SliceViewer::SliceViewerWindow *
 WidgetFactory::getSliceViewerWindow(const QString &wsName,
                                     const QString &label) {
-  for (auto it = m_windows.begin(); it != m_windows.end(); ++it) {
-    QPointer<MantidQt::SliceViewer::SliceViewerWindow> window = *it;
+  for (auto window : m_windows) {
     if (window) {
       // Match the ws name and the label
       if ((window->getSlicer()->getWorkspace()->getName() ==
@@ -91,8 +90,7 @@ WidgetFactory::getSliceViewerWindow(const QString &wsName,
 /** Closes every previously-open instance of a SliceViewerWindow.
  */
 void WidgetFactory::closeAllSliceViewerWindows() {
-  for (auto it = m_windows.begin(); it != m_windows.end(); ++it) {
-    QPointer<MantidQt::SliceViewer::SliceViewerWindow> window = *it;
+  for (auto window : m_windows) {
     if (window)
       // Close with delete
       window->close();

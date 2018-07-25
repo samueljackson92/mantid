@@ -743,13 +743,11 @@ FLATBUFFERS_FINAL_CLASS
     PushElement<voffset_t>(static_cast<voffset_t>(table_object_size));
     PushElement<voffset_t>(FieldIndexToOffset(numfields));
     // Write the offsets into the table
-    for (auto field_location = offsetbuf_.begin();
-              field_location != offsetbuf_.end();
-            ++field_location) {
-      auto pos = static_cast<voffset_t>(vtableoffsetloc - field_location->off);
+    for (auto & field_location : offsetbuf_) {
+      auto pos = static_cast<voffset_t>(vtableoffsetloc - field_location.off);
       // If this asserts, it means you've set a field twice.
       assert(!ReadScalar<voffset_t>(buf_.data() + field_location->id));
-      WriteScalar<voffset_t>(buf_.data() + field_location->id, pos);
+      WriteScalar<voffset_t>(buf_.data() + field_location.id, pos);
     }
     offsetbuf_.clear();
     auto vt1 = reinterpret_cast<voffset_t *>(buf_.data());

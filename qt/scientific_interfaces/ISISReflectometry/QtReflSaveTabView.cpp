@@ -133,8 +133,8 @@ std::string QtReflSaveTabView::getCurrentWorkspaceName() const {
 std::vector<std::string> QtReflSaveTabView::getSelectedWorkspaces() const {
   std::vector<std::string> itemNames;
   auto items = m_ui.listOfWorkspaces->selectedItems();
-  for (auto it = items.begin(); it != items.end(); it++) {
-    itemNames.push_back((*it)->text().toStdString());
+  for (auto & item : items) {
+    itemNames.push_back(item->text().toStdString());
   }
   return itemNames;
 }
@@ -145,8 +145,8 @@ std::vector<std::string> QtReflSaveTabView::getSelectedWorkspaces() const {
 std::vector<std::string> QtReflSaveTabView::getSelectedParameters() const {
   std::vector<std::string> paramNames;
   auto items = m_ui.listOfLoggedParameters->selectedItems();
-  for (auto it = items.begin(); it != items.end(); it++) {
-    paramNames.push_back((*it)->text().toStdString());
+  for (auto & item : items) {
+    paramNames.push_back(item->text().toStdString());
   }
   return paramNames;
 }
@@ -202,8 +202,8 @@ void QtReflSaveTabView::clearParametersList() const {
 */
 void QtReflSaveTabView::setWorkspaceList(
     const std::vector<std::string> &names) const {
-  for (auto it = names.begin(); it != names.end(); it++) {
-    m_ui.listOfWorkspaces->addItem(QString::fromStdString(*it));
+  for (const auto & name : names) {
+    m_ui.listOfWorkspaces->addItem(QString::fromStdString(name));
   }
 }
 
@@ -212,8 +212,8 @@ void QtReflSaveTabView::setWorkspaceList(
 */
 void QtReflSaveTabView::setParametersList(
     const std::vector<std::string> &logs) const {
-  for (auto it = logs.begin(); it != logs.end(); it++) {
-    m_ui.listOfLoggedParameters->addItem(QString::fromStdString(*it));
+  for (const auto & log : logs) {
+    m_ui.listOfLoggedParameters->addItem(QString::fromStdString(log));
   }
 }
 

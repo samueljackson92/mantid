@@ -183,8 +183,8 @@ void PanelsSurface::init() {
   spreadBanks();
 
   RectF surfaceRect;
-  for (int i = 0; i < m_flatBanks.size(); ++i) {
-    RectF rect(m_flatBanks[i]->polygon.boundingRect());
+  for (auto & m_flatBank : m_flatBanks) {
+    RectF rect(m_flatBank->polygon.boundingRect());
     surfaceRect.unite(rect);
   }
 
@@ -584,9 +584,9 @@ bool PanelsSurface::isOverlapped(QPolygonF &polygon, int iexclude) const {
 * Remove all found flat banks
 */
 void PanelsSurface::clearBanks() {
-  for (int i = 0; i < m_flatBanks.size(); ++i) {
-    if (m_flatBanks[i])
-      delete m_flatBanks[i];
+  for (auto & m_flatBank : m_flatBanks) {
+    if (m_flatBank)
+      delete m_flatBank;
   }
   m_flatBanks.clear();
 }

@@ -216,8 +216,8 @@ public:
                                  .retrieveWS<MatrixWorkspace>("ws1")
                                  ->run()
                                  .getProperties();
-    for (auto it = properties.begin(); it != properties.end(); it++) {
-      logs.push_back((*it)->name());
+    for (auto propertie : properties) {
+      logs.push_back(propertie->name());
     }
 
     EXPECT_CALL(*m_mockViewPtr, clearParametersList()).Times(Exactly(1));

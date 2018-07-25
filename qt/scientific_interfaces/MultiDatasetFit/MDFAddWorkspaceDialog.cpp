@@ -21,13 +21,13 @@ AddWorkspaceDialog::AddWorkspaceDialog(QWidget *parent)
   QStringList workspaceNames;
   auto wsNames = Mantid::API::AnalysisDataService::Instance().getObjectNames(
       Mantid::Kernel::DataServiceSort::Sorted);
-  for (auto name = wsNames.begin(); name != wsNames.end(); ++name) {
+  for (auto & wsName : wsNames) {
     auto mws = Mantid::API::AnalysisDataService::Instance()
-                   .retrieveWS<Mantid::API::MatrixWorkspace>(*name);
+                   .retrieveWS<Mantid::API::MatrixWorkspace>(wsName);
     auto grp = Mantid::API::AnalysisDataService::Instance()
-                   .retrieveWS<Mantid::API::WorkspaceGroup>(*name);
+                   .retrieveWS<Mantid::API::WorkspaceGroup>(wsName);
     if (mws || grp) {
-      workspaceNames << QString::fromStdString(*name);
+      workspaceNames << QString::fromStdString(wsName);
     }
   }
   workspaceNames.sort();

@@ -41,12 +41,12 @@ public:
     std::map<std::string, std::string> hints;
 
     auto properties = m_algorithm->getProperties();
-    for (auto it = properties.begin(); it != properties.end(); ++it) {
-      const std::string name = (*it)->name();
+    for (auto & propertie : properties) {
+      const std::string name = propertie->name();
 
       // If it's not in the blacklist, add the property to our hints
       if (m_blacklist.find(name) == m_blacklist.end())
-        hints[name] = (*it)->documentation();
+        hints[name] = propertie->documentation();
     }
 
     return hints;

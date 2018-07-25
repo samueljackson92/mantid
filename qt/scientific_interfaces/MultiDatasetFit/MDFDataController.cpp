@@ -66,11 +66,10 @@ void DataController::addWorkspace() {
       }
 
       if (!matrixWorkspaces.empty()) {
-        for (auto iws = matrixWorkspaces.begin(); iws != matrixWorkspaces.end();
-             ++iws) {
-          auto name = QString::fromStdString((**iws).getName());
-          for (auto i = indices.begin(); i != indices.end(); ++i) {
-            addWorkspaceSpectrum(name, *i, **iws);
+        for (auto & matrixWorkspace : matrixWorkspaces) {
+          auto name = QString::fromStdString((*matrixWorkspace).getName());
+          for (int & indice : indices) {
+            addWorkspaceSpectrum(name, indice, *matrixWorkspace);
           }
         }
         emit spectraAdded(
@@ -130,8 +129,8 @@ void DataController::removeSelectedSpectra() {
   if (ranges.isEmpty())
     return;
   QList<int> rows;
-  for (auto range = ranges.begin(); range != ranges.end(); ++range) {
-    for (int row = range->topRow(); row <= range->bottomRow(); ++row) {
+  for (auto & range : ranges) {
+    for (int row = range.topRow(); row <= range.bottomRow(); ++row) {
       rows.push_back(row);
     }
   }
