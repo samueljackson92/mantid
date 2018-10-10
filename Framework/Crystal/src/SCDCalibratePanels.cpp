@@ -23,8 +23,10 @@
 #include "MantidGeometry/Crystal/IndexingUtils.h"
 #include "MantidGeometry/Crystal/OrientedLattice.h"
 #include "MantidGeometry/Crystal/ReducedCell.h"
+#include "MantidGeometry/Instrument/ComponentInfo.h"
 #include "MantidKernel/BoundedValidator.h"
 #include "MantidKernel/EnabledWhenProperty.h"
+#include "MantidKernel/Exception.h"
 #include "MantidKernel/ListValidator.h"
 #include <Poco/File.h>
 #include <boost/container/flat_set.hpp>
@@ -313,9 +315,19 @@ void SCDCalibratePanels::findL1(int nPeaks,
     g_log.error("Can't locate Fit algorithm");
     throw;
   }
+
+  const auto &componentInfo = peaksWs->componentInfo();
+
+  if(!componentInfo.hasSource()) {
+      const auto msg = "Instrument has no source defined. Cannot find L1 distance";
+      throw Mantid::Kernel::Exception::InstrumentDefinitionError(msg);
+  }
+
+  const auto sourceName = componentInfo.name(componentInfo.source());
+
   std::ostringstream fun_str;
   fun_str << "name=SCDPanelErrors,Workspace=" << peaksWs->getName()
-          << ",Bank=moderator";
+          << ",Bank=" << sourceName;
   std::ostringstream tie_str;
   tie_str << "XShift=0.0,YShift=0.0,XRotate=0.0,YRotate=0.0,ZRotate=0.0,"
              "ScaleWidth=1.0,ScaleHeight=1.0,T0Shift ="
@@ -334,7 +346,7 @@ void SCDCalibratePanels::findL1(int nPeaks,
   AnalysisDataService::Instance().addOrReplace("params_L1", paramsL1);
   double deltaL1 = paramsL1->getRef<double>("Value", 2);
   SCDPanelErrors com;
-  com.moveDetector(0.0, 0.0, deltaL1, 0.0, 0.0, 0.0, 1.0, 1.0, "moderator",
+  com.moveDetector(0.0, 0.0, deltaL1, 0.0, 0.0, 0.0, 1.0, 1.0, sourceName,
                    peaksWs);
   g_log.notice() << "L1 = "
                  << -peaksWs->getInstrument()->getSource()->getPos().Z() << "  "
